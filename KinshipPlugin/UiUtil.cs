@@ -5,6 +5,15 @@ namespace KinshipPlugin;
 
 public static class UiUtil
 {
+    /// <summary>The creation-password box DMs fill in once before creating a room or scene.</summary>
+    public static void CreatePasswordInput()
+    {
+        var pw = Plugin.Config.CreatePassword;
+        ImGui.SetNextItemWidth(240f);
+        if (ImGui.InputText("Creation password", ref pw, 100, ImGuiInputTextFlags.Password)) { Plugin.Config.CreatePassword = pw; Plugin.Config.Save(); }
+        ImGui.TextColored(new Vector4(0.65f, 0.65f, 0.7f, 1f), "Only needed to start things. Ask your FC leader.");
+    }
+
     /// <summary>Wraps an OOC note in (( )) unless it already is.</summary>
     public static string Ooc(string note)
     {

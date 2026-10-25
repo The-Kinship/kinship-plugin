@@ -143,7 +143,7 @@ public sealed class CombatState
         lock (gate) { if (busy) return; busy = true; error = ""; }
         try
         {
-            var r = await SendAsync(HttpMethod.Post, "/rooms", new { name = name.Trim(), encounter = encounter.Trim() }, null).ConfigureAwait(false);
+            var r = await SendAsync(HttpMethod.Post, "/rooms", new { name = name.Trim(), encounter = encounter.Trim(), createPassword = Plugin.Config.CreatePassword }, null).ConfigureAwait(false);
             if (r.Token == null || r.MemberId == null || r.Room == null) throw new CombatException("The reply was incomplete.", 500);
             lock (gate) { token = r.Token; memberId = r.MemberId; code = r.Room.Code; room = r.Room; lastPoll = DateTime.UtcNow; }
             Plugin.Config.CombatName = name.Trim();

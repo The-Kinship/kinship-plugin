@@ -88,7 +88,7 @@ public sealed class SceneState : IDisposable
         lock (gate) { if (busy) return; busy = true; error = ""; }
         try
         {
-            var r = await SendAsync(HttpMethod.Post, "/scenes", new { name = name.Trim(), title = sceneTitle.Trim() }, null).ConfigureAwait(false);
+            var r = await SendAsync(HttpMethod.Post, "/scenes", new { name = name.Trim(), title = sceneTitle.Trim(), createPassword = Plugin.Config.CreatePassword }, null).ConfigureAwait(false);
             Adopt(r, name.Trim());
         }
         catch (CombatException ex) { SetError(ex.Message); }
@@ -230,6 +230,19 @@ public sealed class SceneState : IDisposable
             catch (Exception) { /* try again next time */ }
             finally { lock (gate) { memberPollInFlight = false; } }
         });
+    }
+
+    public async Task RemoveMemberAsync(string id)
+    {
+        string tk, cd;
+        lock (gate) { if (token.Length == 0) return; tk = token; cd = code; error = ""; }
+        try
+        {
+            await SendAsync(HttpMethod.Post, $"/scenes/{cd}/kick", new { memberId = id }, tk).ConfigureAwait(false);
+            lock (gate) { members = members.Where(m => m.Id != id).ToList(); lastMemberPoll = DateTime.MinValue; }
+        }
+        catch (CombatException ex) { SetError(ex.Message); }
+        catch (Exception) { SetError("Couldn't reach the server. Try again."); }
     }
 
     public async Task<bool> SendPopupAsync(string text, string ooc, List<string>? to)

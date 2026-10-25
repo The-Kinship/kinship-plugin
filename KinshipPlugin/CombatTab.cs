@@ -102,6 +102,7 @@ public sealed class CombatTab
         ImGui.TextWrapped("Start a new room. You will be its DM, and you can share the room code or invite link with your players.");
         ImGui.SetNextItemWidth(240f);
         ImGui.InputText("Encounter name", ref newEncounter, 90);
+        UiUtil.CreatePasswordInput();
         if (!busy && ImGui.Button("Create room")) _ = Plugin.Combat.CreateAsync(name, newEncounter);
     }
 

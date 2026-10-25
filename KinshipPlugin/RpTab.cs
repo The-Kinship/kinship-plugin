@@ -44,6 +44,7 @@ public sealed class RpTab
         ImGui.TextColored(Gold, "Run a scene (DM)");
         ImGui.TextWrapped("Start a scene for your RP group. Share the code, then send popups to everyone or to chosen people. Different groups can run different scenes at the same time.");
         ImGui.SetNextItemWidth(240f); ImGui.InputText("Scene name##rp", ref newTitle, 80);
+        UiUtil.CreatePasswordInput();
         if (!s.Busy && ImGui.Button("Create scene")) _ = Plugin.Scene.CreateAsync(name, newTitle);
     }
 
@@ -105,6 +106,7 @@ public sealed class RpTab
         {
             var on = picked.Contains(m.Id);
             if (ImGui.Checkbox(m.Name + "##m" + m.Id, ref on)) { if (on) picked.Add(m.Id); else picked.Remove(m.Id); }
+            ImGui.SameLine(); if (ImGui.SmallButton("Remove##k" + m.Id)) _ = Plugin.Scene.RemoveMemberAsync(m.Id);
         }
         picked.RemoveWhere(id => s.Members.All(m => m.Id != id));
         if (s.Members.Count > 0)

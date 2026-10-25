@@ -31,6 +31,8 @@ public class Configuration : IPluginConfiguration
     public string SceneMemberId { get; set; } = "";
     public string SceneRole { get; set; } = "";
     public string SceneTitle { get; set; } = "";
+    /// <summary>The creation password (only DMs need it). Stored on this computer only.</summary>
+    public string CreatePassword { get; set; } = "";
     public bool ChatEcho { get; set; } = true;
 
     public void Save() => Plugin.PluginInterface.SavePluginConfig(this);
