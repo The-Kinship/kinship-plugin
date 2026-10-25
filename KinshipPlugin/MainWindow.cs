@@ -135,12 +135,16 @@ public sealed class MainWindow : Window, IDisposable
     private static void DrawPlots(List<SheetClient.Plot>? plots)
     {
         if (plots == null) return;
-        if (plots.Count == 0) { ImGui.TextColored(Dim, "No active plot right now."); return; }
+        if (plots.Count == 0) ImGui.TextColored(Dim, "No active plot right now.");
         for (var i = 0; i < plots.Count; i++)
         {
             ImGui.TextColored(Gold, plots[i].Title);
             if (plots[i].Summary.Length > 0) ImGui.TextWrapped(plots[i].Summary);
             if (i < plots.Count - 1) { ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing(); }
         }
+        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        ImGui.TextColored(Gold, "Example plot");
+        ImGui.TextColored(Dim, "How a plot unfolds, and where each sect comes in.");
+        AboutTab.ExamplePlot();
     }
 }

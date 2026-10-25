@@ -23,6 +23,7 @@ public static class AboutTab
 
     public static void Draw()
     {
+        UiUtil.Centered("kin-emblem.jpg", 130f);
         ImGui.TextColored(Gold, "About The Kinship");
         ImGui.TextColored(Dim, "A heavy role-play free company on Crystal \u00b7 Mateus");
         ImGui.Spacing();
@@ -55,21 +56,39 @@ public static class AboutTab
 
         if (ImGui.CollapsingHeader("The four sects"))
         {
+            UiUtil.Centered("sects-emblem.jpg", 120f);
+            ImGui.Spacing();
             foreach (var key in SectData.Order)
             {
                 var s = SectData.All[key];
+                var wrap = Plugin.Images.Get(ImageCache.SiteImages + s.Image);
+                ImGui.BeginGroup();
+                if (wrap != null) ImGui.Image(wrap.Handle, new Vector2(64f * wrap.Width / wrap.Height, 64f));
+                else ImGui.Dummy(new Vector2(64f, 64f));
+                ImGui.EndGroup();
+                ImGui.SameLine();
+                ImGui.BeginGroup();
                 ImGui.TextColored(s.Color, s.Name);
                 ImGui.TextColored(Dim, "Sect Leader: " + s.Leader);
                 ImGui.TextWrapped(s.Blurb);
-                ImGui.Spacing();
+                ImGui.EndGroup();
+                ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
             }
             ImGui.TextWrapped("Each sect plays a vital part in the overall RP of our free company, and each has a special place in our overall RP plots. This helps to ensure everyone is included in some way!");
             ImGui.Spacing();
             ImGui.TextColored(Dim, "Find the full sect pages in the Sects tab.");
         }
 
+        if (ImGui.CollapsingHeader("Example plot"))
+        {
+            ImGui.TextColored(Dim, "How a plot unfolds, and where each sect comes in.");
+            ExamplePlot();
+        }
+
         if (ImGui.CollapsingHeader("Join us"))
         {
+            UiUtil.Centered("join-button.jpg", 110f);
+            ImGui.Spacing();
             ImGui.TextWrapped("If The Kinship sounds like home, send us a message or head straight to the application.");
             ImGui.Spacing();
             var url = Link("application_url");
@@ -79,6 +98,12 @@ public static class AboutTab
             }
             else ImGui.TextColored(Dim, "The application opens soon. Ask a member of the Ember Court in the meantime.");
         }
+    }
+
+    /// <summary>The plot progression graphic. Click it to open it large.</summary>
+    public static void ExamplePlot()
+    {
+        if (UiUtil.FullWidth("plot-example.jpg")) Plugin.ShowImage("plot-example.jpg");
     }
 
     private static void Item(string title, string text)

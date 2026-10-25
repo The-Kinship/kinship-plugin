@@ -28,6 +28,10 @@ public sealed class Plugin : IDalamudPlugin
     internal static SceneState Scene { get; private set; } = null!;
     internal static IFontHandle PopupFont { get; private set; } = null!;
 
+    private static ImageViewerWindow? viewer;
+    /// <summary>Opens a website image in the large viewer window.</summary>
+    internal static void ShowImage(string file) { viewer?.Show(file); }
+
     private static PopupWindow? popupWindow;
     /// <summary>Opens the RP popup window (called when a popup arrives).</summary>
     internal static void ShowPopups() { if (popupWindow != null) popupWindow.IsOpen = true; }
@@ -53,6 +57,8 @@ public sealed class Plugin : IDalamudPlugin
         popupWindow = popup;
         windows.AddWindow(notice);
         windows.AddWindow(popup);
+        viewer = new ImageViewerWindow();
+        windows.AddWindow(viewer);
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
@@ -94,6 +100,7 @@ public sealed class Plugin : IDalamudPlugin
         main.Dispose();
         notice.Dispose();
         popupWindow = null;
+        viewer = null;
         popup.Dispose();
         Scene.Dispose();
         PopupFont.Dispose();

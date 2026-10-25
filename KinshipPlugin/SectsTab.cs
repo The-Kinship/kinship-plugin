@@ -41,6 +41,7 @@ public sealed class SectsTab
     // ---------- the list of sects ----------
     private void DrawList()
     {
+        UiUtil.Centered("sects-emblem.jpg", 120f);
         ImGui.TextColored(Dim, "Four paths, one purpose. Choose a sect and enter with its password.");
         ImGui.Spacing();
         DrawApply();
