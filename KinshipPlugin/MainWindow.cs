@@ -71,6 +71,7 @@ public sealed class MainWindow : Window, IDisposable
         if (ImGui.BeginTabBar("kinship_tabs"))
         {
             if (ImGui.BeginTabItem("Home")) { DrawHome(f); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("About")) { AboutTab.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Announcements")) { DrawAnnouncements(f); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Plots")) { DrawPlots(p); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Sects")) { sects.Draw(); ImGui.EndTabItem(); }

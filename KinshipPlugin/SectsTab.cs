@@ -9,6 +9,7 @@ namespace KinshipPlugin;
 /// <summary>The Sects tab: sect list, password prompt, and each sect's page.</summary>
 public sealed class SectsTab
 {
+    private static readonly Vector4 Gold = new(0.92f, 0.78f, 0.35f, 1f);
     private static readonly Vector4 Dim = new(0.65f, 0.65f, 0.7f, 1f);
     private static readonly Vector4 Red = new(0.95f, 0.4f, 0.35f, 1f);
 
@@ -42,6 +43,8 @@ public sealed class SectsTab
     {
         ImGui.TextColored(Dim, "Four paths, one purpose. Choose a sect and enter with its password.");
         ImGui.Spacing();
+        DrawApply();
+        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         foreach (var key in SectData.Order)
         {
             var s = SectData.All[key];
@@ -61,6 +64,21 @@ public sealed class SectsTab
             ImGui.EndGroup();
             ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         }
+    }
+
+    // ---------- apply to a sect ----------
+    // Games can't hold a form, so this opens the application page in the browser.
+    private static void DrawApply()
+    {
+        var url = AboutTab.Link("sect_application_url");
+        if (!url.StartsWith("http")) url = AboutTab.Link("application_url");
+        ImGui.TextColored(Gold, "Not in a sect yet?");
+        if (url.StartsWith("http"))
+        {
+            ImGui.TextWrapped("Chosen your path? Send in your sect application. It opens in your browser.");
+            if (ImGui.Button("Apply to a sect")) AboutTab.OpenLink(url);
+        }
+        else ImGui.TextColored(Dim, "The sect application opens soon. Ask a member of the Ember Court in the meantime.");
     }
 
     // ---------- the password prompt ----------
