@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Dalamud.Configuration;
 
 namespace KinshipPlugin;
@@ -13,6 +14,9 @@ public class Configuration : IPluginConfiguration
 
     /// <summary>Height of the crest in the main window, in pixels.</summary>
     public int CrestHeight { get; set; } = 200;
+
+    /// <summary>Sects you have unlocked on this computer (never stores the password itself).</summary>
+    public List<string> Unlocked { get; set; } = new();
 
     public void Save() => Plugin.PluginInterface.SavePluginConfig(this);
 }

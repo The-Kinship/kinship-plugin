@@ -17,6 +17,12 @@ public static class SheetClient
     public const string PlotsUrl =
         "https://docs.google.com/spreadsheets/d/e/2PACX-1vTAGpMH_xMZvl3V_Pxo-e57S1D9Q2RhjpGxtN2romaYZer0CjAI3qlYzgZa4SUpNZsIbX0Dt3ag6-Jg/pub?gid=1197750534&single=true&output=csv";
 
+    // The "SectContent" tab: columns sect, section, title, text, order.
+    public const string SectUrl =
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vTAGpMH_xMZvl3V_Pxo-e57S1D9Q2RhjpGxtN2romaYZer0CjAI3qlYzgZa4SUpNZsIbX0Dt3ag6-Jg/pub?gid=1603698241&single=true&output=csv";
+
+    public sealed record SectRow(string Sect, string Section, string Title, string Text, double Order);
+
     public sealed record Plot(string Title, string Summary, double Order);
 
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(15) };
@@ -63,6 +69,27 @@ public static class SheetClient
         }
         plots.Sort((a, b) => a.Order.CompareTo(b.Order));
         return plots;
+    }
+
+    public static async Task<List<SectRow>> FetchSectRowsAsync()
+    {
+        var rows = await FetchCsvAsync(SectUrl).ConfigureAwait(false);
+        var result = new List<SectRow>();
+        if (rows.Count == 0) return result;
+        var head = rows[0].ConvertAll(h => h.Trim().ToLowerInvariant());
+        int Ix(string n) => head.IndexOf(n);
+        string Cell(List<string> r, int i) => i >= 0 && i < r.Count ? r[i].Trim() : "";
+        for (var i = 1; i < rows.Count; i++)
+        {
+            var r = rows[i];
+            var sect = Cell(r, Ix("sect")).ToLowerInvariant();
+            var section = Cell(r, Ix("section")).ToLowerInvariant();
+            if (sect.Length == 0 || section.Length == 0) continue;
+            var order = double.TryParse(Cell(r, Ix("order")), System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var o) ? o : 999;
+            result.Add(new SectRow(sect, section, Cell(r, Ix("title")), Cell(r, Ix("text")), order));
+        }
+        return result;
     }
 
     // Small CSV reader that handles quotes, commas and line breaks inside cells.

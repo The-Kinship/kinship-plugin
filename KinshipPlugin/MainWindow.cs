@@ -13,6 +13,8 @@ public sealed class MainWindow : Window, IDisposable
     private const string CrestPng = ImageCache.SiteImages + "kinship-crest.png";
     private const string CrestJpg = ImageCache.SiteImages + "kinship-crest.jpg";
 
+    private readonly SectsTab sects = new();
+
     public MainWindow() : base("The Kinship##KinshipMain", ImGuiWindowFlags.None)
     {
         Size = new Vector2(440, 520);
@@ -60,6 +62,8 @@ public sealed class MainWindow : Window, IDisposable
             if (ImGui.BeginTabItem("Home")) { DrawHome(f); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Announcements")) { DrawAnnouncements(f); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Plots")) { DrawPlots(p); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Sects")) { sects.Draw(); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Settings")) { DrawSettings(); ImGui.EndTabItem(); }
             ImGui.EndTabBar();
         }
 
@@ -67,20 +71,29 @@ public sealed class MainWindow : Window, IDisposable
         if (s.Length > 0) ImGui.TextColored(Dim, s);
         if (ImGui.Button("Refresh")) _ = Plugin.Data.Refresh();
 
-        if (ImGui.CollapsingHeader("Settings"))
+    }
+
+    private static void DrawSettings()
+    {
+        var show = Plugin.Config.ShowPlotNotice;
+        if (ImGui.Checkbox("Show the plot notice when I log in", ref show))
         {
-            var show = Plugin.Config.ShowPlotNotice;
-            if (ImGui.Checkbox("Show the plot notice when I log in", ref show))
-            {
-                Plugin.Config.ShowPlotNotice = show;
-                Plugin.Config.Save();
-            }
-            var crest = Plugin.Config.CrestHeight;
-            if (ImGui.SliderInt("Crest size", ref crest, 60, 400))
-            {
-                Plugin.Config.CrestHeight = crest;
-                Plugin.Config.Save();
-            }
+            Plugin.Config.ShowPlotNotice = show;
+            Plugin.Config.Save();
+        }
+        ImGui.Spacing();
+        var crest = Plugin.Config.CrestHeight;
+        if (ImGui.SliderInt("Crest size", ref crest, 60, 400))
+        {
+            Plugin.Config.CrestHeight = crest;
+            Plugin.Config.Save();
+        }
+        ImGui.Spacing();
+        if (ImGui.Button("Forget my unlocked sects"))
+        {
+            Plugin.Config.Unlocked.Clear();
+            SectData.SessionUnlocked.Clear();
+            Plugin.Config.Save();
         }
     }
 
