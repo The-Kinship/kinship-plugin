@@ -26,7 +26,7 @@ public sealed class MainWindow : Window, IDisposable
         TitleBarButtons.Add(new TitleBarButton
         {
             Icon = FontAwesomeIcon.Sync,
-            Click = _ => { _ = Plugin.Data.Refresh(); },
+            Click = button => { _ = Plugin.Data.Refresh(); },
             ShowTooltip = () => ImGui.SetTooltip("Refresh")
         });
     }
