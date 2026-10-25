@@ -1,0 +1,9 @@
+{
+  "Author": "The Kinship",
+  "Name": "The Kinship",
+  "Punchline": "Companion for The Kinship free company.",
+  "Description": "Shows The Kinship's faction info, plots and sects in game. Type /kinship to open.",
+  "ApplicableVersion": "any",
+  "Tags": [ "roleplay", "free company", "kinship" ],
+  "RepoUrl": "https://github.com/The-Kinship/kinship-plugin"
+}
