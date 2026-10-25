@@ -16,6 +16,7 @@ public sealed class MainWindow : Window, IDisposable
 
     private readonly SectsTab sects = new();
     private readonly CombatTab combat = new();
+    private readonly RpTab rp = new();
 
     public MainWindow() : base("The Kinship##KinshipMain", ImGuiWindowFlags.None)
     {
@@ -74,6 +75,7 @@ public sealed class MainWindow : Window, IDisposable
             if (ImGui.BeginTabItem("Plots")) { DrawPlots(p); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Sects")) { sects.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Combat")) { combat.Draw(); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("RP")) { rp.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Settings")) { DrawSettings(); ImGui.EndTabItem(); }
             ImGui.EndTabBar();
         }

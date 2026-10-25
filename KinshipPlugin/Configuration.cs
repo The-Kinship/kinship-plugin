@@ -24,5 +24,14 @@ public class Configuration : IPluginConfiguration
     public string CombatToken { get; set; } = "";
     public string CombatMemberId { get; set; } = "";
 
+    /// <summary>RP scenes: the scene you last joined or run (popups themselves always start OFF at login).</summary>
+    public string SceneName { get; set; } = "";
+    public string SceneCode { get; set; } = "";
+    public string SceneToken { get; set; } = "";
+    public string SceneMemberId { get; set; } = "";
+    public string SceneRole { get; set; } = "";
+    public string SceneTitle { get; set; } = "";
+    public bool ChatEcho { get; set; } = true;
+
     public void Save() => Plugin.PluginInterface.SavePluginConfig(this);
 }

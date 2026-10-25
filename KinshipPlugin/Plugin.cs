@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Dalamud.Game.Command;
+using Dalamud.Interface.ManagedFontAtlas;
 using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
@@ -17,15 +18,24 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IPluginLog Log { get; private set; } = null!;
     [PluginService] internal static ITextureProvider TextureProvider { get; private set; } = null!;
     [PluginService] internal static IClientState ClientState { get; private set; } = null!;
+    [PluginService] internal static IChatGui Chat { get; private set; } = null!;
+    [PluginService] internal static IFramework Framework { get; private set; } = null!;
 
     internal static Configuration Config { get; private set; } = null!;
     internal static DataStore Data { get; private set; } = null!;
     internal static ImageCache Images { get; private set; } = null!;
     internal static CombatState Combat { get; private set; } = null!;
+    internal static SceneState Scene { get; private set; } = null!;
+    internal static IFontHandle PopupFont { get; private set; } = null!;
+
+    private static PopupWindow? popupWindow;
+    /// <summary>Opens the RP popup window (called when a popup arrives).</summary>
+    internal static void ShowPopups() { if (popupWindow != null) popupWindow.IsOpen = true; }
 
     private readonly WindowSystem windows = new("KinshipPlugin");
     private readonly MainWindow main;
     private readonly NoticeWindow notice;
+    private readonly PopupWindow popup;
 
     public Plugin()
     {
@@ -33,11 +43,16 @@ public sealed class Plugin : IDalamudPlugin
         Data = new DataStore();
         Images = new ImageCache();
         Combat = new CombatState();
+        Scene = new SceneState();
+        PopupFont = PluginInterface.UiBuilder.FontAtlas.NewDelegateFontHandle(e => e.OnPreBuild(tk => tk.AddDalamudDefaultFont(28f)));
 
         main = new MainWindow();
         notice = new NoticeWindow(OpenMain);
         windows.AddWindow(main);
+        popup = new PopupWindow();
+        popupWindow = popup;
         windows.AddWindow(notice);
+        windows.AddWindow(popup);
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
@@ -78,6 +93,10 @@ public sealed class Plugin : IDalamudPlugin
         windows.RemoveAllWindows();
         main.Dispose();
         notice.Dispose();
+        popupWindow = null;
+        popup.Dispose();
+        Scene.Dispose();
+        PopupFont.Dispose();
         Images.Dispose();
     }
 }
