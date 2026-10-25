@@ -20,15 +20,28 @@ public sealed class CombatTab
     private string codeInput = "";
     private string kind = "attack";
     private int dieIndex = 5;      // d20
-    private int modifier;
     private string targetId = "";
 
     // create-a-room form
     private string newEncounter = "";
 
     // DM setup state
-    private static readonly string[] Modes = { "random", "manual", "initiative" };
-    private static readonly string[] ModeLabels = { "Random order", "Manual order (use the order numbers)", "Roll initiative (d20)" };
+    private static readonly string[] Modes = { "random", "manual" };
+    private static readonly string[] ModeLabels = { "Random order", "Manual order (use the order numbers)" };
+    private static readonly string[] Kinds = { "classic", "lastStanding", "spar", "timed" };
+    private static readonly string[] KindLabels = { "Classic: players vs NPCs", "Last one standing: free for all", "Spar: 1v1, first to fall loses", "Timed: classic with a clock" };
+    private static readonly string[] KindHints =
+    {
+        "Players win when every NPC is down. NPCs win when every player is down.",
+        "Everyone fights everyone. It ends when only one person is left.",
+        "A 1v1 duel with exactly two participants. Whoever goes down first loses.",
+        "Classic rules plus a clock. If time runs out, the side with more total HP wins."
+    };
+    private int sKind, sMinutes = 15;
+    private string fLoot = "";
+    private int seenDrops = -1;
+    private string dropNotice = "";
+    private DateTime dropUntil = DateTime.MinValue;
     private string loadedFor = "";
     private string sName = "", sLocation = "", sNotes = "";
     private int sMode;
@@ -101,8 +114,24 @@ public sealed class CombatTab
         var inCombat = room.Phase == "combat";
         var canAct = inCombat && actor != null && actor.Hp > 0 && (actor.Type == "NPC" ? isDm : actor.OwnerId == myId);
 
+        // A loot popup each time someone with loot goes down.
+        if (seenDrops < 0) seenDrops = room.Drops.Count;
+        if (room.Drops.Count > seenDrops)
+        {
+            dropNotice = string.Join("   ", room.Drops.Skip(seenDrops).Select(d => $"{d.Name} dropped loot: {d.Loot}"));
+            dropUntil = DateTime.UtcNow.AddSeconds(12);
+        }
+        seenDrops = room.Drops.Count;
+        if (dropNotice.Length > 0 && DateTime.UtcNow < dropUntil) { ImGui.TextColored(Gold, dropNotice); ImGui.Spacing(); }
+
         ImGui.TextColored(Gold, room.Name);
-        ImGui.TextColored(Dim, inCombat ? $"Round {room.Round}  ·  in combat" : "Setting up");
+        var timeLeft = "";
+        if (inCombat && !string.IsNullOrEmpty(room.EndsAt) && DateTimeOffset.TryParse(room.EndsAt, out var endsAt))
+        {
+            var left = endsAt - DateTimeOffset.UtcNow; if (left < TimeSpan.Zero) left = TimeSpan.Zero;
+            timeLeft = $"  ·  time left {(int)left.TotalMinutes}:{left.Seconds:00}";
+        }
+        ImGui.TextColored(Dim, room.Phase == "ended" ? "Encounter over" : inCombat ? $"Round {room.Round}  ·  in combat{timeLeft}" : "Setting up");
         if (!string.IsNullOrEmpty(room.Location)) ImGui.TextColored(Dim, "Location: " + room.Location);
         ImGui.Text("Room " + room.Code);
         ImGui.SameLine(); if (ImGui.SmallButton("Copy code")) ImGui.SetClipboardText(room.Code);
@@ -112,6 +141,8 @@ public sealed class CombatTab
         ImGui.Separator();
 
         if (error.Length > 0) ImGui.TextColored(Red, error);
+
+        if (room.Phase == "ended") { DrawEnded(room, isDm, busy); return; }
 
         // ----- the cast / turn order -----
         if (!inCombat)
@@ -148,8 +179,6 @@ public sealed class CombatTab
                     if (!canAct) ImGui.SameLine();
                     if (ImGui.Button("Undo last action")) Plugin.Combat.Act("undo", new { });
                 }
-                if (ImGui.Button("Reroll initiative")) Plugin.Combat.Act("initiative", new { });
-                ImGui.SameLine();
                 if (ImGui.Button("Back to setup")) Plugin.Combat.Act("setup", new { });
             }
         }
@@ -161,10 +190,9 @@ public sealed class CombatTab
             var a = room.People.FirstOrDefault(x => x.Id == lr.ActorId)?.Name ?? "?";
             var t = room.People.FirstOrDefault(x => x.Id == lr.TargetId)?.Name ?? "?";
             var verb = lr.Kind == "heal" ? "heals" : "attacks";
-            var mod = lr.Modifier == 0 ? "" : (lr.Modifier > 0 ? $"+{lr.Modifier}" : lr.Modifier.ToString());
             ImGui.Spacing();
             ImGui.TextColored(Gold, "Last roll");
-            ImGui.TextWrapped($"{a} {verb} {t}: d{lr.Sides} rolled {lr.Raw}{mod} = {lr.Total}.  {t}: {lr.Before} → {lr.After} HP");
+            ImGui.TextWrapped($"{a} {verb} {t}: d{lr.Sides} rolled {lr.Raw}.  {t}: {lr.Before} → {lr.After} HP");
         }
 
         if (ImGui.CollapsingHeader("Encounter log"))
@@ -190,6 +218,7 @@ public sealed class CombatTab
         {
             sName = room.Name; sLocation = room.Location ?? ""; sNotes = room.Notes ?? "";
             sMode = Math.Max(0, Array.IndexOf(Modes, room.Mode));
+            sKind = Math.Max(0, Array.IndexOf(Kinds, room.Kind)); sMinutes = room.Minutes > 0 ? room.Minutes : 15;
             loadedFor = room.Code; fNumber = room.People.Count + 1;
         }
 
@@ -200,6 +229,19 @@ public sealed class CombatTab
         ImGui.InputTextMultiline("##snotes", ref sNotes, 1000, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 56f));
         ImGui.TextColored(Dim, "Scene notes (everyone sees these)");
         ImGui.SetNextItemWidth(260f);
+        if (ImGui.BeginCombo("Encounter type##s", KindLabels[sKind]))
+        {
+            for (var i = 0; i < Kinds.Length; i++)
+                if (ImGui.Selectable(KindLabels[i], i == sKind)) sKind = i;
+            ImGui.EndCombo();
+        }
+        ImGui.TextColored(Dim, KindHints[sKind]);
+        if (Kinds[sKind] == "timed")
+        {
+            ImGui.SetNextItemWidth(110f); ImGui.InputInt("Minutes##s", ref sMinutes);
+            sMinutes = Math.Clamp(sMinutes, 1, 180);
+        }
+        ImGui.SetNextItemWidth(260f);
         if (ImGui.BeginCombo("Turn order##s", ModeLabels[sMode]))
         {
             for (var i = 0; i < Modes.Length; i++)
@@ -207,7 +249,7 @@ public sealed class CombatTab
             ImGui.EndCombo();
         }
         if (ImGui.Button("Save settings"))
-            Plugin.Combat.Act("settings", new { name = sName, location = sLocation, notes = sNotes, mode = Modes[sMode] });
+            Plugin.Combat.Act("settings", new { name = sName, location = sLocation, notes = sNotes, mode = Modes[sMode], kind = Kinds[sKind], minutes = sMinutes });
 
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         ImGui.TextColored(Gold, "The cast");
@@ -215,7 +257,7 @@ public sealed class CombatTab
         foreach (var p in room.People)
         {
             var owner = p.Type == "Player" ? room.Members.FirstOrDefault(m => m.Id == p.OwnerId)?.Name ?? "unassigned" : "DM";
-            ImGui.Text($"{p.Name}  ({p.Type})  HP {p.Hp}/{p.Max}  ·  #{p.Number}  ·  {owner}");
+            ImGui.Text($"{p.Name}  ({p.Type})  HP {p.Hp}/{p.Max}  ·  #{p.Number}  ·  {owner}" + (string.IsNullOrEmpty(p.Loot) ? "" : $"  ·  loot: {p.Loot}"));
             ImGui.SameLine();
             if (ImGui.SmallButton("Edit##e" + p.Id)) LoadForm(p);
             ImGui.SameLine();
@@ -233,6 +275,8 @@ public sealed class CombatTab
         ImGui.SetNextItemWidth(110f); ImGui.InputInt("Order number##f", ref fNumber);
         ImGui.TextColored(Dim, "Order number only matters for Manual order.");
         ImGui.SetNextItemWidth(260f); ImGui.InputText("Details##f", ref fDetails, 300);
+        ImGui.SetNextItemWidth(260f); ImGui.InputText("Loot (optional)##f", ref fLoot, 200);
+        ImGui.TextColored(Dim, "Hidden from players until this character goes down.");
         fMax = Math.Clamp(fMax, 1, 99999); fHp = Math.Clamp(fHp, 0, fMax); fNumber = Math.Clamp(fNumber, 1, 999);
 
         if (fType == 0)
@@ -254,7 +298,7 @@ public sealed class CombatTab
                 Plugin.Combat.Act("participant", new
                 {
                     id = editId, name = fName, type = fType == 0 ? "Player" : "NPC", max = fMax, hp = fHp,
-                    number = fNumber, details = fDetails, ownerId = fType == 0 && fOwnerId.Length > 0 ? fOwnerId : null
+                    number = fNumber, details = fDetails, loot = fLoot, ownerId = fType == 0 && fOwnerId.Length > 0 ? fOwnerId : null
                 });
                 ClearForm(room, room.People.Count + (editId == null ? 2 : 1));
             }
@@ -269,13 +313,69 @@ public sealed class CombatTab
     private void LoadForm(CPerson p)
     {
         editId = p.Id; fName = p.Name; fType = p.Type == "NPC" ? 1 : 0; fHp = p.Hp; fMax = p.Max;
-        fNumber = p.Number; fDetails = p.Details ?? ""; fOwnerId = p.OwnerId ?? "";
+        fNumber = p.Number; fDetails = p.Details ?? ""; fLoot = p.Loot ?? ""; fOwnerId = p.OwnerId ?? "";
     }
 
     private void ClearForm(CRoom room, int? nextNumber = null)
     {
-        editId = null; fName = ""; fDetails = ""; fOwnerId = ""; fHp = 10; fMax = 10;
+        editId = null; fName = ""; fDetails = ""; fLoot = ""; fOwnerId = ""; fHp = 10; fMax = 10;
         fNumber = nextNumber ?? room.People.Count + 1;
+    }
+
+    // ---------- the "Encounter over" summary ----------
+    private static void BoldWrapped(string text, Vector4 color)
+    {
+        // Draws the text twice, one pixel apart, which reads as bold.
+        var start = ImGui.GetCursorPos();
+        ImGui.PushStyleColor(ImGuiCol.Text, color); ImGui.TextWrapped(text); ImGui.PopStyleColor();
+        var end = ImGui.GetCursorPos();
+        ImGui.SetCursorPos(new Vector2(start.X + 1f, start.Y));
+        ImGui.PushStyleColor(ImGuiCol.Text, color); ImGui.TextWrapped(text); ImGui.PopStyleColor();
+        ImGui.SetCursorPos(end);
+    }
+
+    private void DrawEnded(CRoom room, bool isDm, bool busy)
+    {
+        var r = room.Result;
+        ImGui.Spacing();
+        ImGui.TextColored(Gold, r?.Headline ?? "The encounter is over.");
+        if (!string.IsNullOrEmpty(r?.Detail)) ImGui.TextWrapped(r!.Detail);
+        var rounds = r?.Rounds ?? room.Round;
+        ImGui.TextColored(Dim, $"{room.Name}  ·  {rounds} round{(rounds == 1 ? "" : "s")}");
+        ImGui.Separator();
+
+        ImGui.TextColored(Gold, "FINAL STANDINGS");
+        foreach (var s in r?.Standings ?? new())
+        {
+            var winner = r!.Winners.Contains(s.Name);
+            ImGui.TextColored(winner ? Gold : new Vector4(1, 1, 1, 1), s.Name);
+            ImGui.SameLine(); ImGui.TextColored(Dim, $"({s.Type})");
+            if (winner) { ImGui.SameLine(); ImGui.TextColored(Gold, "Winner"); }
+            ImGui.SameLine(); ImGui.TextColored(Dim, s.Hp <= 0 ? "·  Downed" : $"·  {s.Hp} / {s.Max} HP");
+        }
+
+        if (r != null && r.Loot.Count > 0)
+        {
+            ImGui.Spacing();
+            ImGui.TextColored(Gold, "LOOT");
+            foreach (var l in r.Loot) ImGui.TextWrapped($"{l.Name} dropped loot: {l.Loot}");
+        }
+
+        if (!string.IsNullOrEmpty(r?.Note))
+        {
+            ImGui.Spacing(); ImGui.Spacing();
+            BoldWrapped(r!.Note, new Vector4(1f, 1f, 1f, 1f));
+            ImGui.Spacing();
+        }
+
+        ImGui.Separator();
+        if (isDm && room.UndoAvailable && r?.Reason != "time")
+        {
+            if (!busy && ImGui.Button("Undo last action")) Plugin.Combat.Act("undo", new { });
+            ImGui.SameLine();
+        }
+        if (isDm) { if (!busy && ImGui.Button("Close encounter")) _ = Plugin.Combat.CloseRoomAsync(); }
+        else if (ImGui.Button("Close")) Plugin.Combat.Leave();
     }
 
     private static void DrawPerson(CPerson p, CRoom? room, bool current)
@@ -310,10 +410,6 @@ public sealed class CombatTab
                 if (ImGui.Selectable("d" + Dice[i], i == dieIndex)) dieIndex = i;
             ImGui.EndCombo();
         }
-        ImGui.SetNextItemWidth(120f);
-        ImGui.InputInt("Modifier", ref modifier);
-        modifier = Math.Clamp(modifier, -100, 100);
-
         if (room.People.All(p => p.Id != targetId)) targetId = room.People.FirstOrDefault()?.Id ?? "";
         var target = room.People.FirstOrDefault(p => p.Id == targetId);
         ImGui.SetNextItemWidth(220f);
@@ -326,8 +422,9 @@ public sealed class CombatTab
 
         if (busy) { ImGui.TextColored(Dim, "Working..."); return; }
         if (ImGui.Button(kind == "heal" ? "Roll heal" : "Roll attack") && target != null)
-            Plugin.Combat.Act("roll", new { kind, targetId, sides = Dice[dieIndex], modifier });
+            Plugin.Combat.Act("roll", new { kind, targetId, sides = Dice[dieIndex] });
         ImGui.SameLine();
-        if (ImGui.Button("End turn")) Plugin.Combat.Act("next", new { });
+        if (ImGui.Button("Pass turn")) Plugin.Combat.Act("next", new { });
+        ImGui.TextColored(Dim, "Rolling uses your turn.");
     }
 }

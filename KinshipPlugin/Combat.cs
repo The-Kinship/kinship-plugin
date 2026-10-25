@@ -16,19 +16,30 @@ public sealed class CPerson
 {
     public string Id { get; set; } = ""; public string Name { get; set; } = ""; public string Type { get; set; } = "";
     public int Max { get; set; } public int Hp { get; set; } public int Number { get; set; }
-    public string? Details { get; set; } public string? OwnerId { get; set; } public int? Initiative { get; set; }
+    public string? Details { get; set; } public string? OwnerId { get; set; } public string? Loot { get; set; }
 }
 public sealed class CLogEntry { public string Id { get; set; } = ""; public string At { get; set; } = ""; public string Message { get; set; } = ""; }
 public sealed class CRoll
 {
     public string ActorId { get; set; } = ""; public string TargetId { get; set; } = ""; public string Kind { get; set; } = "";
-    public int Sides { get; set; } public int Modifier { get; set; } public int Raw { get; set; } public int Total { get; set; }
+    public int Sides { get; set; } public int Raw { get; set; } public int Total { get; set; }
     public int Applied { get; set; } public int Before { get; set; } public int After { get; set; }
+}
+public sealed class CDrop { public string PersonId { get; set; } = ""; public string Name { get; set; } = ""; public string Loot { get; set; } = ""; }
+public sealed class CStanding { public string Id { get; set; } = ""; public string Name { get; set; } = ""; public string Type { get; set; } = ""; public int Hp { get; set; } public int Max { get; set; } }
+public sealed class CLoot { public string Name { get; set; } = ""; public string Loot { get; set; } = ""; }
+public sealed class CResult
+{
+    public string Reason { get; set; } = ""; public string Headline { get; set; } = ""; public string Detail { get; set; } = "";
+    public List<string> Winners { get; set; } = new(); public string Kind { get; set; } = ""; public int Rounds { get; set; }
+    public List<CStanding> Standings { get; set; } = new(); public List<CLoot> Loot { get; set; } = new(); public string Note { get; set; } = "";
 }
 public sealed class CRoom
 {
     public string Code { get; set; } = ""; public string Name { get; set; } = ""; public string? Location { get; set; } public string? Notes { get; set; }
     public string Phase { get; set; } = "setup"; public string Mode { get; set; } = "random"; public int Revision { get; set; }
+    public string Kind { get; set; } = "classic"; public int Minutes { get; set; } = 15; public string? EndsAt { get; set; }
+    public CResult? Result { get; set; } public List<CDrop> Drops { get; set; } = new();
     public List<CMember> Members { get; set; } = new(); public List<CPerson> People { get; set; } = new();
     public List<string> Order { get; set; } = new(); public int Index { get; set; } public int Round { get; set; } = 1;
     public List<CLogEntry> Log { get; set; } = new(); public CRoll? LastRoll { get; set; } public bool UndoAvailable { get; set; }
@@ -144,6 +155,22 @@ public sealed class CombatState
         finally { lock (gate) { busy = false; } }
     }
 
+    /// <summary>DM only: closes the encounter for everyone and forgets the room.</summary>
+    public async Task CloseRoomAsync()
+    {
+        string tk, cd;
+        lock (gate) { if (busy || token.Length == 0) return; busy = true; error = ""; tk = token; cd = code; }
+        try
+        {
+            await SendAsync(HttpMethod.Post, $"/rooms/{cd}/close", new { }, tk).ConfigureAwait(false);
+            Leave();
+        }
+        catch (CombatException ex) when (ex.Status == 404) { Leave(); }
+        catch (CombatException ex) { SetError(ex.Message); }
+        catch (Exception ex) { Plugin.Log.Warning(ex, "Close failed"); SetError("Couldn't reach the combat server. Try again."); }
+        finally { lock (gate) { busy = false; } }
+    }
+
     public void Leave()
     {
         lock (gate) { token = ""; memberId = ""; code = ""; room = null; error = ""; }
@@ -171,7 +198,12 @@ public sealed class CombatState
                     if (error.StartsWith("Can't reach")) error = "";
                 }
             }
-            catch (CombatException ex) when (ex.Status == 401 || ex.Status == 404)
+            catch (CombatException ex) when (ex.Status == 404)
+            {
+                Leave();
+                SetError("This encounter was closed by the DM.");
+            }
+            catch (CombatException ex) when (ex.Status == 401)
             {
                 SetError(ex.Message + " Press Leave room and join again.");
             }
