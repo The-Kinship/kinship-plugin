@@ -23,6 +23,20 @@ public sealed class CombatTab
     private int modifier;
     private string targetId = "";
 
+    // create-a-room form
+    private string newEncounter = "";
+
+    // DM setup state
+    private static readonly string[] Modes = { "random", "manual", "initiative" };
+    private static readonly string[] ModeLabels = { "Random order", "Manual order (use the order numbers)", "Roll initiative (d20)" };
+    private string loadedFor = "";
+    private string sName = "", sLocation = "", sNotes = "";
+    private int sMode;
+    private string? editId;
+    private string fName = "", fDetails = "", fOwnerId = "";
+    private int fType;                 // 0 = Player, 1 = NPC
+    private int fHp = 10, fMax = 10, fNumber = 1;
+
     public void Draw()
     {
         DrawBanner();
@@ -69,8 +83,13 @@ public sealed class CombatTab
         if (busy) ImGui.TextColored(Dim, "Working...");
         else if (ImGui.Button("Join") || enter) _ = Plugin.Combat.JoinAsync(codeInput, name);
 
-        ImGui.Spacing();
-        ImGui.TextColored(Dim, "The DM sets up the encounter. For now that is done on the Kinship Combat website; setting up from inside the game is coming next.");
+
+        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        ImGui.TextColored(Gold, "Run an encounter (DM)");
+        ImGui.TextWrapped("Start a new room. You will be its DM, and you can share the room code or invite link with your players.");
+        ImGui.SetNextItemWidth(240f);
+        ImGui.InputText("Encounter name", ref newEncounter, 90);
+        if (!busy && ImGui.Button("Create room")) _ = Plugin.Combat.CreateAsync(name, newEncounter);
     }
 
     // ---------- inside a room ----------
@@ -97,11 +116,13 @@ public sealed class CombatTab
         // ----- the cast / turn order -----
         if (!inCombat)
         {
-            ImGui.TextColored(Dim, isDm
-                ? "You are the DM. Add characters and start the encounter on the website for now; doing it here is coming next."
-                : "Waiting for the DM to start the encounter...");
-            ImGui.Spacing();
-            foreach (var p in room.People) DrawPerson(p, null, false);
+            if (isDm) DrawSetup(room, busy);
+            else
+            {
+                ImGui.TextColored(Dim, "Waiting for the DM to start the encounter...");
+                ImGui.Spacing();
+                foreach (var p in room.People) DrawPerson(p, null, false);
+            }
         }
         else
         {
@@ -127,6 +148,9 @@ public sealed class CombatTab
                     if (!canAct) ImGui.SameLine();
                     if (ImGui.Button("Undo last action")) Plugin.Combat.Act("undo", new { });
                 }
+                if (ImGui.Button("Reroll initiative")) Plugin.Combat.Act("initiative", new { });
+                ImGui.SameLine();
+                if (ImGui.Button("Back to setup")) Plugin.Combat.Act("setup", new { });
             }
         }
 
@@ -157,6 +181,101 @@ public sealed class CombatTab
                 ImGui.Text(m.Name + (m.Role == "dm" ? "  (DM)" : ""));
             }
         }
+    }
+
+    // ---------- DM setup ----------
+    private void DrawSetup(CRoom room, bool busy)
+    {
+        if (loadedFor != room.Code)
+        {
+            sName = room.Name; sLocation = room.Location ?? ""; sNotes = room.Notes ?? "";
+            sMode = Math.Max(0, Array.IndexOf(Modes, room.Mode));
+            loadedFor = room.Code; fNumber = room.People.Count + 1;
+        }
+
+        ImGui.TextColored(Gold, "You are the DM. Set up the encounter:");
+        ImGui.Spacing();
+        ImGui.SetNextItemWidth(260f); ImGui.InputText("Encounter name##s", ref sName, 90);
+        ImGui.SetNextItemWidth(260f); ImGui.InputText("Location##s", ref sLocation, 90);
+        ImGui.InputTextMultiline("##snotes", ref sNotes, 1000, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 56f));
+        ImGui.TextColored(Dim, "Scene notes (everyone sees these)");
+        ImGui.SetNextItemWidth(260f);
+        if (ImGui.BeginCombo("Turn order##s", ModeLabels[sMode]))
+        {
+            for (var i = 0; i < Modes.Length; i++)
+                if (ImGui.Selectable(ModeLabels[i], i == sMode)) sMode = i;
+            ImGui.EndCombo();
+        }
+        if (ImGui.Button("Save settings"))
+            Plugin.Combat.Act("settings", new { name = sName, location = sLocation, notes = sNotes, mode = Modes[sMode] });
+
+        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        ImGui.TextColored(Gold, "The cast");
+        if (room.People.Count == 0) ImGui.TextColored(Dim, "No characters yet. Add at least two below.");
+        foreach (var p in room.People)
+        {
+            var owner = p.Type == "Player" ? room.Members.FirstOrDefault(m => m.Id == p.OwnerId)?.Name ?? "unassigned" : "DM";
+            ImGui.Text($"{p.Name}  ({p.Type})  HP {p.Hp}/{p.Max}  ·  #{p.Number}  ·  {owner}");
+            ImGui.SameLine();
+            if (ImGui.SmallButton("Edit##e" + p.Id)) LoadForm(p);
+            ImGui.SameLine();
+            if (ImGui.SmallButton("Remove##r" + p.Id)) { Plugin.Combat.Act("remove", new { id = p.Id }); if (editId == p.Id) ClearForm(room); }
+        }
+
+        ImGui.Spacing();
+        ImGui.TextColored(Gold, editId == null ? "Add a character" : "Editing a character");
+        ImGui.SetNextItemWidth(220f); ImGui.InputText("Name##f", ref fName, 60);
+        if (ImGui.RadioButton("Player", fType == 0)) fType = 0;
+        ImGui.SameLine();
+        if (ImGui.RadioButton("NPC", fType == 1)) fType = 1;
+        ImGui.SetNextItemWidth(110f); ImGui.InputInt("HP##f", ref fHp);
+        ImGui.SetNextItemWidth(110f); ImGui.InputInt("Max HP##f", ref fMax);
+        ImGui.SetNextItemWidth(110f); ImGui.InputInt("Order number##f", ref fNumber);
+        ImGui.TextColored(Dim, "Order number only matters for Manual order.");
+        ImGui.SetNextItemWidth(260f); ImGui.InputText("Details##f", ref fDetails, 300);
+        fMax = Math.Clamp(fMax, 1, 99999); fHp = Math.Clamp(fHp, 0, fMax); fNumber = Math.Clamp(fNumber, 1, 999);
+
+        if (fType == 0)
+        {
+            var current = room.Members.FirstOrDefault(m => m.Id == fOwnerId)?.Name ?? "(choose a member)";
+            ImGui.SetNextItemWidth(220f);
+            if (ImGui.BeginCombo("Played by##f", current))
+            {
+                foreach (var m in room.Members)
+                    if (ImGui.Selectable(m.Name + (m.Role == "dm" ? " (DM)" : "") + "##o" + m.Id, m.Id == fOwnerId)) fOwnerId = m.Id;
+                ImGui.EndCombo();
+            }
+        }
+
+        if (!busy)
+        {
+            if (ImGui.Button(editId == null ? "Add character" : "Save changes"))
+            {
+                Plugin.Combat.Act("participant", new
+                {
+                    id = editId, name = fName, type = fType == 0 ? "Player" : "NPC", max = fMax, hp = fHp,
+                    number = fNumber, details = fDetails, ownerId = fType == 0 && fOwnerId.Length > 0 ? fOwnerId : null
+                });
+                ClearForm(room, room.People.Count + (editId == null ? 2 : 1));
+            }
+            if (editId != null) { ImGui.SameLine(); if (ImGui.Button("Cancel edit")) ClearForm(room); }
+        }
+
+        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        ImGui.TextWrapped("Players must join the room first (send them the code), then be picked under \"Played by\" before you can start.");
+        if (!busy && ImGui.Button("Start the encounter")) Plugin.Combat.Act("start", new { });
+    }
+
+    private void LoadForm(CPerson p)
+    {
+        editId = p.Id; fName = p.Name; fType = p.Type == "NPC" ? 1 : 0; fHp = p.Hp; fMax = p.Max;
+        fNumber = p.Number; fDetails = p.Details ?? ""; fOwnerId = p.OwnerId ?? "";
+    }
+
+    private void ClearForm(CRoom room, int? nextNumber = null)
+    {
+        editId = null; fName = ""; fDetails = ""; fOwnerId = ""; fHp = 10; fMax = 10;
+        fNumber = nextNumber ?? room.People.Count + 1;
     }
 
     private static void DrawPerson(CPerson p, CRoom? room, bool current)

@@ -124,6 +124,26 @@ public sealed class CombatState
         finally { lock (gate) { busy = false; } }
     }
 
+    /// <summary>Starts a brand new encounter room; you become its DM.</summary>
+    public async Task CreateAsync(string name, string encounter)
+    {
+        if (name.Trim().Length == 0) { SetError("Enter the name you want to appear under."); return; }
+        if (encounter.Trim().Length == 0) { SetError("Give the encounter a name."); return; }
+        lock (gate) { if (busy) return; busy = true; error = ""; }
+        try
+        {
+            var r = await SendAsync(HttpMethod.Post, "/rooms", new { name = name.Trim(), encounter = encounter.Trim() }, null).ConfigureAwait(false);
+            if (r.Token == null || r.MemberId == null || r.Room == null) throw new CombatException("The reply was incomplete.", 500);
+            lock (gate) { token = r.Token; memberId = r.MemberId; code = r.Room.Code; room = r.Room; lastPoll = DateTime.UtcNow; }
+            Plugin.Config.CombatName = name.Trim();
+            Plugin.Config.CombatCode = r.Room.Code; Plugin.Config.CombatToken = r.Token; Plugin.Config.CombatMemberId = r.MemberId;
+            Plugin.Config.Save();
+        }
+        catch (CombatException ex) { SetError(ex.Message); }
+        catch (Exception ex) { Plugin.Log.Warning(ex, "Create failed"); SetError("Couldn't reach the combat server. Check your connection and try again."); }
+        finally { lock (gate) { busy = false; } }
+    }
+
     public void Leave()
     {
         lock (gate) { token = ""; memberId = ""; code = ""; room = null; error = ""; }
