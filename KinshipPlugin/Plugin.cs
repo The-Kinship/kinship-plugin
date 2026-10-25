@@ -13,12 +13,16 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
     [PluginService] internal static ICommandManager CommandManager { get; private set; } = null!;
     [PluginService] internal static IPluginLog Log { get; private set; } = null!;
+    [PluginService] internal static ITextureProvider TextureProvider { get; private set; } = null!;
+
+    internal static ImageCache Images { get; private set; } = null!;
 
     private readonly WindowSystem windows = new("KinshipPlugin");
     private readonly MainWindow main;
 
     public Plugin()
     {
+        Images = new ImageCache();
         main = new MainWindow();
         windows.AddWindow(main);
 
@@ -42,5 +46,6 @@ public sealed class Plugin : IDalamudPlugin
         CommandManager.RemoveHandler(CommandName);
         windows.RemoveAllWindows();
         main.Dispose();
+        Images.Dispose();
     }
 }
