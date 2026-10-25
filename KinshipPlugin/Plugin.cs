@@ -21,6 +21,7 @@ public sealed class Plugin : IDalamudPlugin
     internal static Configuration Config { get; private set; } = null!;
     internal static DataStore Data { get; private set; } = null!;
     internal static ImageCache Images { get; private set; } = null!;
+    internal static CombatState Combat { get; private set; } = null!;
 
     private readonly WindowSystem windows = new("KinshipPlugin");
     private readonly MainWindow main;
@@ -31,6 +32,7 @@ public sealed class Plugin : IDalamudPlugin
         Config = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
         Data = new DataStore();
         Images = new ImageCache();
+        Combat = new CombatState();
 
         main = new MainWindow();
         notice = new NoticeWindow(OpenMain);

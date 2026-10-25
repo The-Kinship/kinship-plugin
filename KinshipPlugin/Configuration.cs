@@ -18,5 +18,11 @@ public class Configuration : IPluginConfiguration
     /// <summary>Sects you have unlocked on this computer (never stores the password itself).</summary>
     public List<string> Unlocked { get; set; } = new();
 
+    /// <summary>Combat: who you are in your current room (so it survives restarts).</summary>
+    public string CombatName { get; set; } = "";
+    public string CombatCode { get; set; } = "";
+    public string CombatToken { get; set; } = "";
+    public string CombatMemberId { get; set; } = "";
+
     public void Save() => Plugin.PluginInterface.SavePluginConfig(this);
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
 
 namespace KinshipPlugin;
@@ -14,11 +15,20 @@ public sealed class MainWindow : Window, IDisposable
     private const string CrestJpg = ImageCache.SiteImages + "kinship-crest.jpg";
 
     private readonly SectsTab sects = new();
+    private readonly CombatTab combat = new();
 
     public MainWindow() : base("The Kinship##KinshipMain", ImGuiWindowFlags.None)
     {
         Size = new Vector2(440, 520);
         SizeCondition = ImGuiCond.FirstUseEver;
+
+        // Refresh lives in the title bar, top right.
+        TitleBarButtons.Add(new TitleBarButton
+        {
+            Icon = FontAwesomeIcon.Sync,
+            Click = _ => { _ = Plugin.Data.Refresh(); },
+            ShowTooltip = () => ImGui.SetTooltip("Refresh")
+        });
     }
 
     public void Dispose() { }
@@ -63,14 +73,12 @@ public sealed class MainWindow : Window, IDisposable
             if (ImGui.BeginTabItem("Announcements")) { DrawAnnouncements(f); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Plots")) { DrawPlots(p); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Sects")) { sects.Draw(); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Combat")) { combat.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Settings")) { DrawSettings(); ImGui.EndTabItem(); }
             ImGui.EndTabBar();
         }
 
-        ImGui.Separator();
-        if (s.Length > 0) ImGui.TextColored(Dim, s);
-        if (ImGui.Button("Refresh")) _ = Plugin.Data.Refresh();
-
+        if (s.Length > 0) { ImGui.Separator(); ImGui.TextColored(Dim, s); }
     }
 
     private static void DrawSettings()
