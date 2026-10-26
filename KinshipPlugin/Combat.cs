@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -17,12 +18,40 @@ public sealed class CPerson
     public string Id { get; set; } = ""; public string Name { get; set; } = ""; public string Type { get; set; } = "";
     public int Max { get; set; } public int Hp { get; set; } public int Number { get; set; }
     public string? Details { get; set; } public string? OwnerId { get; set; } public string? Loot { get; set; }
+    public List<CMod>? Mods { get; set; }
+}
+public sealed class CMod
+{
+    [JsonPropertyName("label")] public string Label { get; set; } = "";
+    [JsonPropertyName("value")] public int Value { get; set; }
+    public static string Describe(IEnumerable<CMod>? mods) => mods == null ? "" : string.Join(", ", mods.Select(m => (m.Value > 0 ? "+" : "") + m.Value + " " + m.Label));
+
+    /// <summary>"+1 Sword, -2 Sick" into modifiers. Returns null if something can't be read.</summary>
+    public static List<CMod>? Parse(string text)
+    {
+        var list = new List<CMod>();
+        foreach (var part in text.Split(','))
+        {
+            var t = part.Trim();
+            if (t.Length == 0) continue;
+            var i = 0;
+            if (t[0] == '+' || t[0] == '-') i = 1;
+            var j = i;
+            while (j < t.Length && char.IsDigit(t[j])) j++;
+            if (j == i || j - i > 2 || !int.TryParse(t[..j], out var value)) return null;
+            var label = t[j..].Trim();
+            if (label.Length == 0) label = "Modifier";
+            if (label.Length > 30) return null;
+            if (value != 0) list.Add(new CMod { Label = label, Value = value });
+        }
+        return list.Count <= 6 ? list : null;
+    }
 }
 public sealed class CLogEntry { public string Id { get; set; } = ""; public string At { get; set; } = ""; public string Message { get; set; } = ""; }
 public sealed class CRoll
 {
     public string ActorId { get; set; } = ""; public string TargetId { get; set; } = ""; public string Kind { get; set; } = "";
-    public int Sides { get; set; } public int Raw { get; set; } public int Total { get; set; }
+    public int Sides { get; set; } public int Raw { get; set; } public int Total { get; set; } public List<CMod>? Mods { get; set; }
     public int Applied { get; set; } public int Before { get; set; } public int After { get; set; }
 }
 public sealed class CDrop { public string PersonId { get; set; } = ""; public string Name { get; set; } = ""; public string Loot { get; set; } = ""; }

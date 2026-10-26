@@ -38,7 +38,7 @@ public sealed class CombatTab
         "Classic rules plus a clock. If time runs out, the side with more total HP wins."
     };
     private int sKind, sMinutes = 15;
-    private string fLoot = "";
+    private string fLoot = "", fMods = "", modsError = "";
     private int seenDrops = -1;
     private string dropNotice = "";
     private DateTime dropUntil = DateTime.MinValue;
@@ -193,7 +193,8 @@ public sealed class CombatTab
             var verb = lr.Kind == "heal" ? "heals" : "attacks";
             ImGui.Spacing();
             ImGui.TextColored(Gold, "Last roll");
-            ImGui.TextWrapped($"{a} {verb} {t}: d{lr.Sides} rolled {lr.Raw}.  {t}: {lr.Before} → {lr.After} HP");
+            var rolled = lr.Mods is { Count: > 0 } ? $"d{lr.Sides} rolled {lr.Raw}, {CMod.Describe(lr.Mods)} = {lr.Total}." : $"d{lr.Sides} rolled {lr.Raw}.";
+            ImGui.TextWrapped($"{a} {verb} {t}: {rolled}  {t}: {lr.Before} → {lr.After} HP");
         }
 
         if (ImGui.CollapsingHeader("Encounter log"))
@@ -258,7 +259,7 @@ public sealed class CombatTab
         foreach (var p in room.People)
         {
             var owner = p.Type == "Player" ? room.Members.FirstOrDefault(m => m.Id == p.OwnerId)?.Name ?? "unassigned" : "DM";
-            ImGui.Text($"{p.Name}  ({p.Type})  HP {p.Hp}/{p.Max}  ·  #{p.Number}  ·  {owner}" + (string.IsNullOrEmpty(p.Loot) ? "" : $"  ·  loot: {p.Loot}"));
+            ImGui.Text($"{p.Name}  ({p.Type})  HP {p.Hp}/{p.Max}  ·  #{p.Number}  ·  {owner}" + (string.IsNullOrEmpty(p.Loot) ? "" : $"  ·  loot: {p.Loot}") + (p.Mods is { Count: > 0 } ? $"  ·  mods: {CMod.Describe(p.Mods)}" : ""));
             ImGui.SameLine();
             if (ImGui.SmallButton("Edit##e" + p.Id)) LoadForm(p);
             ImGui.SameLine();
@@ -278,6 +279,9 @@ public sealed class CombatTab
         ImGui.SetNextItemWidth(260f); ImGui.InputText("Details##f", ref fDetails, 300);
         ImGui.SetNextItemWidth(260f); ImGui.InputText("Loot (optional)##f", ref fLoot, 200);
         ImGui.TextColored(Dim, "Hidden from players until this character goes down.");
+        ImGui.SetNextItemWidth(260f); ImGui.InputText("Roll modifiers (optional)##f", ref fMods, 200);
+        ImGui.TextColored(Dim, "e.g. +1 Sword, -2 Sick. Added to every roll this character makes, for the whole encounter. Check items first.");
+        if (modsError.Length > 0) ImGui.TextColored(Red, modsError);
         fMax = Math.Clamp(fMax, 1, 99999); fHp = Math.Clamp(fHp, 0, fMax); fNumber = Math.Clamp(fNumber, 1, 999);
 
         if (fType == 0)
@@ -296,12 +300,18 @@ public sealed class CombatTab
         {
             if (ImGui.Button(editId == null ? "Add character" : "Save changes"))
             {
+                var mods = CMod.Parse(fMods);
+                if (mods == null) modsError = "Modifiers look like +1 Sword, -2 Sick (up to 6, each name up to 30 characters).";
+                else
+                {
+                modsError = "";
                 Plugin.Combat.Act("participant", new
                 {
                     id = editId, name = fName, type = fType == 0 ? "Player" : "NPC", max = fMax, hp = fHp,
-                    number = fNumber, details = fDetails, loot = fLoot, ownerId = fType == 0 && fOwnerId.Length > 0 ? fOwnerId : null
+                    number = fNumber, details = fDetails, loot = fLoot, mods, ownerId = fType == 0 && fOwnerId.Length > 0 ? fOwnerId : null
                 });
                 ClearForm(room, room.People.Count + (editId == null ? 2 : 1));
+                }
             }
             if (editId != null) { ImGui.SameLine(); if (ImGui.Button("Cancel edit")) ClearForm(room); }
         }
@@ -314,12 +324,12 @@ public sealed class CombatTab
     private void LoadForm(CPerson p)
     {
         editId = p.Id; fName = p.Name; fType = p.Type == "NPC" ? 1 : 0; fHp = p.Hp; fMax = p.Max;
-        fNumber = p.Number; fDetails = p.Details ?? ""; fLoot = p.Loot ?? ""; fOwnerId = p.OwnerId ?? "";
+        fNumber = p.Number; fDetails = p.Details ?? ""; fLoot = p.Loot ?? ""; fMods = CMod.Describe(p.Mods); modsError = ""; fOwnerId = p.OwnerId ?? "";
     }
 
     private void ClearForm(CRoom room, int? nextNumber = null)
     {
-        editId = null; fName = ""; fDetails = ""; fLoot = ""; fOwnerId = ""; fHp = 10; fMax = 10;
+        editId = null; fName = ""; fDetails = ""; fLoot = ""; fMods = ""; modsError = ""; fOwnerId = ""; fHp = 10; fMax = 10;
         fNumber = nextNumber ?? room.People.Count + 1;
     }
 
@@ -387,6 +397,7 @@ public sealed class CombatTab
         ImGui.TextColored(downed ? Dim : new Vector4(1, 1, 1, 1), p.Name);
         ImGui.SameLine();
         ImGui.TextColored(Dim, p.Type == "NPC" ? "(NPC)" : "");
+        if (p.Mods is { Count: > 0 }) { ImGui.SameLine(); ImGui.TextColored(new Vector4(0.9f, 0.75f, 0.35f, 1f), CMod.Describe(p.Mods)); }
 
         var frac = p.Max > 0 ? Math.Clamp((float)p.Hp / p.Max, 0f, 1f) : 0f;
         var color = frac > 0.5f ? new Vector4(0.25f, 0.65f, 0.35f, 1f) : frac > 0.25f ? new Vector4(0.85f, 0.65f, 0.2f, 1f) : new Vector4(0.8f, 0.25f, 0.2f, 1f);
