@@ -3,7 +3,7 @@
     "Author": "The Kinship",
     "Name": "The Kinship",
     "InternalName": "KinshipPlugin",
-    "AssemblyVersion": "0.11.1.0",
+    "AssemblyVersion": "0.11.2.0",
     "Punchline": "Companion for The Kinship free company.",
     "Description": "Shows The Kinship's faction info, plots and sects in game. Type /kinship to open.",
     "ApplicableVersion": "any",
@@ -16,7 +16,7 @@
     "DalamudApiLevel": 15,
     "IsHide": false,
     "IsTestingExclusive": false,
-    "LastUpdate": 1792996953,
+    "LastUpdate": 1792997851,
     "DownloadLinkInstall": "https://github.com/The-Kinship/kinship-plugin/releases/download/latest/latest.zip",
     "DownloadLinkTesting": "https://github.com/The-Kinship/kinship-plugin/releases/download/latest/latest.zip",
     "DownloadLinkUpdate": "https://github.com/The-Kinship/kinship-plugin/releases/download/latest/latest.zip"
