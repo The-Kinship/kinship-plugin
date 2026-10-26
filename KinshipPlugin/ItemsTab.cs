@@ -33,7 +33,8 @@ public sealed class ItemsTab
     private string? confirmDelete;
 
     // icon picker
-    private string? confirmAdminDelete, confirmAdminRemove;
+    private readonly StashesTab stashTab = new();
+    private string? confirmAdminDelete, confirmAdminRemove, confirmAdminStash;
     private string giftRecipient = "";
     private int browseStart = 20000, goTo = 20000, iconNumber = 20001;
     private string category = "All";
@@ -45,7 +46,12 @@ public sealed class ItemsTab
         if (!s.SignedIn) { DrawSignIn(s); return; }
         Plugin.Items.RefreshIfDue();
         if (mode == Mode.Form || mode == Mode.Gift) { DrawForm(s); return; }
-        DrawInventory(s);
+        if (ImGui.BeginTabBar("itemsub"))
+        {
+            if (ImGui.BeginTabItem("Inventory")) { DrawInventory(s); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Stashes")) { stashTab.Draw(s); ImGui.EndTabItem(); }
+            ImGui.EndTabBar();
+        }
     }
 
     // ---------- signing in ----------
@@ -165,7 +171,7 @@ public sealed class ItemsTab
         ImGui.SameLine(); if (ImGui.Button("Cancel##give")) giving = null;
     }
 
-    private static void DrawTooltip(ItemView it)
+    internal static void DrawTooltip(ItemView it)
     {
         ImGui.BeginTooltip();
         var wrap = ItemIcons.Wrap(it.Icon);
@@ -274,6 +280,22 @@ public sealed class ItemsTab
                 ImGui.SameLine(); if (ImGui.SmallButton("No##ad" + it.Id)) confirmAdminDelete = null;
             }
             else if (ImGui.SmallButton("Delete##ad" + it.Id)) confirmAdminDelete = it.Id;
+        }
+
+        var stashList = Plugin.Items.AdminStashes();
+        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        ImGui.TextColored(Gold, $"Stashes ({stashList.Count})");
+        foreach (var st in stashList)
+        {
+            ImGui.Text(st.Name);
+            ImGui.SameLine(); ImGui.TextColored(Dim, $"{st.Zone}, by {st.Owner}, {st.Count} items" + (st.IsPrivate ? ", private" : ""));
+            ImGui.SameLine();
+            if (confirmAdminStash == st.Id)
+            {
+                if (ImGui.SmallButton("Really delete##as" + st.Id)) { _ = Plugin.Items.AdminDeleteStashAsync(st.Id); confirmAdminStash = null; }
+                ImGui.SameLine(); if (ImGui.SmallButton("No##as" + st.Id)) confirmAdminStash = null;
+            }
+            else if (ImGui.SmallButton("Delete##as" + st.Id)) confirmAdminStash = st.Id;
         }
 
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();

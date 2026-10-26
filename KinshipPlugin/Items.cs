@@ -24,6 +24,7 @@ public sealed class ItemReply
     public string? Token { get; set; } public string? Name { get; set; } public string? RecoveryCode { get; set; }
     public int Capacity { get; set; } public List<ItemView>? Items { get; set; } public List<string>? Members { get; set; }
     public string? Text { get; set; } public bool Consumed { get; set; } public string? Error { get; set; }
+    public List<StashView>? Stashes { get; set; } public StashView? Stash { get; set; } public List<ItemView>? StashItems { get; set; }
 }
 public sealed class ItemForm
 {
@@ -50,12 +51,14 @@ public sealed class ItemsState
     // DM tools (they use the creation password)
     private List<ItemView> adminItems = new();
     private List<string> adminMembers = new();
+    private List<StashView> adminStashes = new();
     private string adminError = "", adminNotice = "";
     private bool adminBusy, adminLoaded;
     public (List<ItemView> Items, List<string> Members, string Error, string Notice, bool Busy, bool Loaded) AdminSnapshot()
     {
         lock (gate) { return (adminItems.ToList(), adminMembers.ToList(), adminError, adminNotice, adminBusy, adminLoaded); }
     }
+    public List<StashView> AdminStashes() { lock (gate) { return adminStashes.ToList(); } }
 
     public ItemsSnap Snapshot()
     {
@@ -64,7 +67,7 @@ public sealed class ItemsState
     private void SetError(string m) { lock (gate) { error = m; notice = ""; } }
     public void ClearMessages() { lock (gate) { error = ""; notice = ""; } }
 
-    private static async Task<ItemReply> SendAsync(HttpMethod method, string path, object? body)
+    internal static async Task<ItemReply> SendAsync(HttpMethod method, string path, object? body)
     {
         using var req = new HttpRequestMessage(method, CombatState.BaseUrl + "/api" + path);
         if (Plugin.Config.ItemsToken.Length > 0) req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Plugin.Config.ItemsToken);
@@ -102,6 +105,8 @@ public sealed class ItemsState
         Plugin.Config.ItemsToken = ""; Plugin.Config.Save();
         lock (gate) { items = new(); loadedOnce = false; }
     }
+    /// <summary>Lets the stash screen update your inventory after you put something in or take something out.</summary>
+    public void SetInventory(List<ItemView> list) { lock (gate) { items = list; lastRefresh = DateTime.UtcNow; } }
     public void SignOut() { SignOutLocal(); ClearMessages(); }
 
     public async Task RegisterAsync(string name, string memberPassword)
@@ -166,12 +171,17 @@ public sealed class ItemsState
     public async Task AdminLoadAsync()
     {
         var r = await RunAdmin(pw => SendAsync(HttpMethod.Post, "/items/admin/list", new { adminPassword = pw })).ConfigureAwait(false);
-        if (r != null) lock (gate) { adminItems = r.Items ?? new(); adminMembers = r.Members ?? new(); adminLoaded = true; }
+        if (r != null) lock (gate) { adminItems = r.Items ?? new(); adminMembers = r.Members ?? new(); adminStashes = r.Stashes ?? new(); adminLoaded = true; }
     }
     public async Task AdminDeleteItemAsync(string id)
     {
         var r = await RunAdmin(pw => SendAsync(HttpMethod.Post, "/items/admin/delete", new { adminPassword = pw, itemId = id }), "Item deleted.").ConfigureAwait(false);
         if (r != null) await AdminLoadAsync().ConfigureAwait(false);
+    }
+    public async Task AdminDeleteStashAsync(string id)
+    {
+        var r = await RunAdmin(pw => SendAsync(HttpMethod.Post, "/items/admin/delete-stash", new { adminPassword = pw, stashId = id }), "Stash deleted.").ConfigureAwait(false);
+        if (r != null) { await AdminLoadAsync().ConfigureAwait(false); await Plugin.Stashes.RefreshAsync().ConfigureAwait(false); }
     }
     public async Task AdminRemoveMemberAsync(string name)
     {

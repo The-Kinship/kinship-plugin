@@ -20,6 +20,10 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IClientState ClientState { get; private set; } = null!;
     [PluginService] internal static IChatGui Chat { get; private set; } = null!;
     [PluginService] internal static IFramework Framework { get; private set; } = null!;
+    [PluginService] internal static IObjectTable ObjectTable { get; private set; } = null!;
+    [PluginService] internal static ICondition Condition { get; private set; } = null!;
+    [PluginService] internal static IGameGui GameGui { get; private set; } = null!;
+    [PluginService] internal static IDataManager GameData { get; private set; } = null!;
 
     internal static Configuration Config { get; private set; } = null!;
     internal static DataStore Data { get; private set; } = null!;
@@ -27,6 +31,7 @@ public sealed class Plugin : IDalamudPlugin
     internal static CombatState Combat { get; private set; } = null!;
     internal static SceneState Scene { get; private set; } = null!;
     internal static ItemsState Items { get; private set; } = null!;
+    internal static StashState Stashes { get; private set; } = null!;
     internal static IFontHandle PopupFont { get; private set; } = null!;
 
     private static ImageViewerWindow? viewer;
@@ -41,6 +46,7 @@ public sealed class Plugin : IDalamudPlugin
     private readonly MainWindow main;
     private readonly NoticeWindow notice;
     private readonly PopupWindow popup;
+    private readonly StashOverlay overlay;
 
     public Plugin()
     {
@@ -50,6 +56,7 @@ public sealed class Plugin : IDalamudPlugin
         Combat = new CombatState();
         Scene = new SceneState();
         Items = new ItemsState();
+        Stashes = new StashState();
         PopupFont = PluginInterface.UiBuilder.FontAtlas.NewDelegateFontHandle(e => e.OnPreBuild(tk => tk.AddDalamudDefaultFont(28f)));
 
         main = new MainWindow();
@@ -61,6 +68,8 @@ public sealed class Plugin : IDalamudPlugin
         windows.AddWindow(popup);
         viewer = new ImageViewerWindow();
         windows.AddWindow(viewer);
+        overlay = new StashOverlay();
+        windows.AddWindow(overlay);
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
@@ -104,6 +113,7 @@ public sealed class Plugin : IDalamudPlugin
         popupWindow = null;
         viewer = null;
         popup.Dispose();
+        overlay.Dispose();
         Scene.Dispose();
         PopupFont.Dispose();
         Images.Dispose();

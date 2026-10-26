@@ -38,6 +38,9 @@ public class Configuration : IPluginConfiguration
     public string ItemsToken { get; set; } = "";
     public string ItemsRecovery { get; set; } = "";
 
+    /// <summary>Show the name tags of nearby stashes in the world.</summary>
+    public bool StashLabels { get; set; } = true;
+
     public bool ChatEcho { get; set; } = true;
 
     public void Save() => Plugin.PluginInterface.SavePluginConfig(this);
