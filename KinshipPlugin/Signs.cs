@@ -31,7 +31,9 @@ public sealed record SignSnap(List<SignView> Signs, SignView? Reading, string Er
 /// <summary>Signs and markers: notes left at a spot in the world. The list lives on your server.</summary>
 public sealed class SignState
 {
-    public const float ReadRange = 10f;    // how close you must be to read a sign
+    public const float ReadRange = 10f;    // how close you must be to look from the list in the tab
+    public const float PopupRange = 4f;    // how close before the pop-up appears (right next to it)
+    public const float PopupStay = 6f;     // once it is up, it stays until you are this far, so it doesn't flicker
     public const float LabelRange = 40f;   // how close before its name tag shows
 
     private readonly object gate = new();

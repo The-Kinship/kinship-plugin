@@ -31,10 +31,14 @@ public sealed class SignReaderWindow : Window, IDisposable
         PositionCondition = ImGuiCond.FirstUseEver;
     }
 
-    private static bool AnyNear()
+    private bool shown;
+    private static bool Close(SignView s, float range) => s.Distance() is { } d && d <= range;
+    private bool AnyNear()
     {
         var territory = Plugin.ClientState.TerritoryType;
-        return Plugin.Signs.All.Any(s => s.Territory == territory && s.Near());
+        var range = shown ? SignState.PopupStay : SignState.PopupRange;
+        shown = Plugin.Signs.All.Any(s => s.Territory == territory && Close(s, range));
+        return shown;
     }
 
     public override bool DrawConditions()
@@ -49,7 +53,7 @@ public sealed class SignReaderWindow : Window, IDisposable
         if (reading != null) { DrawReading(reading); return; }
 
         ImGui.TextColored(Parchment, "Something here");
-        var near = Plugin.Signs.All.Where(s => s.Territory == Plugin.ClientState.TerritoryType && s.Near())
+        var near = Plugin.Signs.All.Where(s => s.Territory == Plugin.ClientState.TerritoryType && Close(s, SignState.PopupStay))
             .OrderBy(s => s.Distance() ?? 0f).Take(5).ToList();
         foreach (var s in near)
         {
