@@ -21,7 +21,7 @@ public sealed class StashView
     public string? Owner { get; set; }   // only filled in by the Advocate list
 }
 
-public sealed record Spot(ushort Territory, uint Map, Vector3 Pos, string Zone, float MapX, float MapY);
+public sealed record Spot(uint Territory, uint Map, Vector3 Pos, string Zone, float MapX, float MapY);
 public sealed record StashSnap(List<StashView> Stashes, StashView? Open, List<ItemView> OpenItems, string Error, string Notice, bool Busy);
 
 /// <summary>Reads where you are standing. Read-only: nothing here changes anything in the game.</summary>
@@ -43,7 +43,7 @@ public static class WorldInfo
     }
     public static bool Near(StashView s) => DistanceTo(s) is { } d && d <= UseRange;
 
-    public static string ZoneName(ushort territory)
+    public static string ZoneName(uint territory)
     {
         try
         {
