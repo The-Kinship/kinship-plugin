@@ -48,7 +48,9 @@ public sealed class QuestState
     private TalkResult? talk;
 
     public QuestSnap Snapshot() { lock (gate) { return new QuestSnap(mine.ToList(), admin.ToList(), error, notice, busy); } }
-    public TalkResult? TakeTalk() { lock (gate) { var t = talk; talk = null; return t; } }
+    public TalkResult? LastTalk() { lock (gate) { return talk; } }
+    public void DismissTalk() { lock (gate) { talk = null; } }
+    public List<QuestView> Active() { lock (gate) { return mine.Where(q => !q.Done).ToList(); } }
     public void ClearMessages() { lock (gate) { error = ""; notice = ""; } }
 
     public void RefreshIfDue(int seconds)

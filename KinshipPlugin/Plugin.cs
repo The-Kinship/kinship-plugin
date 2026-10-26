@@ -55,6 +55,8 @@ public sealed class Plugin : IDalamudPlugin
     private readonly SignOverlay signOverlay;
     private readonly SignReaderWindow signReader;
     private readonly StatusBar statusBar;
+    private readonly QuestWindow questWindow;
+    private readonly QuestReplyWindow questReply;
 
     public Plugin()
     {
@@ -88,6 +90,10 @@ public sealed class Plugin : IDalamudPlugin
         windows.AddWindow(signReader);
         statusBar = new StatusBar();
         windows.AddWindow(statusBar);
+        questWindow = new QuestWindow();
+        windows.AddWindow(questWindow);
+        questReply = new QuestReplyWindow();
+        windows.AddWindow(questReply);
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
@@ -135,6 +141,8 @@ public sealed class Plugin : IDalamudPlugin
         signOverlay.Dispose();
         signReader.Dispose();
         statusBar.Dispose();
+        questWindow.Dispose();
+        questReply.Dispose();
         Scene.Dispose();
         PopupFont.Dispose();
         Images.Dispose();

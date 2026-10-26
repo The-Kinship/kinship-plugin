@@ -17,20 +17,17 @@ public sealed class QuestsTab
     private readonly IconPicker picker = new("questpick");
     private QuestForm form = new();
     private bool editing;
-    private TalkResult? shown;
     private string assignTo = "", assignQuest = "";
 
     private static string NameOf(string t) => t == "give" ? "Hand over an item" : t == "receive" ? "They give an item" : "They talk";
 
-    private static string Objective(QuestNow c) =>
+    internal static string Objective(QuestNow c) =>
         c.Type == "give" ? $"Bring {c.Item} to {c.Npc}." : $"Speak to {c.Npc}.";
 
     public void Draw(ItemsSnap inv)
     {
         Plugin.Quests.RefreshIfDue(20);
         var s = Plugin.Quests.Snapshot();
-        var fresh = Plugin.Quests.TakeTalk();
-        if (fresh != null) { shown = fresh; ImGui.OpenPopup("Conversation##quest"); }
 
         ImGui.TextColored(Gold, "Quests");
         ImGui.TextWrapped("Target a character in the game, then press Talk. If they have something to say about one of your quests, you'll hear it.");
@@ -43,9 +40,10 @@ public sealed class QuestsTab
         if (ImGui.Button("Talk##quest")) _ = Plugin.Quests.TalkAsync(target);
         if (!can) ImGui.EndDisabled();
         ImGui.SameLine(); if (ImGui.SmallButton("Refresh##quests")) _ = Plugin.Quests.RefreshAsync();
+        var win = Plugin.Config.QuestWindow;
+        if (ImGui.Checkbox("Show the quest window on screen while I have a quest", ref win)) { Plugin.Config.QuestWindow = win; Plugin.Config.Save(); }
         if (s.Error.Length > 0) ImGui.TextColored(Red, s.Error);
         else if (s.Notice.Length > 0) ImGui.TextColored(Green, s.Notice);
-        DrawConversation();
 
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         var active = s.Mine.Where(q => !q.Done).ToList();
@@ -72,31 +70,6 @@ public sealed class QuestsTab
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         DrawAdvocate(s, inv);
         picker.Draw();
-    }
-
-    private void DrawConversation()
-    {
-        if (!ImGui.BeginPopup("Conversation##quest")) return;
-        if (shown != null)
-        {
-            if (shown.Error.Length > 0) ImGui.TextColored(Red, shown.Error);
-            else if (shown.Lines.Count == 0) { ImGui.PushTextWrapPos(ImGui.GetFontSize() * 24f); ImGui.TextUnformatted($"{shown.Npc} has nothing to say to you right now."); ImGui.PopTextWrapPos(); }
-            else
-            {
-                ImGui.PushTextWrapPos(ImGui.GetFontSize() * 26f);
-                foreach (var l in shown.Lines)
-                {
-                    ImGui.TextColored(Gold, shown.Npc + "  ·  " + l.Quest);
-                    ImGui.TextUnformatted(l.Text);
-                    if (l.Gained != null) foreach (var g in l.Gained) ImGui.TextColored(Green, "You received: " + g);
-                    if (l.Ok && l.Finished) ImGui.TextColored(Green, "Quest complete!");
-                    ImGui.Spacing();
-                }
-                ImGui.PopTextWrapPos();
-            }
-            if (ImGui.Button("Close##quest")) ImGui.CloseCurrentPopup();
-        }
-        ImGui.EndPopup();
     }
 
     // ---------- Advocate tools ----------

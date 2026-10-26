@@ -43,6 +43,7 @@ public class Configuration : IPluginConfiguration
     public bool StashLabels { get; set; } = true;
     public bool SignLabels { get; set; } = true;
     public bool StatusBar { get; set; } = true;
+    public bool QuestWindow { get; set; } = true;
 
     public bool ChatEcho { get; set; } = true;
 
