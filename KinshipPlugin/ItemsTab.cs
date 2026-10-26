@@ -16,7 +16,7 @@ public sealed class ItemsTab
     private const float Slot = 52f;
     private const int Columns = 5;
 
-    private enum Mode { Inventory, Form }
+    private enum Mode { Inventory, Form, Gift }
     private Mode mode = Mode.Inventory;
 
     // sign in
@@ -33,15 +33,18 @@ public sealed class ItemsTab
     private string? confirmDelete;
 
     // icon picker
+    private string? confirmAdminDelete, confirmAdminRemove;
+    private string giftRecipient = "";
     private int browseStart = 20000, goTo = 20000, iconNumber = 20001;
     private string category = "All";
 
     public void Draw()
     {
         var s = Plugin.Items.Snapshot();
+        if (mode == Mode.Gift) { DrawForm(s); return; }   // DMs can gift without being signed in as a member
         if (!s.SignedIn) { DrawSignIn(s); return; }
         Plugin.Items.RefreshIfDue();
-        if (mode == Mode.Form) { DrawForm(s); return; }
+        if (mode == Mode.Form || mode == Mode.Gift) { DrawForm(s); return; }
         DrawInventory(s);
     }
 
@@ -64,6 +67,9 @@ public sealed class ItemsTab
         ImGui.SetNextItemWidth(240f); ImGui.InputText("Your name##rc", ref recoveryName, 40);
         ImGui.SetNextItemWidth(240f); ImGui.InputText("Recovery code##rc", ref recoveryCode, 40);
         if (!s.Busy && ImGui.Button("Get my items back")) _ = Plugin.Items.RecoverAsync(recoveryName, recoveryCode);
+
+        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        DrawDmTools();
     }
 
     // ---------- the inventory ----------
@@ -134,6 +140,9 @@ public sealed class ItemsTab
             ImGui.TextColored(Gold, s.Recovery.Length > 0 ? s.Recovery : "(not saved on this computer)");
             if (ImGui.SmallButton("Sign out of items")) { Plugin.Items.SignOut(); mode = Mode.Inventory; }
         }
+
+        ImGui.Spacing();
+        DrawDmTools();
     }
 
     private void DrawGive(ItemsSnap s)
@@ -180,8 +189,19 @@ public sealed class ItemsTab
 
     private void DrawForm(ItemsSnap s)
     {
-        ImGui.TextColored(Gold, editingId == null ? "Create an item" : "Edit item");
+        var gift = mode == Mode.Gift;
+        ImGui.TextColored(Gold, gift ? "Gift an item (DM)" : editingId == null ? "Create an item" : "Edit item");
         ImGui.Spacing();
+        if (gift)
+        {
+            var dm = Plugin.Items.AdminSnapshot();
+            ImGui.SetNextItemWidth(220f);
+            if (ImGui.BeginCombo("Give to##gift", giftRecipient.Length > 0 ? giftRecipient : "Choose a member"))
+            {
+                foreach (var m in dm.Members) if (ImGui.Selectable(m, m == giftRecipient)) giftRecipient = m;
+                ImGui.EndCombo();
+            }
+        }
 
         var wrap = form.Icon.Length > 0 ? ItemIcons.Wrap(form.Icon) : null;
         if (wrap != null) ImGui.Image(wrap.Handle, new Vector2(Slot, Slot)); else ImGui.Button("?##formicon", new Vector2(Slot, Slot));
@@ -201,11 +221,13 @@ public sealed class ItemsTab
         ImGui.Text("What happens"); ImGui.InputTextMultiline("##fuse", ref form.UseText, 400, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 64f));
         ImGui.Checkbox("Used up when used", ref form.Consumable);
 
-        if (s.Error.Length > 0) ImGui.TextColored(Red, s.Error);
+        var adm = Plugin.Items.AdminSnapshot();
+        if (gift && adm.Error.Length > 0) ImGui.TextColored(Red, adm.Error);
+        else if (!gift && s.Error.Length > 0) ImGui.TextColored(Red, s.Error);
         ImGui.Spacing();
-        var ok = form.Name.Trim().Length > 0 && form.Icon.Length > 0 && !s.Busy;
+        var ok = form.Name.Trim().Length > 0 && form.Icon.Length > 0 && !s.Busy && (!gift || (giftRecipient.Length > 0 && !adm.Busy));
         if (!ok) ImGui.BeginDisabled();
-        if (ImGui.Button(editingId == null ? "Create item" : "Save changes")) _ = SubmitAsync();
+        if (ImGui.Button(gift ? "Send gift" : editingId == null ? "Create item" : "Save changes")) _ = SubmitAsync();
         if (!ok) ImGui.EndDisabled();
         ImGui.SameLine(); if (ImGui.Button("Cancel##form")) mode = Mode.Inventory;
         if (form.Icon.Length == 0) { ImGui.SameLine(); ImGui.TextColored(Dim, "Choose an icon first."); }
@@ -214,8 +236,59 @@ public sealed class ItemsTab
     private async System.Threading.Tasks.Task SubmitAsync()
     {
         var f = form; var id = editingId;
+        if (mode == Mode.Gift) { if (await Plugin.Items.AdminGrantAsync(f, giftRecipient)) { mode = Mode.Inventory; await Plugin.Items.AdminLoadAsync(); } return; }
         var ok = id == null ? await Plugin.Items.CreateAsync(f) : await Plugin.Items.UpdateAsync(id, f);
         if (ok) mode = Mode.Inventory;
+    }
+
+    // ---------- DM tools (leader and officers) ----------
+    private void DrawDmTools()
+    {
+        if (!ImGui.CollapsingHeader("DM tools")) return;
+        ImGui.TextWrapped("For the leader and officers. Uses the creation password.");
+        UiUtil.CreatePasswordInput();
+        var d = Plugin.Items.AdminSnapshot();
+        if (d.Error.Length > 0) ImGui.TextColored(Red, d.Error);
+        else if (d.Notice.Length > 0) ImGui.TextColored(Green, d.Notice);
+        if (d.Busy) ImGui.TextColored(Dim, "Working...");
+        else if (ImGui.Button(d.Loaded ? "Reload lists" : "Load everyone's items")) _ = Plugin.Items.AdminLoadAsync();
+        if (!d.Loaded) return;
+
+        ImGui.SameLine();
+        if (ImGui.Button("Gift an item...")) { form = new ItemForm(); editingId = null; giftRecipient = ""; mode = Mode.Gift; Plugin.Items.ClearMessages(); }
+
+        ImGui.Spacing();
+        ImGui.TextColored(Gold, $"All items ({d.Items.Count})");
+        if (d.Items.Count == 0) ImGui.TextColored(Dim, "No items yet.");
+        foreach (var it in d.Items)
+        {
+            var wrap = ItemIcons.Wrap(it.Icon);
+            if (wrap != null) { ImGui.Image(wrap.Handle, new Vector2(24f, 24f)); ImGui.SameLine(); }
+            ImGui.Text(it.Name);
+            if (ImGui.IsItemHovered() && it.Description.Length > 0) ImGui.SetTooltip(it.Description);
+            ImGui.SameLine(); ImGui.TextColored(Dim, $"held by {it.Owner}, made by {it.Creator}");
+            ImGui.SameLine();
+            if (confirmAdminDelete == it.Id)
+            {
+                if (ImGui.SmallButton("Really delete##ad" + it.Id)) { _ = Plugin.Items.AdminDeleteItemAsync(it.Id); confirmAdminDelete = null; }
+                ImGui.SameLine(); if (ImGui.SmallButton("No##ad" + it.Id)) confirmAdminDelete = null;
+            }
+            else if (ImGui.SmallButton("Delete##ad" + it.Id)) confirmAdminDelete = it.Id;
+        }
+
+        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        ImGui.TextColored(Gold, $"Members ({d.Members.Count})");
+        foreach (var m in d.Members)
+        {
+            ImGui.Text(m); ImGui.SameLine();
+            if (confirmAdminRemove == m)
+            {
+                ImGui.TextColored(Red, "Delete their items and sign them out?"); ImGui.SameLine();
+                if (ImGui.SmallButton("Yes, remove##rm" + m)) { _ = Plugin.Items.AdminRemoveMemberAsync(m); confirmAdminRemove = null; }
+                ImGui.SameLine(); if (ImGui.SmallButton("No##rm" + m)) confirmAdminRemove = null;
+            }
+            else if (ImGui.SmallButton("Remove##rm" + m)) confirmAdminRemove = m;
+        }
     }
 
     // ---------- the icon picker ----------

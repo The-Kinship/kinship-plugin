@@ -17,6 +17,7 @@ public sealed class ItemView
     public string Id { get; set; } = ""; public string Name { get; set; } = ""; public string Icon { get; set; } = "";
     public string Description { get; set; } = ""; public string Flavor { get; set; } = ""; public string UseLabel { get; set; } = "";
     public string? UseText { get; set; } public bool Consumable { get; set; } public bool CanEdit { get; set; }
+    public string? Owner { get; set; } public string? Creator { get; set; }
 }
 public sealed class ItemReply
 {
@@ -45,6 +46,16 @@ public sealed class ItemsState
     private bool busy;
     private DateTime lastRefresh = DateTime.MinValue;
     private bool loadedOnce;
+
+    // DM tools (they use the creation password)
+    private List<ItemView> adminItems = new();
+    private List<string> adminMembers = new();
+    private string adminError = "", adminNotice = "";
+    private bool adminBusy, adminLoaded;
+    public (List<ItemView> Items, List<string> Members, string Error, string Notice, bool Busy, bool Loaded) AdminSnapshot()
+    {
+        lock (gate) { return (adminItems.ToList(), adminMembers.ToList(), adminError, adminNotice, adminBusy, adminLoaded); }
+    }
 
     public ItemsSnap Snapshot()
     {
@@ -132,6 +143,49 @@ public sealed class ItemsState
     {
         try { var r = await SendAsync(HttpMethod.Get, "/items/members", null).ConfigureAwait(false); lock (gate) { members = r.Members ?? new(); } }
         catch (Exception) { /* the give list stays as it was */ }
+    }
+
+    // ---------- DM tools ----------
+    private async Task<ItemReply?> RunAdmin(Func<string, Task<ItemReply>> action, string? done = null)
+    {
+        var pw = Plugin.Config.CreatePassword;
+        lock (gate) { if (adminBusy) return null; adminBusy = true; adminError = ""; adminNotice = ""; }
+        try
+        {
+            if (pw.Length == 0) throw new CombatException("Enter the creation password first.", 400);
+            var r = await action(pw).ConfigureAwait(false);
+            lock (gate) { if (done != null) adminNotice = done; }
+            return r;
+        }
+        catch (CombatException ex) { lock (gate) { adminError = ex.Message; } }
+        catch (Exception ex) { Plugin.Log.Warning(ex, "DM request failed"); lock (gate) { adminError = "Couldn't reach the server. Try again."; } }
+        finally { lock (gate) { adminBusy = false; } }
+        return null;
+    }
+
+    public async Task AdminLoadAsync()
+    {
+        var r = await RunAdmin(pw => SendAsync(HttpMethod.Post, "/items/admin/list", new { adminPassword = pw })).ConfigureAwait(false);
+        if (r != null) lock (gate) { adminItems = r.Items ?? new(); adminMembers = r.Members ?? new(); adminLoaded = true; }
+    }
+    public async Task AdminDeleteItemAsync(string id)
+    {
+        var r = await RunAdmin(pw => SendAsync(HttpMethod.Post, "/items/admin/delete", new { adminPassword = pw, itemId = id }), "Item deleted.").ConfigureAwait(false);
+        if (r != null) await AdminLoadAsync().ConfigureAwait(false);
+    }
+    public async Task AdminRemoveMemberAsync(string name)
+    {
+        var r = await RunAdmin(pw => SendAsync(HttpMethod.Post, "/items/admin/remove-member", new { adminPassword = pw, name }), $"{name} was removed.").ConfigureAwait(false);
+        if (r != null) await AdminLoadAsync().ConfigureAwait(false);
+    }
+    public async Task<bool> AdminGrantAsync(ItemForm f, string to)
+    {
+        var r = await RunAdmin(pw => SendAsync(HttpMethod.Post, "/items/admin/grant", new
+        {
+            adminPassword = pw, to, name = f.Name.Trim(), icon = f.Icon, description = f.Description.Trim(), flavor = f.Flavor.Trim(),
+            useLabel = f.UseLabel.Trim(), useText = f.UseText.Trim(), consumable = f.Consumable
+        }), $"Gift sent to {to}.").ConfigureAwait(false);
+        return r != null;
     }
 
     private static object Body(ItemForm f) => new { name = f.Name.Trim(), icon = f.Icon, description = f.Description.Trim(), flavor = f.Flavor.Trim(), useLabel = f.UseLabel.Trim(), useText = f.UseText.Trim(), consumable = f.Consumable };
