@@ -48,14 +48,14 @@ public sealed class SignReaderWindow : Window, IDisposable
         var reading = Plugin.Signs.Reading;
         if (reading != null) { DrawReading(reading); return; }
 
-        ImGui.TextColored(Parchment, "A sign is here");
+        ImGui.TextColored(Parchment, "Something here");
         var near = Plugin.Signs.All.Where(s => s.Territory == Plugin.ClientState.TerritoryType && s.Near())
             .OrderBy(s => s.Distance() ?? 0f).Take(5).ToList();
         foreach (var s in near)
         {
             ImGui.Text(s.Name);
             ImGui.SameLine();
-            if (ImGui.SmallButton("Read##r" + s.Id)) _ = Plugin.Signs.ReadAsync(s.Id);
+            if (ImGui.SmallButton("Look##r" + s.Id)) _ = Plugin.Signs.ReadAsync(s.Id);
         }
         var err = Plugin.Signs.Snapshot().Error;
         if (err.Length > 0) ImGui.TextColored(new Vector4(0.95f, 0.4f, 0.35f, 1f), err);

@@ -46,7 +46,7 @@ public sealed class SignOverlay : Window, IDisposable
             var dist = Vector3.Distance(me.Value, pos);
             if (dist > SignState.LabelRange) continue;
             if (!Plugin.GameGui.WorldToScreen(pos + new Vector3(0, 1.0f, 0), out var screen)) continue;
-            var sub = dist <= SignState.ReadRange ? "you can read this" : $"sign  {dist:0}y";
+            var sub = dist <= SignState.ReadRange ? "you can look closer" : $"{dist:0}y away";
             var w = Math.Max(ImGui.CalcTextSize(s.Name).X, ImGui.CalcTextSize(sub).X);
             ImGui.SetCursorScreenPos(new Vector2(screen.X - w / 2f, screen.Y - 18f));
             ImGui.TextColored(Parchment, s.Name);

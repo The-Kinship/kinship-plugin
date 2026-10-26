@@ -25,7 +25,7 @@ public sealed class SignsTab
         var s = Plugin.Signs.Snapshot();
 
         ImGui.TextColored(Parchment, "Signs & markers");
-        ImGui.TextWrapped("Leave a note in the world: a carving in a tree, a mark on a wall, a scrap of paper. Stand where you want it, give it a name and write what someone finds when they read it. Anyone who walks up to it can read it.");
+        ImGui.TextWrapped("Leave a note in the world: a carving in a tree, a mark on a wall, a scrap of paper, a footprint, a clue. Stand where you want it, give it a name and write what someone finds when they look closer. Anyone who walks up to it can look.");
         var labels = Plugin.Config.SignLabels;
         if (ImGui.Checkbox("Show sign names in the world", ref labels)) { Plugin.Config.SignLabels = labels; Plugin.Config.Save(); }
         if (s.Error.Length > 0) ImGui.TextColored(Red, s.Error);
@@ -70,8 +70,8 @@ public sealed class SignsTab
             ImGui.TextColored(Dim, $"{sg.Zone}  ·  by {sg.OwnerName}" + (dist != null ? $"  ·  {dist:0} yalms away" : ""));
 
             if (!near) ImGui.BeginDisabled();
-            if (ImGui.SmallButton("Read##" + sg.Id)) { _ = Plugin.Signs.ReadAsync(sg.Id); }
-            if (!near) { ImGui.EndDisabled(); if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) ImGui.SetTooltip("Get within 10 yalms of the sign to read it."); }
+            if (ImGui.SmallButton("Look##" + sg.Id)) { _ = Plugin.Signs.ReadAsync(sg.Id); }
+            if (!near) { ImGui.EndDisabled(); if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) ImGui.SetTooltip("Get within 10 yalms to look at it."); }
             ImGui.SameLine();
             if (sg.MapX > 0 && ImGui.SmallButton("Show on map##" + sg.Id)) SignState.ShowOnMap(sg);
             if (sg.Mine)
