@@ -35,6 +35,7 @@ public sealed class ItemsTab
     // icon picker
     private readonly StashesTab stashTab = new();
     private readonly SignsTab signTab = new();
+    private readonly BankTab bankTab = new();
     private string? confirmAdminDelete, confirmAdminRemove, confirmAdminStash;
     private string giftRecipient = "";
     private int browseStart = 20000, goTo = 20000, iconNumber = 20001;
@@ -52,6 +53,7 @@ public sealed class ItemsTab
             if (ImGui.BeginTabItem("Inventory")) { DrawInventory(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Stashes")) { stashTab.Draw(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Signs")) { signTab.Draw(); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Bank")) { bankTab.Draw(s); ImGui.EndTabItem(); }
             ImGui.EndTabBar();
         }
     }
@@ -85,6 +87,7 @@ public sealed class ItemsTab
     {
         ImGui.TextColored(Gold, s.Name + "'s items");
         ImGui.SameLine(); ImGui.TextColored(Dim, $"{s.Items.Count} / {s.Capacity}");
+        ImGui.SameLine(); ImGui.TextColored(new Vector4(0.95f, 0.8f, 0.3f, 1f), $"Gold: {Plugin.Items.Gold:N0}");
         ImGui.SameLine(); if (ImGui.SmallButton("Refresh##items")) _ = Plugin.Items.RefreshAsync();
         if (s.Error.Length > 0) ImGui.TextColored(Red, s.Error);
         else if (s.Notice.Length > 0) ImGui.TextColored(Green, s.Notice);

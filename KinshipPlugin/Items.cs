@@ -28,6 +28,8 @@ public sealed class ItemReply
     public List<StashView>? Stashes { get; set; } public StashView? Stash { get; set; } public List<ItemView>? StashItems { get; set; }
     public List<SignView>? Signs { get; set; } public SignView? Sign { get; set; }
     public List<string>? Gained { get; set; } public string? KeyUsed { get; set; }
+    public int? Gold { get; set; } public string? To { get; set; } public long? Total { get; set; }
+    public List<BankEntry>? History { get; set; } public List<BankEntry>? Recent { get; set; } public List<BankMember>? Balances { get; set; }
 }
 public sealed class ItemForm
 {
@@ -50,6 +52,9 @@ public sealed class ItemsState
     private bool busy;
     private DateTime lastRefresh = DateTime.MinValue;
     private bool loadedOnce;
+    private int gold;
+    public int Gold { get { lock (gate) { return gold; } } }
+    public void SetGold(int g) { lock (gate) { gold = g; } }
 
     // DM tools (they use the creation password)
     private List<ItemView> adminItems = new();
@@ -91,6 +96,7 @@ public sealed class ItemsState
         {
             var r = await action().ConfigureAwait(false);
             if (r.Items != null) lock (gate) { items = r.Items; if (r.Capacity > 0) capacity = r.Capacity; lastRefresh = DateTime.UtcNow; }
+            if (r.Gold != null) lock (gate) { gold = r.Gold.Value; }
             return r;
         }
         catch (CombatException ex)

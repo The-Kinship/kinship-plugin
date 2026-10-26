@@ -33,6 +33,7 @@ public sealed class Plugin : IDalamudPlugin
     internal static ItemsState Items { get; private set; } = null!;
     internal static StashState Stashes { get; private set; } = null!;
     internal static SignState Signs { get; private set; } = null!;
+    internal static BankState Bank { get; private set; } = null!;
     internal static IFontHandle PopupFont { get; private set; } = null!;
 
     private static ImageViewerWindow? viewer;
@@ -61,6 +62,7 @@ public sealed class Plugin : IDalamudPlugin
         Items = new ItemsState();
         Stashes = new StashState();
         Signs = new SignState();
+        Bank = new BankState();
         PopupFont = PluginInterface.UiBuilder.FontAtlas.NewDelegateFontHandle(e => e.OnPreBuild(tk => tk.AddDalamudDefaultFont(28f)));
 
         main = new MainWindow();
