@@ -38,7 +38,9 @@ public sealed class ItemsTab
     private readonly BankTab bankTab = new();
     private readonly StatusTab statusTab = new();
     private string? confirmAdminDelete, confirmAdminRemove, confirmAdminStash;
-    private string giftRecipient = "";
+    private string giftRecipient = "", giftStashId = "", giftStashName = "";
+    private int giftCopies = 1;
+    private readonly Stack<ItemForm> parents = new();   // when editing what a combination makes, the form we came from
     private readonly IconPicker picker = new("pickicon");
 
     public void Draw()
@@ -105,10 +107,15 @@ public sealed class ItemsTab
                 var wrap = ItemIcons.Wrap(it.Icon);
                 if (wrap != null) ImGui.Image(wrap.Handle, new Vector2(Slot, Slot));
                 else ImGui.Button("?##slot" + i, new Vector2(Slot, Slot));
-                if (ImGui.IsItemHovered()) { hovered = it; if (it.UseLabel.Length > 0) ImGui.SetMouseCursor(ImGuiMouseCursor.Hand); }
-                if (ImGui.IsItemClicked(ImGuiMouseButton.Left) && it.UseLabel.Length > 0 && !s.Busy) _ = Plugin.Items.UseAsync(it.Id);
+                if (ImGui.IsItemHovered()) { hovered = it; if (it.UseLabel.Length > 0 || it.CanCombine) ImGui.SetMouseCursor(ImGuiMouseCursor.Hand); }
+                if (ImGui.IsItemClicked(ImGuiMouseButton.Left) && !s.Busy)
+                {
+                    if (it.CanCombine) _ = Plugin.Items.CombineAsync(it.Id);
+                    else if (it.UseLabel.Length > 0) _ = Plugin.Items.UseAsync(it.Id);
+                }
                 if (ImGui.BeginPopupContextItem("ctx" + it.Id))
                 {
+                    if (it.CanCombine && ImGui.MenuItem("Combine")) _ = Plugin.Items.CombineAsync(it.Id);
                     if (it.UseLabel.Length > 0 && ImGui.MenuItem(it.UseLabel)) _ = Plugin.Items.UseAsync(it.Id);
                     if (it.CanEdit && ImGui.MenuItem("Edit")) StartEdit(it);
                     if (it.CanEdit && it.UseLabel.Length > 0 && ImGui.MenuItem("Put an item inside...")) { sealing = it; giving = null; confirmDelete = null; }
@@ -206,33 +213,62 @@ public sealed class ItemsTab
         if (it.Flavor.Length > 0) { ImGui.Spacing(); ImGui.TextColored(Dim, "“" + it.Flavor + "”"); }
         if (it.Requires.Length > 0) { ImGui.Spacing(); ImGui.TextColored(new Vector4(0.95f, 0.65f, 0.35f, 1f), "Needs: " + it.Requires + (it.RequiresConsume ? "  (used up)" : "")); }
         if (it.Holds > 0) { ImGui.Spacing(); ImGui.TextColored(Gold, it.Holds == 1 ? "Something is inside." : $"{it.Holds} things are inside."); }
+        if (it.CanCombine) { ImGui.Spacing(); ImGui.TextColored(Green, "Click to combine with other reagents"); }
         if (it.UseLabel.Length > 0) { ImGui.Spacing(); ImGui.TextColored(Green, "Click to " + it.UseLabel.ToLowerInvariant() + (it.Consumable ? "  (used up)" : "")); }
         ImGui.PopTextWrapPos();
         ImGui.EndTooltip();
     }
 
     // ---------- creating and editing ----------
-    private void StartCreate() { form = new ItemForm(); editingId = null; mode = Mode.Form; Plugin.Items.ClearMessages(); }
+    private void StartCreate() { parents.Clear(); form = new ItemForm(); editingId = null; mode = Mode.Form; Plugin.Items.ClearMessages(); }
+    private static ItemForm FormFrom(ItemView it, bool recipe = true)
+    {
+        var f = new ItemForm
+        {
+            Name = it.Name, Icon = it.Icon, Description = it.Description, Flavor = it.Flavor, UseLabel = it.UseLabel, UseText = it.UseText ?? "", Consumable = it.Consumable,
+            Requires = it.Requires, RequiresConsume = it.RequiresConsume, StName = it.StName, StDesc = it.StDesc, StIcon = it.StIcon, StDebuff = it.StDebuff, StMinutes = it.StMinutes, Cures = it.Cures,
+        };
+        if (recipe && it.CombineWith != null)
+        {
+            for (var i = 0; i < 3 && i < it.CombineWith.Count; i++) f.With[i] = it.CombineWith[i];
+            if (it.Result != null) f.Result = FormFrom(it.Result, false);
+        }
+        return f;
+    }
     private void StartEdit(ItemView it)
     {
-        form = new ItemForm { Name = it.Name, Icon = it.Icon, Description = it.Description, Flavor = it.Flavor, UseLabel = it.UseLabel, UseText = it.UseText ?? "", Consumable = it.Consumable, Requires = it.Requires, RequiresConsume = it.RequiresConsume, StName = it.StName, StDesc = it.StDesc, StIcon = it.StIcon, StDebuff = it.StDebuff, StMinutes = it.StMinutes, Cures = it.Cures };
+        parents.Clear();
+        form = FormFrom(it);
         editingId = it.Id; mode = Mode.Form; Plugin.Items.ClearMessages();
     }
 
     private void DrawForm(ItemsSnap s)
     {
         var gift = mode == Mode.Gift;
-        ImGui.TextColored(Gold, gift ? "Gift an item (Advocate)" : editingId == null ? "Create an item" : "Edit item");
+        var inResult = parents.Count > 0;
+        ImGui.TextColored(Gold, inResult ? "What the combination makes" : gift ? "Gift an item (Advocate)" : editingId == null ? "Create an item" : "Edit item");
+        if (inResult) ImGui.TextColored(Dim, "Fill this in like any other item. It is made when the reagents are combined.");
         ImGui.Spacing();
-        if (gift)
+        if (gift && !inResult)
         {
             var dm = Plugin.Items.AdminSnapshot();
             ImGui.SetNextItemWidth(220f);
             if (ImGui.BeginCombo("Give to##gift", giftRecipient.Length > 0 ? giftRecipient : "Choose a member"))
             {
-                foreach (var m in dm.Members) if (ImGui.Selectable(m, m == giftRecipient)) giftRecipient = m;
+                foreach (var m in dm.Members) if (ImGui.Selectable(m, m == giftRecipient)) { giftRecipient = m; giftStashId = ""; giftStashName = ""; }
                 ImGui.EndCombo();
             }
+            Plugin.Stashes.RefreshIfDue(30);
+            ImGui.SetNextItemWidth(220f);
+            if (ImGui.BeginCombo("Or put it in a stash##giftst", giftStashId.Length > 0 ? giftStashName : "Choose a stash"))
+            {
+                foreach (var st in Plugin.Stashes.All) if (ImGui.Selectable($"{st.Name}  ({st.Zone})##gs{st.Id}", st.Id == giftStashId)) { giftStashId = st.Id; giftStashName = st.Name; giftRecipient = ""; }
+                ImGui.EndCombo();
+            }
+            ImGui.SetNextItemWidth(100f); ImGui.InputInt("Copies##giftn", ref giftCopies, 1);
+            if (giftCopies < 1) giftCopies = 1;
+            if (giftCopies > 10) giftCopies = 10;
+            ImGui.TextColored(Dim, "Up to 10 identical copies at once, like several herbs for a stash.");
         }
 
         var wrap = form.Icon.Length > 0 ? ItemIcons.Wrap(form.Icon) : null;
@@ -281,24 +317,48 @@ public sealed class ItemsTab
         ImGui.TextColored(Dim, "The exact name of a status this cures, like Chocolate poison. If they don't have it, nothing is used up.");
         if ((form.StName.Trim().Length > 0 || form.Cures.Trim().Length > 0) && form.UseText.Trim().Length == 0) ImGui.TextColored(Red, "Fill in \"What happens\" so there is an action, like Drink.");
 
+        if (!inResult)
+        {
+            ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+            ImGui.TextColored(Gold, "Combining (optional)");
+            ImGui.TextColored(Dim, "Makes this a reagent. Click it to combine it with up to 3 other items and make something new. All of them are used up.");
+            for (var i = 0; i < 3; i++) { ImGui.SetNextItemWidth(240f); ImGui.InputText($"Needs this item##with{i}", ref form.With[i], 40); }
+            if (form.With.Any(w => w.Trim().Length > 0))
+            {
+                if (form.Result == null || form.Result.Name.Trim().Length == 0) ImGui.TextColored(Dim, "Nothing set up to make yet.");
+                else ImGui.TextColored(Green, "Makes: " + form.Result.Name);
+                if (ImGui.Button("Set up what it makes...")) { form.Result ??= new ItemForm(); parents.Push(form); form = form.Result; }
+                ImGui.TextColored(Dim, "Combining always works for now. A chance of failing may be added later.");
+            }
+        }
+
         var adm = Plugin.Items.AdminSnapshot();
         if (gift && adm.Error.Length > 0) ImGui.TextColored(Red, adm.Error);
         else if (!gift && s.Error.Length > 0) ImGui.TextColored(Red, s.Error);
         ImGui.Spacing();
-        var ok = form.Name.Trim().Length > 0 && form.Icon.Length > 0 && !s.Busy && (!gift || (giftRecipient.Length > 0 && !adm.Busy));
+        if (inResult)
+        {
+            var done = form.Name.Trim().Length > 0 && form.Icon.Length > 0;
+            if (!done) ImGui.BeginDisabled();
+            if (ImGui.Button("Done##result")) form = parents.Pop();
+            if (!done) ImGui.EndDisabled();
+            if (form.Icon.Length == 0) { ImGui.SameLine(); ImGui.TextColored(Dim, "Choose an icon first."); }
+            return;
+        }
+        var ok = form.Name.Trim().Length > 0 && form.Icon.Length > 0 && !s.Busy && (!gift || ((giftRecipient.Length > 0 || giftStashId.Length > 0) && !adm.Busy));
         if (!ok) ImGui.BeginDisabled();
         if (ImGui.Button(gift ? "Send gift" : editingId == null ? "Create item" : "Save changes")) _ = SubmitAsync();
         if (!ok) ImGui.EndDisabled();
-        ImGui.SameLine(); if (ImGui.Button("Cancel##form")) mode = Mode.Inventory;
+        ImGui.SameLine(); if (ImGui.Button("Cancel##form")) { mode = Mode.Inventory; parents.Clear(); }
         if (form.Icon.Length == 0) { ImGui.SameLine(); ImGui.TextColored(Dim, "Choose an icon first."); }
     }
 
     private async System.Threading.Tasks.Task SubmitAsync()
     {
         var f = form; var id = editingId;
-        if (mode == Mode.Gift) { if (await Plugin.Items.AdminGrantAsync(f, giftRecipient)) { mode = Mode.Inventory; await Plugin.Items.AdminLoadAsync(); } return; }
+        if (mode == Mode.Gift) { if (await Plugin.Items.AdminGrantAsync(f, giftRecipient, giftStashId, giftCopies)) { mode = Mode.Inventory; await Plugin.Items.AdminLoadAsync(); } return; }
         var ok = id == null ? await Plugin.Items.CreateAsync(f) : await Plugin.Items.UpdateAsync(id, f);
-        if (ok) mode = Mode.Inventory;
+        if (ok) { mode = Mode.Inventory; parents.Clear(); }
     }
 
     // ---------- Advocate tools (leader and officers) ----------
@@ -315,7 +375,7 @@ public sealed class ItemsTab
         if (!d.Loaded) return;
 
         ImGui.SameLine();
-        if (ImGui.Button("Gift an item...")) { form = new ItemForm(); editingId = null; giftRecipient = ""; mode = Mode.Gift; Plugin.Items.ClearMessages(); }
+        if (ImGui.Button("Gift an item...")) { form = new ItemForm(); editingId = null; giftRecipient = ""; giftStashId = ""; giftStashName = ""; giftCopies = 1; parents.Clear(); mode = Mode.Gift; Plugin.Items.ClearMessages(); }
 
         ImGui.Spacing();
         ImGui.TextColored(Gold, $"All items ({d.Items.Count})");

@@ -21,6 +21,7 @@ public sealed class ItemView
     public string Requires { get; set; } = ""; public bool RequiresConsume { get; set; } public int Holds { get; set; }
     public string StName { get; set; } = ""; public string StDesc { get; set; } = ""; public string StIcon { get; set; } = "";
     public bool StDebuff { get; set; } public int StMinutes { get; set; } public string Cures { get; set; } = "";
+    public bool CanCombine { get; set; } public List<string>? CombineWith { get; set; } public ItemView? Result { get; set; }
 }
 public sealed class ItemReply
 {
@@ -32,12 +33,15 @@ public sealed class ItemReply
     public List<string>? Gained { get; set; } public string? KeyUsed { get; set; }
     public int? Gold { get; set; } public string? To { get; set; } public long? Total { get; set; }
     public string? StatusGained { get; set; } public string? StatusCured { get; set; } public List<StatusView>? Statuses { get; set; }
+    public string? Combined { get; set; } public List<string>? Used { get; set; } public int? Copies { get; set; }
     public List<BankEntry>? History { get; set; } public List<BankEntry>? Recent { get; set; } public List<BankMember>? Balances { get; set; }
 }
 public sealed class ItemForm
 {
     public string Name = "", Icon = "", Description = "", Flavor = "", UseLabel = "", UseText = "", Requires = "";
     public string StName = "", StDesc = "", StIcon = "", Cures = "";
+    public string[] With = { "", "", "" };   // other reagents this combines with
+    public ItemForm? Result;                 // what the combination makes
     public int StMinutes;
     public bool Consumable, RequiresConsume, StDebuff;
 }
@@ -202,17 +206,34 @@ public sealed class ItemsState
         var r = await RunAdmin(pw => SendAsync(HttpMethod.Post, "/items/admin/remove-member", new { adminPassword = pw, name }), $"{name} was removed.").ConfigureAwait(false);
         if (r != null) await AdminLoadAsync().ConfigureAwait(false);
     }
-    public async Task<bool> AdminGrantAsync(ItemForm f, string to)
+    public async Task<bool> AdminGrantAsync(ItemForm f, string to, string stashId, int copies)
     {
-        var r = await RunAdmin(pw => SendAsync(HttpMethod.Post, "/items/admin/grant", new
-        {
-            adminPassword = pw, to, name = f.Name.Trim(), icon = f.Icon, description = f.Description.Trim(), flavor = f.Flavor.Trim(),
-            useLabel = f.UseLabel.Trim(), useText = f.UseText.Trim(), requires = f.Requires.Trim(), requiresConsume = f.RequiresConsume, stName = f.StName.Trim(), stDesc = f.StDesc.Trim(), stIcon = f.StIcon, stDebuff = f.StDebuff, stMinutes = f.StMinutes, cures = f.Cures.Trim(), consumable = f.Consumable
-        }), $"Gift sent to {to}.").ConfigureAwait(false);
+        var body = BodyDict(f);
+        body["copies"] = copies;
+        if (stashId.Length > 0) body["stashId"] = stashId; else body["to"] = to;
+        var where = stashId.Length > 0 ? "the stash" : to;
+        var r = await RunAdmin(pw => { body["adminPassword"] = pw; return SendAsync(HttpMethod.Post, "/items/admin/grant", body); }, copies > 1 ? $"{copies} copies sent to {where}." : $"Gift sent to {where}.").ConfigureAwait(false);
         return r != null;
     }
 
-    private static object Body(ItemForm f) => new { name = f.Name.Trim(), icon = f.Icon, description = f.Description.Trim(), flavor = f.Flavor.Trim(), useLabel = f.UseLabel.Trim(), useText = f.UseText.Trim(), requires = f.Requires.Trim(), requiresConsume = f.RequiresConsume, stName = f.StName.Trim(), stDesc = f.StDesc.Trim(), stIcon = f.StIcon, stDebuff = f.StDebuff, stMinutes = f.StMinutes, cures = f.Cures.Trim(), consumable = f.Consumable };
+    private static Dictionary<string, object?> BodyDict(ItemForm f, bool recipe = true)
+    {
+        var d = new Dictionary<string, object?>
+        {
+            ["name"] = f.Name.Trim(), ["icon"] = f.Icon, ["description"] = f.Description.Trim(), ["flavor"] = f.Flavor.Trim(),
+            ["useLabel"] = f.UseLabel.Trim(), ["useText"] = f.UseText.Trim(), ["requires"] = f.Requires.Trim(), ["requiresConsume"] = f.RequiresConsume,
+            ["stName"] = f.StName.Trim(), ["stDesc"] = f.StDesc.Trim(), ["stIcon"] = f.StIcon, ["stDebuff"] = f.StDebuff, ["stMinutes"] = f.StMinutes,
+            ["cures"] = f.Cures.Trim(), ["consumable"] = f.Consumable,
+        };
+        var with = f.With.Select(x => x.Trim()).Where(x => x.Length > 0).ToList();
+        if (recipe && with.Count > 0)
+        {
+            d["with"] = with;
+            if (f.Result != null) d["result"] = BodyDict(f.Result, false);
+        }
+        return d;
+    }
+    private static object Body(ItemForm f) => BodyDict(f);
 
     public async Task<bool> CreateAsync(ItemForm f)
     {
@@ -238,6 +259,15 @@ public sealed class ItemsState
         if (!string.IsNullOrEmpty(r.StatusGained)) text += "\n\nYou are now affected by: " + r.StatusGained + ".";
         if (!string.IsNullOrEmpty(r.StatusCured)) text += "\n\n" + r.StatusCured + " has been lifted.";
         if (!string.IsNullOrEmpty(r.StatusGained) || !string.IsNullOrEmpty(r.StatusCured)) _ = Plugin.Status.RefreshAsync();
+        _ = Plugin.Framework.RunOnFrameworkThread(() => Plugin.Scene.ShowLocal(text));
+    }
+    public async Task CombineAsync(string id)
+    {
+        var r = await Run(() => SendAsync(HttpMethod.Post, $"/items/{id}/combine", new { })).ConfigureAwait(false);
+        if (r?.Combined == null) return;
+        var used = r.Used ?? new();
+        var list = used.Count <= 1 ? string.Join("", used) : string.Join(", ", used.Take(used.Count - 1)) + " and " + used[^1];
+        var text = $"You combine {list} and make: {r.Combined}.";
         _ = Plugin.Framework.RunOnFrameworkThread(() => Plugin.Scene.ShowLocal(text));
     }
     public async Task SealAsync(string id, string itemId)
