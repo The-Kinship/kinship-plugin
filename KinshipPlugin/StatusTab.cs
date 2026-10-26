@@ -122,6 +122,15 @@ public sealed class StatusTab
             ImGui.EndCombo();
         }
         IconAndFields(adminForm, "adm");
+        ImGui.SetNextItemWidth(160f);
+        if (ImGui.BeginCombo("Kind##admk", adminForm.Type == "sickness" ? "Sickness" : adminForm.Type == "curse" ? "Curse" : "Neither"))
+        {
+            if (ImGui.Selectable("Neither", adminForm.Type.Length == 0)) adminForm.Type = "";
+            if (ImGui.Selectable("Sickness (Life Watch can diagnose)", adminForm.Type == "sickness")) adminForm.Type = "sickness";
+            if (ImGui.Selectable("Curse (Onyx Blood Guard can diagnose)", adminForm.Type == "curse")) adminForm.Type = "curse";
+            ImGui.EndCombo();
+        }
+        if (adminForm.Type.Length > 0) { ImGui.Text("Cure information (shown to a successful diagnosis)"); ImGui.InputTextMultiline("##admcure", ref adminForm.Cure, 200, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 52f)); }
         var ok = adminTo.Length > 0 && adminForm.Name.Trim().Length > 0 && adminForm.Icon.Length > 0 && !s.Busy;
         if (!ok) ImGui.BeginDisabled();
         if (ImGui.Button("Give status##adm")) { _ = Plugin.Status.AdminAddAsync(adminTo, adminForm); }

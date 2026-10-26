@@ -166,6 +166,8 @@ public sealed class SectsTab
             Roster(members, s);
         }
 
+        if (key == "life" || key == "onyx") DrawDiagnose(key, s);
+
         // The hidden way into the crypt, on the Onyx Blood Guard page only.
         if (key == "onyx")
         {
@@ -173,6 +175,61 @@ public sealed class SectsTab
             ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.35f, 0.35f, 0.4f, 1f));
             if (ImGui.SmallButton("Knock twice, bleed once")) TryOpenCrypt();
             ImGui.PopStyleColor();
+        }
+    }
+
+    private string dxPatient = "";
+    private DiagnoseResult? dxShown;
+    private DateTime dxMembersLoad = DateTime.MinValue;
+
+    private void DrawDiagnose(string key, SectInfo s)
+    {
+        var kind = key == "life" ? "sickness" : "curse";
+        Heading(key == "life" ? "Diagnose a sickness" : "Read for a curse", s);
+        var inv = Plugin.Items.Snapshot();
+        var fresh = Plugin.Status.TakeDiagnosis();
+        if (fresh != null) { dxShown = fresh; ImGui.OpenPopup("Diagnosis##dx"); }
+
+        if (!inv.SignedIn) ImGui.TextColored(Dim, "Sign in on the Items tab to use this.");
+        else
+        {
+            if (inv.Members.Count == 0 && (DateTime.UtcNow - dxMembersLoad).TotalSeconds > 30) { dxMembersLoad = DateTime.UtcNow; _ = Plugin.Items.LoadMembersAsync(); }
+            ImGui.TextColored(Dim, key == "life" ? "Pick a patient and try to work out what ails them." : "Pick someone and try to work out what curse they carry.");
+            var names = inv.Members.Append(inv.Name).Where(m => m.Length > 0).Distinct().OrderBy(m => m).ToList();
+            ImGui.SetNextItemWidth(200f);
+            if (ImGui.BeginCombo("Patient##dxp", dxPatient.Length > 0 ? dxPatient : "Choose a name"))
+            {
+                foreach (var m in names) if (ImGui.Selectable(m, m == dxPatient)) dxPatient = m;
+                ImGui.EndCombo();
+            }
+            var ok = dxPatient.Length > 0 && !Plugin.Status.IsBusy();
+            if (!ok) ImGui.BeginDisabled();
+            if (ImGui.Button(key == "life" ? "Diagnose##dx" : "Read##dx")) _ = Plugin.Status.DiagnoseAsync(dxPatient, kind);
+            if (!ok) ImGui.EndDisabled();
+        }
+
+        if (ImGui.BeginPopup("Diagnosis##dx"))
+        {
+            if (dxShown != null)
+            {
+                if (dxShown.Error.Length > 0) ImGui.TextColored(Red, dxShown.Error);
+                else
+                {
+                    ImGui.TextColored(Dim, $"{dxShown.Patient}  ·  you rolled {dxShown.Roll} (d20)");
+                    ImGui.Spacing();
+                    ImGui.PushTextWrapPos(ImGui.GetFontSize() * 26f);
+                    if (dxShown.Success)
+                    {
+                        ImGui.TextColored(s.Color, "Condition: " + dxShown.Condition);
+                        ImGui.TextUnformatted(dxShown.Cure.Length > 0 ? "Cure: " + dxShown.Cure : "There is no cure you know of.");
+                    }
+                    else ImGui.TextUnformatted("It's hard to tell what it is. Just use your best judgement.");
+                    ImGui.PopTextWrapPos();
+                }
+                ImGui.Spacing();
+                if (ImGui.Button("Close##dx")) ImGui.CloseCurrentPopup();
+            }
+            ImGui.EndPopup();
         }
     }
 

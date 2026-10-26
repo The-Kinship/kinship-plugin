@@ -226,7 +226,7 @@ public sealed class ItemsTab
         var f = new ItemForm
         {
             Name = it.Name, Icon = it.Icon, Description = it.Description, Flavor = it.Flavor, UseLabel = it.UseLabel, UseText = it.UseText ?? "", Consumable = it.Consumable,
-            Requires = it.Requires, RequiresConsume = it.RequiresConsume, StName = it.StName, StDesc = it.StDesc, StIcon = it.StIcon, StDebuff = it.StDebuff, StMinutes = it.StMinutes, Cures = it.Cures,
+            Requires = it.Requires, RequiresConsume = it.RequiresConsume, StName = it.StName, StDesc = it.StDesc, StIcon = it.StIcon, StDebuff = it.StDebuff, StMinutes = it.StMinutes, Cures = it.Cures, StType = it.StType, StCure = it.StCure,
         };
         if (recipe && it.CombineWith != null)
         {
@@ -311,6 +311,18 @@ public sealed class ItemsTab
             if (form.StMinutes < 0) form.StMinutes = 0;
             ImGui.TextColored(Dim, "0 means it lasts until something removes it.");
             ImGui.Checkbox("It is a debuff (bad)", ref form.StDebuff);
+            ImGui.SetNextItemWidth(160f);
+            if (ImGui.BeginCombo("Kind##fstt", form.StType == "sickness" ? "Sickness" : form.StType == "curse" ? "Curse" : "Neither"))
+            {
+                if (ImGui.Selectable("Neither", form.StType.Length == 0)) form.StType = "";
+                if (ImGui.Selectable("Sickness (Life Watch can diagnose)", form.StType == "sickness")) form.StType = "sickness";
+                if (ImGui.Selectable("Curse (Onyx Blood Guard can diagnose)", form.StType == "curse")) form.StType = "curse";
+                ImGui.EndCombo();
+            }
+            if (form.StType.Length > 0)
+            {
+                ImGui.Text("Cure information (shown to a successful diagnosis)"); ImGui.InputTextMultiline("##fstc", ref form.StCure, 200, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 52f));
+            }
             ImGui.Unindent();
         }
         ImGui.SetNextItemWidth(240f); ImGui.InputText("Removes the status##fcu", ref form.Cures, 30);

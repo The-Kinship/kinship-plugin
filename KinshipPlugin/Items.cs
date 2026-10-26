@@ -21,6 +21,7 @@ public sealed class ItemView
     public string Requires { get; set; } = ""; public bool RequiresConsume { get; set; } public int Holds { get; set; }
     public string StName { get; set; } = ""; public string StDesc { get; set; } = ""; public string StIcon { get; set; } = "";
     public bool StDebuff { get; set; } public int StMinutes { get; set; } public string Cures { get; set; } = "";
+    public string StType { get; set; } = ""; public string StCure { get; set; } = "";
     public bool CanCombine { get; set; } public List<string>? CombineWith { get; set; } public ItemView? Result { get; set; }
 }
 public sealed class ItemReply
@@ -33,13 +34,14 @@ public sealed class ItemReply
     public List<string>? Gained { get; set; } public string? KeyUsed { get; set; }
     public int? Gold { get; set; } public string? To { get; set; } public long? Total { get; set; }
     public string? StatusGained { get; set; } public string? StatusCured { get; set; } public List<StatusView>? Statuses { get; set; }
+    public int? Roll { get; set; } public string? Patient { get; set; } public bool? Success { get; set; } public string? Condition { get; set; } public string? Cure { get; set; }
     public string? Combined { get; set; } public List<string>? Used { get; set; } public int? Copies { get; set; }
     public List<BankEntry>? History { get; set; } public List<BankEntry>? Recent { get; set; } public List<BankMember>? Balances { get; set; }
 }
 public sealed class ItemForm
 {
     public string Name = "", Icon = "", Description = "", Flavor = "", UseLabel = "", UseText = "", Requires = "";
-    public string StName = "", StDesc = "", StIcon = "", Cures = "";
+    public string StName = "", StDesc = "", StIcon = "", Cures = "", StType = "", StCure = "";
     public string[] With = { "", "", "" };   // other reagents this combines with
     public ItemForm? Result;                 // what the combination makes
     public int StMinutes;
@@ -222,7 +224,7 @@ public sealed class ItemsState
         {
             ["name"] = f.Name.Trim(), ["icon"] = f.Icon, ["description"] = f.Description.Trim(), ["flavor"] = f.Flavor.Trim(),
             ["useLabel"] = f.UseLabel.Trim(), ["useText"] = f.UseText.Trim(), ["requires"] = f.Requires.Trim(), ["requiresConsume"] = f.RequiresConsume,
-            ["stName"] = f.StName.Trim(), ["stDesc"] = f.StDesc.Trim(), ["stIcon"] = f.StIcon, ["stDebuff"] = f.StDebuff, ["stMinutes"] = f.StMinutes,
+            ["stName"] = f.StName.Trim(), ["stDesc"] = f.StDesc.Trim(), ["stIcon"] = f.StIcon, ["stDebuff"] = f.StDebuff, ["stMinutes"] = f.StMinutes, ["stType"] = f.StType, ["stCure"] = f.StCure.Trim(),
             ["cures"] = f.Cures.Trim(), ["consumable"] = f.Consumable,
         };
         var with = f.With.Select(x => x.Trim()).Where(x => x.Length > 0).ToList();

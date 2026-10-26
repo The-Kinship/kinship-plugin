@@ -34,7 +34,9 @@ public sealed class StatusForm
     public string Name = "", Description = "", Icon = "";
     public int Minutes;
     public bool Debuff;
+    public string Type = "", Cure = "";   // Advocate only: "sickness" or "curse", and what a diagnosis reveals
 }
+public sealed record DiagnoseResult(string Patient, int Roll, bool Success, string Condition, string Cure, string Error);
 public sealed record StatusSnap(List<StatusView> All, string Error, string Notice, bool Busy);
 
 /// <summary>Statuses (buffs and debuffs): everyone's are shown, and you can only add your own. Items and Advocates add them to others.</summary>
@@ -84,6 +86,23 @@ public sealed class StatusState
 
     private static object Body(StatusForm f) => new { name = f.Name.Trim(), description = f.Description.Trim(), icon = f.Icon, minutes = f.Minutes, isDebuff = f.Debuff };
 
+    // ---------- diagnosis (Life Watch and Onyx Blood Guard pages) ----------
+    private DiagnoseResult? dx;
+    public DiagnoseResult? TakeDiagnosis() { lock (gate) { var r = dx; dx = null; return r; } }
+    public async Task DiagnoseAsync(string patient, string kind)
+    {
+        lock (gate) { if (busy) return; busy = true; error = ""; }
+        try
+        {
+            var r = await ItemsState.SendAsync(HttpMethod.Post, "/statuses/diagnose", new { patient, kind }).ConfigureAwait(false);
+            lock (gate) { dx = new DiagnoseResult(r.Patient ?? patient, r.Roll ?? 0, r.Success == true, r.Condition ?? "", r.Cure ?? "", ""); }
+        }
+        catch (CombatException ex) { lock (gate) { dx = new DiagnoseResult(patient, 0, false, "", "", ex.Message); } }
+        catch (Exception ex) { Plugin.Log.Warning(ex, "Diagnosis failed"); lock (gate) { dx = new DiagnoseResult(patient, 0, false, "", "", "Couldn't reach the server. Check your connection and try again."); } }
+        finally { lock (gate) { busy = false; } }
+    }
+    public bool IsBusy() { lock (gate) { return busy; } }
+
     public Task<bool> AddSelfAsync(StatusForm f) => Exec(() => ItemsState.SendAsync(HttpMethod.Post, "/statuses/self", Body(f)), "Status added.");
     public Task<bool> RemoveAsync(string id) => Exec(() => ItemsState.SendAsync(HttpMethod.Post, $"/statuses/{id}/remove", new { }), "Status removed.");
 
@@ -94,6 +113,6 @@ public sealed class StatusState
         if (pw.Length == 0) { lock (gate) { error = "Enter the creation password in the Advocate tools first."; } return Task.FromResult(false); }
         return Exec(() => ItemsState.SendAsync(HttpMethod.Post, path, body), done);
     }
-    public Task<bool> AdminAddAsync(string to, StatusForm f) => Admin("/statuses/admin/add", new { adminPassword = Plugin.Config.CreatePassword, to, name = f.Name.Trim(), description = f.Description.Trim(), icon = f.Icon, minutes = f.Minutes, isDebuff = f.Debuff }, $"Status added to {to}.");
+    public Task<bool> AdminAddAsync(string to, StatusForm f) => Admin("/statuses/admin/add", new { adminPassword = Plugin.Config.CreatePassword, to, name = f.Name.Trim(), description = f.Description.Trim(), icon = f.Icon, minutes = f.Minutes, isDebuff = f.Debuff, statusType = f.Type, cureInfo = f.Cure.Trim() }, $"Status added to {to}.");
     public Task<bool> AdminRemoveAsync(string id) => Admin("/statuses/admin/remove", new { adminPassword = Plugin.Config.CreatePassword, statusId = id }, "Status removed.");
 }
