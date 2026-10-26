@@ -34,6 +34,7 @@ public sealed class ItemsTab
 
     // icon picker
     private readonly StashesTab stashTab = new();
+    private readonly SignsTab signTab = new();
     private string? confirmAdminDelete, confirmAdminRemove, confirmAdminStash;
     private string giftRecipient = "";
     private int browseStart = 20000, goTo = 20000, iconNumber = 20001;
@@ -50,6 +51,7 @@ public sealed class ItemsTab
         {
             if (ImGui.BeginTabItem("Inventory")) { DrawInventory(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Stashes")) { stashTab.Draw(s); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Signs")) { signTab.Draw(); ImGui.EndTabItem(); }
             ImGui.EndTabBar();
         }
     }
