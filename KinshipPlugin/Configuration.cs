@@ -42,6 +42,7 @@ public class Configuration : IPluginConfiguration
     /// <summary>Show the name tags of nearby stashes in the world.</summary>
     public bool StashLabels { get; set; } = true;
     public bool SignLabels { get; set; } = true;
+    public bool StatusBar { get; set; } = true;
 
     public bool ChatEcho { get; set; } = true;
 

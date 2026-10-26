@@ -36,10 +36,10 @@ public sealed class ItemsTab
     private readonly StashesTab stashTab = new();
     private readonly SignsTab signTab = new();
     private readonly BankTab bankTab = new();
+    private readonly StatusTab statusTab = new();
     private string? confirmAdminDelete, confirmAdminRemove, confirmAdminStash;
     private string giftRecipient = "";
-    private int browseStart = 20000, goTo = 20000, iconNumber = 20001;
-    private string category = "All";
+    private readonly IconPicker picker = new("pickicon");
 
     public void Draw()
     {
@@ -53,6 +53,7 @@ public sealed class ItemsTab
             if (ImGui.BeginTabItem("Inventory")) { DrawInventory(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Stashes")) { stashTab.Draw(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Signs")) { signTab.Draw(); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Status")) { statusTab.Draw(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Bank")) { bankTab.Draw(s); ImGui.EndTabItem(); }
             ImGui.EndTabBar();
         }
@@ -214,7 +215,7 @@ public sealed class ItemsTab
     private void StartCreate() { form = new ItemForm(); editingId = null; mode = Mode.Form; Plugin.Items.ClearMessages(); }
     private void StartEdit(ItemView it)
     {
-        form = new ItemForm { Name = it.Name, Icon = it.Icon, Description = it.Description, Flavor = it.Flavor, UseLabel = it.UseLabel, UseText = it.UseText ?? "", Consumable = it.Consumable, Requires = it.Requires, RequiresConsume = it.RequiresConsume };
+        form = new ItemForm { Name = it.Name, Icon = it.Icon, Description = it.Description, Flavor = it.Flavor, UseLabel = it.UseLabel, UseText = it.UseText ?? "", Consumable = it.Consumable, Requires = it.Requires, RequiresConsume = it.RequiresConsume, StName = it.StName, StDesc = it.StDesc, StIcon = it.StIcon, StDebuff = it.StDebuff, StMinutes = it.StMinutes, Cures = it.Cures };
         editingId = it.Id; mode = Mode.Form; Plugin.Items.ClearMessages();
     }
 
@@ -237,8 +238,8 @@ public sealed class ItemsTab
         var wrap = form.Icon.Length > 0 ? ItemIcons.Wrap(form.Icon) : null;
         if (wrap != null) ImGui.Image(wrap.Handle, new Vector2(Slot, Slot)); else ImGui.Button("?##formicon", new Vector2(Slot, Slot));
         ImGui.SameLine();
-        if (ImGui.Button("Choose icon")) ImGui.OpenPopup("pickicon");
-        DrawPicker();
+        if (ImGui.Button("Choose icon")) picker.Open(v => form.Icon = v);
+        picker.Draw();
 
         ImGui.SetNextItemWidth(260f); ImGui.InputText("Name##f", ref form.Name, 40);
         ImGui.Text("Description"); ImGui.InputTextMultiline("##fdesc", ref form.Description, 300, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 56f));
@@ -257,6 +258,28 @@ public sealed class ItemsTab
         if (form.Requires.Trim().Length > 0) ImGui.Checkbox("That item is used up too", ref form.RequiresConsume);
         if (form.Requires.Trim().Length > 0 && form.UseText.Trim().Length == 0) ImGui.TextColored(Red, "Fill in \"What happens\" so there is an action, like Open.");
         ImGui.TextColored(Dim, "To make something hold other items, save this item first, then right-click it and choose Put an item inside.");
+
+        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        ImGui.TextColored(Gold, "Status (optional)");
+        ImGui.SetNextItemWidth(240f); ImGui.InputText("Gives the status##fst", ref form.StName, 30);
+        ImGui.TextColored(Dim, "A buff or debuff the person gets when they use this, like Chocolate poison.");
+        if (form.StName.Trim().Length > 0)
+        {
+            ImGui.Indent();
+            var swrap = ItemIcons.Wrap(form.StIcon.Length > 0 ? form.StIcon : form.Icon);
+            if (swrap != null) { ImGui.Image(swrap.Handle, new Vector2(32f, 32f)); ImGui.SameLine(); }
+            if (ImGui.SmallButton("Choose status icon")) picker.Open(v => form.StIcon = v);
+            if (form.StIcon.Length > 0) { ImGui.SameLine(); if (ImGui.SmallButton("Use the item's icon")) form.StIcon = ""; }
+            ImGui.Text("What it does"); ImGui.InputTextMultiline("##fstd", ref form.StDesc, 200, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 52f));
+            ImGui.SetNextItemWidth(120f); ImGui.InputInt("Minutes##fstm", ref form.StMinutes, 1);
+            if (form.StMinutes < 0) form.StMinutes = 0;
+            ImGui.TextColored(Dim, "0 means it lasts until something removes it.");
+            ImGui.Checkbox("It is a debuff (bad)", ref form.StDebuff);
+            ImGui.Unindent();
+        }
+        ImGui.SetNextItemWidth(240f); ImGui.InputText("Removes the status##fcu", ref form.Cures, 30);
+        ImGui.TextColored(Dim, "The exact name of a status this cures, like Chocolate poison. If they don't have it, nothing is used up.");
+        if ((form.StName.Trim().Length > 0 || form.Cures.Trim().Length > 0) && form.UseText.Trim().Length == 0) ImGui.TextColored(Red, "Fill in \"What happens\" so there is an action, like Drink.");
 
         var adm = Plugin.Items.AdminSnapshot();
         if (gift && adm.Error.Length > 0) ImGui.TextColored(Red, adm.Error);
@@ -342,80 +365,5 @@ public sealed class ItemsTab
             }
             else if (ImGui.SmallButton("Remove##rm" + m)) confirmAdminRemove = m;
         }
-    }
-
-    // ---------- the icon picker ----------
-    private void DrawPicker()
-    {
-        ImGui.SetNextWindowSize(new Vector2(460f, 400f), ImGuiCond.Appearing);
-        if (!ImGui.BeginPopup("pickicon")) return;
-        if (ImGui.BeginTabBar("pickertabs"))
-        {
-            if (ImGui.BeginTabItem("Suggested")) { PickerCurated(); ImGui.EndTabItem(); }
-            if (ImGui.BeginTabItem("Browse game icons")) { PickerBrowse(); ImGui.EndTabItem(); }
-            if (ImGui.BeginTabItem("By number")) { PickerNumber(); ImGui.EndTabItem(); }
-            ImGui.EndTabBar();
-        }
-        ImGui.EndPopup();
-    }
-
-    private bool IconCell(string icon, string tip, ref int shown)
-    {
-        var wrap = ItemIcons.Wrap(icon);
-        if (wrap == null) return false;
-        if (shown % 8 != 0) ImGui.SameLine();
-        ImGui.Image(wrap.Handle, new Vector2(40f, 40f));
-        shown++;
-        if (ImGui.IsItemHovered()) { ImGui.SetMouseCursor(ImGuiMouseCursor.Hand); ImGui.SetTooltip(tip); }
-        if (ImGui.IsItemClicked(ImGuiMouseButton.Left)) { form.Icon = icon; ImGui.CloseCurrentPopup(); return true; }
-        return false;
-    }
-
-    private void PickerCurated()
-    {
-        var list = Plugin.Data.Icons;
-        if (list.Count == 0) { ImGui.TextWrapped("No suggested icons yet. Use Browse game icons or By number."); return; }
-        var cats = list.Select(i => i.Category).Where(c => c.Length > 0).Distinct().OrderBy(c => c).ToList();
-        cats.Insert(0, "All");
-        ImGui.SetNextItemWidth(180f);
-        if (ImGui.BeginCombo("Category", category))
-        {
-            foreach (var c in cats) if (ImGui.Selectable(c, c == category)) category = c;
-            ImGui.EndCombo();
-        }
-        ImGui.BeginChild("curlist", new Vector2(0, 0));
-        var shown = 0;
-        foreach (var i in list.Where(i => category == "All" || i.Category == category))
-            if (IconCell(i.Icon, i.Label.Length > 0 ? i.Label : i.Icon, ref shown)) break;
-        ImGui.EndChild();
-    }
-
-    private void PickerBrowse()
-    {
-        ImGui.TextColored(Dim, "Every game icon, 100 numbers at a time. Gaps are numbers with no icon.");
-        if (ImGui.Button("< Previous 100") && browseStart >= 100) browseStart -= 100;
-        ImGui.SameLine(); if (ImGui.Button("Next 100 >")) browseStart += 100;
-        ImGui.SameLine(); ImGui.SetNextItemWidth(90f); ImGui.InputInt("##goto", ref goTo, 0);
-        ImGui.SameLine(); if (ImGui.Button("Go") && goTo >= 0) browseStart = goTo / 100 * 100;
-        ImGui.Text($"Showing {browseStart} to {browseStart + 99}");
-        ImGui.BeginChild("browselist", new Vector2(0, 0));
-        var shown = 0;
-        for (var id = browseStart; id < browseStart + 100; id++)
-            if (IconCell("game:" + id, "Icon " + id, ref shown)) break;
-        if (shown == 0) ImGui.TextColored(Dim, "No icons in this range. Try the next page.");
-        ImGui.EndChild();
-    }
-
-    private void PickerNumber()
-    {
-        ImGui.TextWrapped("If you know an icon's number, type it here.");
-        ImGui.SetNextItemWidth(140f); ImGui.InputInt("Icon number", ref iconNumber, 0);
-        var wrap = iconNumber >= 0 ? ItemIcons.Wrap("game:" + iconNumber) : null;
-        if (wrap != null)
-        {
-            ImGui.Image(wrap.Handle, new Vector2(64f, 64f));
-            if (ImGui.Button("Use this icon")) { form.Icon = "game:" + iconNumber; ImGui.CloseCurrentPopup(); }
-        }
-        else ImGui.TextColored(Dim, "No icon with that number.");
     }
 }

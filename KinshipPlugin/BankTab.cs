@@ -49,7 +49,7 @@ public sealed class BankTab
             foreach (var m in inv.Members) if (ImGui.Selectable(m, m == payTo)) payTo = m;
             ImGui.EndCombo();
         }
-        ImGui.SetNextItemWidth(120f); ImGui.InputInt("Gold##bankpay", ref payAmount);
+        ImGui.SetNextItemWidth(120f); ImGui.InputInt("Gold##bankpay", ref payAmount, 1);
         if (payAmount < 1) payAmount = 1;
         var ok = payTo.Length > 0 && payAmount <= Plugin.Items.Gold && !s.Busy;
         if (!ok) ImGui.BeginDisabled();
@@ -97,7 +97,7 @@ public sealed class BankTab
             foreach (var m in d.Balances) if (ImGui.Selectable(m.Name, m.Name == mintTo)) mintTo = m.Name;
             ImGui.EndCombo();
         }
-        ImGui.SetNextItemWidth(120f); ImGui.InputInt("Gold##mint", ref mintAmount);
+        ImGui.SetNextItemWidth(120f); ImGui.InputInt("Gold##mint", ref mintAmount, 1);
         if (mintAmount < 1) mintAmount = 1;
         ImGui.SetNextItemWidth(260f); ImGui.InputText("Note##mint", ref mintNote, 60);
         ImGui.TextColored(Dim, "Optional, they see it in their history. e.g. Mission reward.");

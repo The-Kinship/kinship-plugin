@@ -19,6 +19,8 @@ public sealed class ItemView
     public string? UseText { get; set; } public bool Consumable { get; set; } public bool CanEdit { get; set; }
     public string? Owner { get; set; } public string? Creator { get; set; }
     public string Requires { get; set; } = ""; public bool RequiresConsume { get; set; } public int Holds { get; set; }
+    public string StName { get; set; } = ""; public string StDesc { get; set; } = ""; public string StIcon { get; set; } = "";
+    public bool StDebuff { get; set; } public int StMinutes { get; set; } public string Cures { get; set; } = "";
 }
 public sealed class ItemReply
 {
@@ -29,12 +31,15 @@ public sealed class ItemReply
     public List<SignView>? Signs { get; set; } public SignView? Sign { get; set; }
     public List<string>? Gained { get; set; } public string? KeyUsed { get; set; }
     public int? Gold { get; set; } public string? To { get; set; } public long? Total { get; set; }
+    public string? StatusGained { get; set; } public string? StatusCured { get; set; } public List<StatusView>? Statuses { get; set; }
     public List<BankEntry>? History { get; set; } public List<BankEntry>? Recent { get; set; } public List<BankMember>? Balances { get; set; }
 }
 public sealed class ItemForm
 {
     public string Name = "", Icon = "", Description = "", Flavor = "", UseLabel = "", UseText = "", Requires = "";
-    public bool Consumable, RequiresConsume;
+    public string StName = "", StDesc = "", StIcon = "", Cures = "";
+    public int StMinutes;
+    public bool Consumable, RequiresConsume, StDebuff;
 }
 public sealed record ItemsSnap(bool SignedIn, string Name, int Capacity, List<ItemView> Items, List<string> Members, string Error, string Notice, bool Busy, string Recovery);
 
@@ -202,12 +207,12 @@ public sealed class ItemsState
         var r = await RunAdmin(pw => SendAsync(HttpMethod.Post, "/items/admin/grant", new
         {
             adminPassword = pw, to, name = f.Name.Trim(), icon = f.Icon, description = f.Description.Trim(), flavor = f.Flavor.Trim(),
-            useLabel = f.UseLabel.Trim(), useText = f.UseText.Trim(), requires = f.Requires.Trim(), requiresConsume = f.RequiresConsume, consumable = f.Consumable
+            useLabel = f.UseLabel.Trim(), useText = f.UseText.Trim(), requires = f.Requires.Trim(), requiresConsume = f.RequiresConsume, stName = f.StName.Trim(), stDesc = f.StDesc.Trim(), stIcon = f.StIcon, stDebuff = f.StDebuff, stMinutes = f.StMinutes, cures = f.Cures.Trim(), consumable = f.Consumable
         }), $"Gift sent to {to}.").ConfigureAwait(false);
         return r != null;
     }
 
-    private static object Body(ItemForm f) => new { name = f.Name.Trim(), icon = f.Icon, description = f.Description.Trim(), flavor = f.Flavor.Trim(), useLabel = f.UseLabel.Trim(), useText = f.UseText.Trim(), requires = f.Requires.Trim(), requiresConsume = f.RequiresConsume, consumable = f.Consumable };
+    private static object Body(ItemForm f) => new { name = f.Name.Trim(), icon = f.Icon, description = f.Description.Trim(), flavor = f.Flavor.Trim(), useLabel = f.UseLabel.Trim(), useText = f.UseText.Trim(), requires = f.Requires.Trim(), requiresConsume = f.RequiresConsume, stName = f.StName.Trim(), stDesc = f.StDesc.Trim(), stIcon = f.StIcon, stDebuff = f.StDebuff, stMinutes = f.StMinutes, cures = f.Cures.Trim(), consumable = f.Consumable };
 
     public async Task<bool> CreateAsync(ItemForm f)
     {
@@ -230,6 +235,9 @@ public sealed class ItemsState
         var text = r.Text;
         if (r.Gained is { Count: > 0 }) text += "\n\nYou receive: " + string.Join(", ", r.Gained) + ".";
         if (!string.IsNullOrEmpty(r.KeyUsed)) text += "\n\n(" + r.KeyUsed + " was used up.)";
+        if (!string.IsNullOrEmpty(r.StatusGained)) text += "\n\nYou are now affected by: " + r.StatusGained + ".";
+        if (!string.IsNullOrEmpty(r.StatusCured)) text += "\n\n" + r.StatusCured + " has been lifted.";
+        if (!string.IsNullOrEmpty(r.StatusGained) || !string.IsNullOrEmpty(r.StatusCured)) _ = Plugin.Status.RefreshAsync();
         _ = Plugin.Framework.RunOnFrameworkThread(() => Plugin.Scene.ShowLocal(text));
     }
     public async Task SealAsync(string id, string itemId)

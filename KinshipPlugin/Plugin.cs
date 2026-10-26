@@ -34,6 +34,7 @@ public sealed class Plugin : IDalamudPlugin
     internal static StashState Stashes { get; private set; } = null!;
     internal static SignState Signs { get; private set; } = null!;
     internal static BankState Bank { get; private set; } = null!;
+    internal static StatusState Status { get; private set; } = null!;
     internal static IFontHandle PopupFont { get; private set; } = null!;
 
     private static ImageViewerWindow? viewer;
@@ -51,6 +52,7 @@ public sealed class Plugin : IDalamudPlugin
     private readonly StashOverlay overlay;
     private readonly SignOverlay signOverlay;
     private readonly SignReaderWindow signReader;
+    private readonly StatusBar statusBar;
 
     public Plugin()
     {
@@ -63,6 +65,7 @@ public sealed class Plugin : IDalamudPlugin
         Stashes = new StashState();
         Signs = new SignState();
         Bank = new BankState();
+        Status = new StatusState();
         PopupFont = PluginInterface.UiBuilder.FontAtlas.NewDelegateFontHandle(e => e.OnPreBuild(tk => tk.AddDalamudDefaultFont(28f)));
 
         main = new MainWindow();
@@ -80,6 +83,8 @@ public sealed class Plugin : IDalamudPlugin
         windows.AddWindow(signOverlay);
         signReader = new SignReaderWindow();
         windows.AddWindow(signReader);
+        statusBar = new StatusBar();
+        windows.AddWindow(statusBar);
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
@@ -126,6 +131,7 @@ public sealed class Plugin : IDalamudPlugin
         overlay.Dispose();
         signOverlay.Dispose();
         signReader.Dispose();
+        statusBar.Dispose();
         Scene.Dispose();
         PopupFont.Dispose();
         Images.Dispose();
