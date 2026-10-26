@@ -57,7 +57,7 @@ public sealed class IconPicker
             foreach (var c in cats) if (ImGui.Selectable(c, c == category)) category = c;
             ImGui.EndCombo();
         }
-        ImGui.BeginChild("curlist", new Vector2(0, 0));
+        ImGui.BeginChild("curlist", new Vector2(440f, 300f));
         var shown = 0;
         foreach (var i in list.Where(i => category == "All" || i.Category == category))
             if (IconCell(i.Icon, i.Label.Length > 0 ? i.Label : i.Icon, ref shown)) break;
@@ -72,7 +72,7 @@ public sealed class IconPicker
         ImGui.SameLine(); ImGui.SetNextItemWidth(90f); ImGui.InputInt("##goto", ref goTo, 0);
         ImGui.SameLine(); if (ImGui.Button("Go") && goTo >= 0) browseStart = goTo / 100 * 100;
         ImGui.Text($"Showing {browseStart} to {browseStart + 99}");
-        ImGui.BeginChild("browselist", new Vector2(0, 0));
+        ImGui.BeginChild("browselist", new Vector2(440f, 300f));
         var shown = 0;
         for (var id = browseStart; id < browseStart + 100; id++)
             if (IconCell("game:" + id, "Icon " + id, ref shown)) break;
