@@ -2,7 +2,10 @@ name: Build plugin
 on:
   push:
     branches: [ main ]
+    paths-ignore: [ 'repo.json' ]
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,6 +26,7 @@ jobs:
         run: |
           ZIP=$(find KinshipPlugin/bin -name latest.zip | head -1)
           echo "Found package: $ZIP"
+          cp "$ZIP" latest.zip
           mkdir -p out/KinshipPlugin
           unzip -q "$ZIP" -d out/KinshipPlugin
           ls -la out/KinshipPlugin
@@ -30,3 +34,51 @@ jobs:
         with:
           name: KinshipPlugin
           path: out/KinshipPlugin
+      - name: Publish the installable package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest latest.zip --title "Latest build" --notes "Installed and updated through the custom repo link. Nothing to download here by hand." --target "$GITHUB_SHA"
+      - name: Update repo.json
+        run: |
+          cat > make_repo_json.py <<'PYEOF'
+          """Builds repo.json (the file Dalamud reads) from the plugin package the SDK just made."""
+          import json, sys, time, zipfile
+
+          zip_path, out_path = sys.argv[1], sys.argv[2]
+          OWNER_REPO = "The-Kinship/kinship-plugin"
+
+          with zipfile.ZipFile(zip_path) as z:
+              name = next(n for n in z.namelist() if n.endswith("KinshipPlugin.json"))
+              manifest = json.loads(z.read(name).decode("utf-8-sig"))
+
+          download = f"https://github.com/{OWNER_REPO}/releases/download/latest/latest.zip"
+          entry = {
+              "Author": manifest.get("Author", "The Kinship"),
+              "Name": manifest.get("Name", "The Kinship"),
+              "InternalName": manifest.get("InternalName", "KinshipPlugin"),
+              "AssemblyVersion": manifest["AssemblyVersion"],
+              "Punchline": manifest.get("Punchline", ""),
+              "Description": manifest.get("Description", ""),
+              "ApplicableVersion": manifest.get("ApplicableVersion", "any"),
+              "RepoUrl": manifest.get("RepoUrl", f"https://github.com/{OWNER_REPO}"),
+              "Tags": manifest.get("Tags", []),
+              "DalamudApiLevel": manifest["DalamudApiLevel"],
+              "IsHide": False,
+              "IsTestingExclusive": False,
+              "LastUpdate": int(time.time()),
+              "DownloadLinkInstall": download,
+              "DownloadLinkTesting": download,
+              "DownloadLinkUpdate": download,
+          }
+          with open(out_path, "w", encoding="utf-8") as f:
+              json.dump([entry], f, indent=2)
+          print(json.dumps(entry, indent=2))
+          PYEOF
+          python3 make_repo_json.py latest.zip repo.json
+          rm make_repo_json.py
+          git config user.name "kinship-build"
+          git config user.email "actions@users.noreply.github.com"
+          git add repo.json
+          git diff --cached --quiet || (git commit -m "Update repo.json" && git push)
