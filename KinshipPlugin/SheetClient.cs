@@ -23,6 +23,8 @@ public static class SheetClient
 
     public sealed record SectRow(string Sect, string Section, string Title, string Text, double Order);
 
+    public sealed record Person(string Name, string Sect, string Rank, string Race, string Age, string Bio, string Portrait, string Carrd, double Order);
+
     public sealed record Plot(string Title, string Summary, double Order);
 
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(15) };
@@ -88,6 +90,29 @@ public static class SheetClient
             var order = double.TryParse(Cell(r, Ix("order")), System.Globalization.NumberStyles.Float,
                 System.Globalization.CultureInfo.InvariantCulture, out var o) ? o : 999;
             result.Add(new SectRow(sect, section, Cell(r, Ix("title")), Cell(r, Ix("text")), order));
+        }
+        return result;
+    }
+
+    /// <summary>The Roster tab: name, sect, rank, race, age, bio, portrait, carrd_url, status, order. Rows marked hidden are skipped.</summary>
+    public static async Task<List<Person>> FetchRosterAsync(string url)
+    {
+        var rows = await FetchCsvAsync(url).ConfigureAwait(false);
+        var result = new List<Person>();
+        if (rows.Count == 0) return result;
+        var head = rows[0].ConvertAll(h => h.Trim().ToLowerInvariant());
+        int Ix(string n) => head.IndexOf(n);
+        string Cell(List<string> r, int i) => i >= 0 && i < r.Count ? r[i].Trim() : "";
+        for (var i = 1; i < rows.Count; i++)
+        {
+            var r = rows[i];
+            var name = Cell(r, Ix("name"));
+            if (name.Length == 0) continue;
+            if (Cell(r, Ix("status")).Equals("hidden", StringComparison.OrdinalIgnoreCase)) continue;
+            var order = double.TryParse(Cell(r, Ix("order")), System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var o) ? o : 999;
+            result.Add(new Person(name, Cell(r, Ix("sect")), Cell(r, Ix("rank")), Cell(r, Ix("race")), Cell(r, Ix("age")),
+                Cell(r, Ix("bio")), Cell(r, Ix("portrait")), Cell(r, Ix("carrd_url")), order));
         }
         return result;
     }

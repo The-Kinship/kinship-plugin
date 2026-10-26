@@ -17,6 +17,7 @@ public sealed class MainWindow : Window, IDisposable
     private readonly SectsTab sects = new();
     private readonly CombatTab combat = new();
     private readonly RpTab rp = new();
+    private readonly RosterTab roster = new();
 
     public MainWindow() : base("The Kinship##KinshipMain", ImGuiWindowFlags.None)
     {
@@ -68,10 +69,11 @@ public sealed class MainWindow : Window, IDisposable
     {
         var (f, p, s) = Plugin.Data.Snapshot();
 
-        if (ImGui.BeginTabBar("kinship_tabs"))
+        if (ImGui.BeginTabBar("kinship_tabs", ImGuiTabBarFlags.FittingPolicyScroll))
         {
             if (ImGui.BeginTabItem("Home")) { DrawHome(f); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("About")) { AboutTab.Draw(); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Roster")) { roster.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Announcements")) { DrawAnnouncements(f); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Plots")) { DrawPlots(p); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Sects")) { sects.Draw(); ImGui.EndTabItem(); }
