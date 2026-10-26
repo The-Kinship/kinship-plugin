@@ -190,7 +190,7 @@ public sealed class ItemsTab
     private void DrawForm(ItemsSnap s)
     {
         var gift = mode == Mode.Gift;
-        ImGui.TextColored(Gold, gift ? "Gift an item (DM)" : editingId == null ? "Create an item" : "Edit item");
+        ImGui.TextColored(Gold, gift ? "Gift an item (Advocate)" : editingId == null ? "Create an item" : "Edit item");
         ImGui.Spacing();
         if (gift)
         {
@@ -241,11 +241,11 @@ public sealed class ItemsTab
         if (ok) mode = Mode.Inventory;
     }
 
-    // ---------- DM tools (leader and officers) ----------
+    // ---------- Advocate tools (leader and officers) ----------
     private void DrawDmTools()
     {
-        if (!ImGui.CollapsingHeader("DM tools")) return;
-        ImGui.TextWrapped("For the leader and officers. Uses the creation password.");
+        if (!ImGui.CollapsingHeader("Advocate tools")) return;
+        ImGui.TextWrapped("For the Harbinger and the Advocates. Uses the creation password.");
         UiUtil.CreatePasswordInput();
         var d = Plugin.Items.AdminSnapshot();
         if (d.Error.Length > 0) ImGui.TextColored(Red, d.Error);
