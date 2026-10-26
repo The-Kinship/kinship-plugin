@@ -18,6 +18,7 @@ public sealed class ItemView
     public string Description { get; set; } = ""; public string Flavor { get; set; } = ""; public string UseLabel { get; set; } = "";
     public string? UseText { get; set; } public bool Consumable { get; set; } public bool CanEdit { get; set; }
     public string? Owner { get; set; } public string? Creator { get; set; }
+    public string Requires { get; set; } = ""; public bool RequiresConsume { get; set; } public int Holds { get; set; }
 }
 public sealed class ItemReply
 {
@@ -26,11 +27,12 @@ public sealed class ItemReply
     public string? Text { get; set; } public bool Consumed { get; set; } public string? Error { get; set; }
     public List<StashView>? Stashes { get; set; } public StashView? Stash { get; set; } public List<ItemView>? StashItems { get; set; }
     public List<SignView>? Signs { get; set; } public SignView? Sign { get; set; }
+    public List<string>? Gained { get; set; } public string? KeyUsed { get; set; }
 }
 public sealed class ItemForm
 {
-    public string Name = "", Icon = "", Description = "", Flavor = "", UseLabel = "", UseText = "";
-    public bool Consumable;
+    public string Name = "", Icon = "", Description = "", Flavor = "", UseLabel = "", UseText = "", Requires = "";
+    public bool Consumable, RequiresConsume;
 }
 public sealed record ItemsSnap(bool SignedIn, string Name, int Capacity, List<ItemView> Items, List<string> Members, string Error, string Notice, bool Busy, string Recovery);
 
@@ -194,12 +196,12 @@ public sealed class ItemsState
         var r = await RunAdmin(pw => SendAsync(HttpMethod.Post, "/items/admin/grant", new
         {
             adminPassword = pw, to, name = f.Name.Trim(), icon = f.Icon, description = f.Description.Trim(), flavor = f.Flavor.Trim(),
-            useLabel = f.UseLabel.Trim(), useText = f.UseText.Trim(), consumable = f.Consumable
+            useLabel = f.UseLabel.Trim(), useText = f.UseText.Trim(), requires = f.Requires.Trim(), requiresConsume = f.RequiresConsume, consumable = f.Consumable
         }), $"Gift sent to {to}.").ConfigureAwait(false);
         return r != null;
     }
 
-    private static object Body(ItemForm f) => new { name = f.Name.Trim(), icon = f.Icon, description = f.Description.Trim(), flavor = f.Flavor.Trim(), useLabel = f.UseLabel.Trim(), useText = f.UseText.Trim(), consumable = f.Consumable };
+    private static object Body(ItemForm f) => new { name = f.Name.Trim(), icon = f.Icon, description = f.Description.Trim(), flavor = f.Flavor.Trim(), useLabel = f.UseLabel.Trim(), useText = f.UseText.Trim(), requires = f.Requires.Trim(), requiresConsume = f.RequiresConsume, consumable = f.Consumable };
 
     public async Task<bool> CreateAsync(ItemForm f)
     {
@@ -218,7 +220,21 @@ public sealed class ItemsState
     public async Task UseAsync(string id)
     {
         var r = await Run(() => SendAsync(HttpMethod.Post, $"/items/{id}/use", new { })).ConfigureAwait(false);
-        if (r?.Text != null) _ = Plugin.Framework.RunOnFrameworkThread(() => Plugin.Scene.ShowLocal(r.Text));
+        if (r?.Text == null) return;
+        var text = r.Text;
+        if (r.Gained is { Count: > 0 }) text += "\n\nYou receive: " + string.Join(", ", r.Gained) + ".";
+        if (!string.IsNullOrEmpty(r.KeyUsed)) text += "\n\n(" + r.KeyUsed + " was used up.)";
+        _ = Plugin.Framework.RunOnFrameworkThread(() => Plugin.Scene.ShowLocal(text));
+    }
+    public async Task SealAsync(string id, string itemId)
+    {
+        var r = await Run(() => SendAsync(HttpMethod.Post, $"/items/{id}/seal", new { itemId })).ConfigureAwait(false);
+        if (r != null) lock (gate) { notice = "Put inside."; }
+    }
+    public async Task UnsealAsync(string id)
+    {
+        var r = await Run(() => SendAsync(HttpMethod.Post, $"/items/{id}/unseal", new { })).ConfigureAwait(false);
+        if (r != null) lock (gate) { notice = "Taken out."; }
     }
 }
 

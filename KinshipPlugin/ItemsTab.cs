@@ -28,7 +28,7 @@ public sealed class ItemsTab
     private string? editingId;
 
     // actions
-    private ItemView? giving;
+    private ItemView? giving, sealing;
     private string giveTo = "";
     private string? confirmDelete;
 
@@ -107,6 +107,8 @@ public sealed class ItemsTab
                 {
                     if (it.UseLabel.Length > 0 && ImGui.MenuItem(it.UseLabel)) _ = Plugin.Items.UseAsync(it.Id);
                     if (it.CanEdit && ImGui.MenuItem("Edit")) StartEdit(it);
+                    if (it.CanEdit && it.UseLabel.Length > 0 && ImGui.MenuItem("Put an item inside...")) { sealing = it; giving = null; confirmDelete = null; }
+                    if (it.CanEdit && it.Holds > 0 && ImGui.MenuItem("Take out what's inside")) _ = Plugin.Items.UnsealAsync(it.Id);
                     if (ImGui.MenuItem("Give to...")) { giving = it; giveTo = ""; confirmDelete = null; _ = Plugin.Items.LoadMembersAsync(); }
                     if (ImGui.MenuItem("Delete")) { confirmDelete = it.Id; giving = null; }
                     ImGui.EndPopup();
@@ -134,6 +136,7 @@ public sealed class ItemsTab
             }
         }
         if (giving != null) DrawGive(s);
+        if (sealing != null) DrawSeal(s);
 
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         var full = s.Items.Count >= s.Capacity;
@@ -173,6 +176,21 @@ public sealed class ItemsTab
         ImGui.SameLine(); if (ImGui.Button("Cancel##give")) giving = null;
     }
 
+    private void DrawSeal(ItemsSnap s)
+    {
+        if (sealing == null) return;
+        ImGui.Spacing(); ImGui.TextColored(Gold, $"Put an item inside {sealing.Name}:");
+        ImGui.TextColored(Dim, "Up to 3. They come out when it is used.");
+        var others = s.Items.Where(x => x.Id != sealing.Id).ToList();
+        if (others.Count == 0) ImGui.TextColored(Dim, "You have nothing else to put inside.");
+        foreach (var o in others)
+        {
+            ImGui.Text(o.Name); ImGui.SameLine();
+            if (!s.Busy && ImGui.SmallButton("Put inside##sl" + o.Id)) { _ = Plugin.Items.SealAsync(sealing.Id, o.Id); }
+        }
+        if (ImGui.Button("Done##seal")) sealing = null;
+    }
+
     internal static void DrawTooltip(ItemView it)
     {
         ImGui.BeginTooltip();
@@ -182,6 +200,8 @@ public sealed class ItemsTab
         ImGui.PushTextWrapPos(ImGui.GetFontSize() * 22f);
         if (it.Description.Length > 0) { ImGui.Spacing(); ImGui.TextUnformatted(it.Description); }
         if (it.Flavor.Length > 0) { ImGui.Spacing(); ImGui.TextColored(Dim, "“" + it.Flavor + "”"); }
+        if (it.Requires.Length > 0) { ImGui.Spacing(); ImGui.TextColored(new Vector4(0.95f, 0.65f, 0.35f, 1f), "Needs: " + it.Requires + (it.RequiresConsume ? "  (used up)" : "")); }
+        if (it.Holds > 0) { ImGui.Spacing(); ImGui.TextColored(Gold, it.Holds == 1 ? "Something is inside." : $"{it.Holds} things are inside."); }
         if (it.UseLabel.Length > 0) { ImGui.Spacing(); ImGui.TextColored(Green, "Click to " + it.UseLabel.ToLowerInvariant() + (it.Consumable ? "  (used up)" : "")); }
         ImGui.PopTextWrapPos();
         ImGui.EndTooltip();
@@ -191,7 +211,7 @@ public sealed class ItemsTab
     private void StartCreate() { form = new ItemForm(); editingId = null; mode = Mode.Form; Plugin.Items.ClearMessages(); }
     private void StartEdit(ItemView it)
     {
-        form = new ItemForm { Name = it.Name, Icon = it.Icon, Description = it.Description, Flavor = it.Flavor, UseLabel = it.UseLabel, UseText = it.UseText ?? "", Consumable = it.Consumable };
+        form = new ItemForm { Name = it.Name, Icon = it.Icon, Description = it.Description, Flavor = it.Flavor, UseLabel = it.UseLabel, UseText = it.UseText ?? "", Consumable = it.Consumable, Requires = it.Requires, RequiresConsume = it.RequiresConsume };
         editingId = it.Id; mode = Mode.Form; Plugin.Items.ClearMessages();
     }
 
@@ -228,6 +248,12 @@ public sealed class ItemsTab
         ImGui.TextColored(Dim, "e.g. Eat, Read, Open. Leave blank for an item that can't be used.");
         ImGui.Text("What happens"); ImGui.InputTextMultiline("##fuse", ref form.UseText, 400, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 64f));
         ImGui.Checkbox("Used up when used", ref form.Consumable);
+        ImGui.Spacing();
+        ImGui.SetNextItemWidth(260f); ImGui.InputText("Needs this item##freq", ref form.Requires, 40);
+        ImGui.TextColored(Dim, "Optional. The exact name of another item, like The Harbinger's Key. It must be in the user's inventory to use this.");
+        if (form.Requires.Trim().Length > 0) ImGui.Checkbox("That item is used up too", ref form.RequiresConsume);
+        if (form.Requires.Trim().Length > 0 && form.UseText.Trim().Length == 0) ImGui.TextColored(Red, "Fill in \"What happens\" so there is an action, like Open.");
+        ImGui.TextColored(Dim, "To make something hold other items, save this item first, then right-click it and choose Put an item inside.");
 
         var adm = Plugin.Items.AdminSnapshot();
         if (gift && adm.Error.Length > 0) ImGui.TextColored(Red, adm.Error);
