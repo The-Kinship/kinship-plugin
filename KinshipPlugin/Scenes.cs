@@ -52,6 +52,14 @@ public sealed class SceneState : IDisposable
     }
     public List<Popup> ActivePopups() { lock (gate) { return popups.ToList(); } }
     public List<Popup> RecentPopups() { lock (gate) { return history.AsEnumerable().Reverse().ToList(); } }
+    private int localId;
+    /// <summary>Shows a popup that never touches the server (used when an item is used).</summary>
+    public void ShowLocal(string text)
+    {
+        var popup = new Popup { Id = System.Threading.Interlocked.Decrement(ref localId), Text = text, Ooc = "" };
+        lock (gate) { popups.Add(popup); history.Add(popup); if (history.Count > 20) history.RemoveAt(0); }
+        Plugin.ShowPopups();
+    }
     public void Dismiss(int id) { lock (gate) { popups.RemoveAll(p => p.Id == id); } }
     public void DismissAll() { lock (gate) { popups.Clear(); } }
     private void SetError(string m) { lock (gate) { error = m; } }

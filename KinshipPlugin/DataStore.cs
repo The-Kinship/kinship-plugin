@@ -12,6 +12,7 @@ public sealed class DataStore
     private List<SheetClient.Plot>? plots;
     private List<SheetClient.SectRow>? sectRows;
     private List<SheetClient.Person>? roster;
+    private List<SheetClient.IconEntry> icons = new();
     private string status = "Loading...";
     private Task? current;
 
@@ -20,6 +21,7 @@ public sealed class DataStore
         lock (gate) { return (faction, plots, status); }
     }
 
+    public List<SheetClient.IconEntry> Icons { get { lock (gate) { return icons; } } }
     public List<SheetClient.Person>? Roster { get { lock (gate) { return roster; } } }
 
     public List<SheetClient.SectRow>? SectRows { get { lock (gate) { return sectRows; } } }
@@ -52,6 +54,12 @@ public sealed class DataStore
                 else lock (gate) { roster = null; }
             }
             catch (Exception ex) { Plugin.Log.Warning(ex, "Could not load the roster."); }
+            try
+            {
+                var iconUrl = fd.TryGetValue("icons_csv_url", out var iu) ? iu : "";
+                if (iconUrl.StartsWith("http")) { var list = await SheetClient.FetchIconsAsync(iconUrl).ConfigureAwait(false); lock (gate) { icons = list; } }
+            }
+            catch (Exception ex) { Plugin.Log.Warning(ex, "Could not load the icon list."); }
             try
             {
                 var rows = await SheetClient.FetchSectRowsAsync().ConfigureAwait(false);

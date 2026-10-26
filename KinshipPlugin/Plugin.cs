@@ -26,6 +26,7 @@ public sealed class Plugin : IDalamudPlugin
     internal static ImageCache Images { get; private set; } = null!;
     internal static CombatState Combat { get; private set; } = null!;
     internal static SceneState Scene { get; private set; } = null!;
+    internal static ItemsState Items { get; private set; } = null!;
     internal static IFontHandle PopupFont { get; private set; } = null!;
 
     private static ImageViewerWindow? viewer;
@@ -48,6 +49,7 @@ public sealed class Plugin : IDalamudPlugin
         Images = new ImageCache();
         Combat = new CombatState();
         Scene = new SceneState();
+        Items = new ItemsState();
         PopupFont = PluginInterface.UiBuilder.FontAtlas.NewDelegateFontHandle(e => e.OnPreBuild(tk => tk.AddDalamudDefaultFont(28f)));
 
         main = new MainWindow();

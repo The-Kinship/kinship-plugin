@@ -25,6 +25,8 @@ public static class SheetClient
 
     public sealed record Person(string Name, string Sect, string Rank, string Race, string Age, string Bio, string Portrait, string Carrd, double Order);
 
+    public sealed record IconEntry(string Icon, string Label, string Category);
+
     public sealed record Plot(string Title, string Summary, double Order);
 
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(15) };
@@ -113,6 +115,25 @@ public static class SheetClient
                 System.Globalization.CultureInfo.InvariantCulture, out var o) ? o : 999;
             result.Add(new Person(name, Cell(r, Ix("sect")), Cell(r, Ix("rank")), Cell(r, Ix("race")), Cell(r, Ix("age")),
                 Cell(r, Ix("bio")), Cell(r, Ix("portrait")), Cell(r, Ix("carrd_url")), order));
+        }
+        return result;
+    }
+
+    /// <summary>The Icons tab: icon (a game icon number, or a file name in the website's images/icons folder), label, category.</summary>
+    public static async Task<List<IconEntry>> FetchIconsAsync(string url)
+    {
+        var rows = await FetchCsvAsync(url).ConfigureAwait(false);
+        var result = new List<IconEntry>();
+        if (rows.Count == 0) return result;
+        var head = rows[0].ConvertAll(h => h.Trim().ToLowerInvariant());
+        int Ix(string n) => head.IndexOf(n);
+        string Cell(List<string> r, int i) => i >= 0 && i < r.Count ? r[i].Trim() : "";
+        foreach (var r in rows.GetRange(1, rows.Count - 1))
+        {
+            var raw = Cell(r, Ix("icon"));
+            if (raw.Length == 0) continue;
+            var icon = uint.TryParse(raw, out _) ? "game:" + raw : "site:" + raw;
+            result.Add(new IconEntry(icon, Cell(r, Ix("label")), Cell(r, Ix("category"))));
         }
         return result;
     }
