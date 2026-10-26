@@ -34,6 +34,7 @@ public sealed class ItemReply
     public List<string>? Gained { get; set; } public string? KeyUsed { get; set; }
     public int? Gold { get; set; } public string? To { get; set; } public long? Total { get; set; }
     public string? StatusGained { get; set; } public string? StatusCured { get; set; } public List<StatusView>? Statuses { get; set; }
+    public List<QuestView>? Quests { get; set; } public List<TalkLine>? Results { get; set; }
     public int? Roll { get; set; } public string? Patient { get; set; } public bool? Success { get; set; } public string? Condition { get; set; } public string? Cure { get; set; }
     public string? Combined { get; set; } public List<string>? Used { get; set; } public int? Copies { get; set; }
     public List<BankEntry>? History { get; set; } public List<BankEntry>? Recent { get; set; } public List<BankMember>? Balances { get; set; }

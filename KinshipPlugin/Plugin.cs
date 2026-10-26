@@ -22,6 +22,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IFramework Framework { get; private set; } = null!;
     [PluginService] internal static IObjectTable ObjectTable { get; private set; } = null!;
     [PluginService] internal static ICondition Condition { get; private set; } = null!;
+    [PluginService] internal static ITargetManager TargetManager { get; private set; } = null!;
     [PluginService] internal static IGameGui GameGui { get; private set; } = null!;
     [PluginService] internal static IDataManager GameData { get; private set; } = null!;
 
@@ -35,6 +36,7 @@ public sealed class Plugin : IDalamudPlugin
     internal static SignState Signs { get; private set; } = null!;
     internal static BankState Bank { get; private set; } = null!;
     internal static StatusState Status { get; private set; } = null!;
+    internal static QuestState Quests { get; private set; } = null!;
     internal static IFontHandle PopupFont { get; private set; } = null!;
 
     private static ImageViewerWindow? viewer;
@@ -66,6 +68,7 @@ public sealed class Plugin : IDalamudPlugin
         Signs = new SignState();
         Bank = new BankState();
         Status = new StatusState();
+        Quests = new QuestState();
         PopupFont = PluginInterface.UiBuilder.FontAtlas.NewDelegateFontHandle(e => e.OnPreBuild(tk => tk.AddDalamudDefaultFont(28f)));
 
         main = new MainWindow();

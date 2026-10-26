@@ -37,6 +37,7 @@ public sealed class ItemsTab
     private readonly SignsTab signTab = new();
     private readonly BankTab bankTab = new();
     private readonly StatusTab statusTab = new();
+    private readonly QuestsTab questsTab = new();
     private string? confirmAdminDelete, confirmAdminRemove, confirmAdminStash;
     private string giftRecipient = "", giftStashId = "", giftStashName = "";
     private int giftCopies = 1;
@@ -57,6 +58,7 @@ public sealed class ItemsTab
             if (ImGui.BeginTabItem("Signs")) { signTab.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Status")) { statusTab.Draw(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Bank")) { bankTab.Draw(s); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Quests")) { questsTab.Draw(s); ImGui.EndTabItem(); }
             ImGui.EndTabBar();
         }
     }
