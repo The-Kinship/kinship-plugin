@@ -19,7 +19,7 @@ public sealed class QuestWindow : Window, IDisposable
         RespectCloseHotkey = false;
         IsOpen = true;
         BgAlpha = 0.7f;
-        Size = new Vector2(300f, 220f);
+        Size = new Vector2(340f, 240f);
         SizeCondition = ImGuiCond.FirstUseEver;
         SizeConstraints = new WindowSizeConstraints { MinimumSize = new Vector2(220f, 120f), MaximumSize = new Vector2(700f, 900f) };
     }
@@ -48,7 +48,7 @@ public sealed class QuestWindow : Window, IDisposable
         var active = Plugin.Quests.Active();
 
         // The action bar is pinned to the bottom; the quests scroll above it.
-        var barHeight = 56f;
+        var barHeight = 64f;
         if (ImGui.BeginChild("##questlist", new Vector2(0f, Math.Max(40f, ImGui.GetContentRegionAvail().Y - barHeight))))
         {
             foreach (var q in active)
@@ -59,6 +59,13 @@ public sealed class QuestWindow : Window, IDisposable
                 {
                     ImGui.PushTextWrapPos(0f);
                     ImGui.TextUnformatted(QuestsTab.Objective(q.Current));
+                    if (q.Current.Place != null)
+                    {
+                        var d = q.Current.Place.Distance();
+                        if (d == null) ImGui.TextColored(Dim, "Not in this zone.");
+                        else if (d <= QuestState.ActionRange) ImGui.TextColored(Green, QuestState.Phrase(q.Current.Type));
+                        else ImGui.TextColored(Dim, $"{d:0} yalms away");
+                    }
                     if (q.Current.Hint.Length > 0) ImGui.TextColored(Dim, q.Current.Hint);
                     ImGui.PopTextWrapPos();
                 }
@@ -74,7 +81,14 @@ public sealed class QuestWindow : Window, IDisposable
         if (!can) ImGui.BeginDisabled();
         if (ImGui.Button("Speak##qw")) _ = Plugin.Quests.TalkAsync(target);
         if (!can) ImGui.EndDisabled();
-        ImGui.SameLine();
+        foreach (var (type, label) in new[] { ("look", "Look"), ("listen", "Listen"), ("search", "Search") })
+        {
+            ImGui.SameLine();
+            var ready = !s.Busy && Plugin.Quests.Ready(type);
+            if (!ready) ImGui.BeginDisabled();
+            if (ImGui.Button(label + "##qw" + type)) _ = Plugin.Quests.ActAsync(type);
+            if (!ready) ImGui.EndDisabled();
+        }
         ImGui.TextColored(target.Length > 0 ? Gold : Dim, target.Length > 0 ? target : "Target someone to speak");
         if (s.Error.Length > 0) ImGui.TextColored(Red, s.Error);
     }
@@ -112,11 +126,11 @@ public sealed class QuestReplyWindow : Window, IDisposable
         if (t == null) return;
         ImGui.PushTextWrapPos(ImGui.GetFontSize() * 26f);
         if (t.Error.Length > 0) ImGui.TextColored(Red, t.Error);
-        else if (t.Lines.Count == 0) ImGui.TextUnformatted($"{t.Npc} has nothing to say to you right now.");
+        else if (t.Lines.Count == 0) ImGui.TextUnformatted(t.Npc.Length > 0 ? $"{t.Npc} has nothing to say to you right now." : "You find nothing of note here.");
         else
             foreach (var l in t.Lines)
             {
-                ImGui.TextColored(Gold, t.Npc + "  ·  " + l.Quest);
+                ImGui.TextColored(Gold, t.Npc.Length > 0 ? t.Npc + "  ·  " + l.Quest : l.Quest);
                 ImGui.TextUnformatted(l.Text);
                 if (l.Gained != null) foreach (var g in l.Gained) ImGui.TextColored(Green, "You received: " + g);
                 if (l.Ok && l.Finished) ImGui.TextColored(Green, "Quest complete!");

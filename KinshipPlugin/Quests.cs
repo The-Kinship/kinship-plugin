@@ -6,20 +6,33 @@ using System.Threading.Tasks;
 
 namespace KinshipPlugin;
 
-public sealed class QuestNow { public string Type { get; set; } = ""; public string Npc { get; set; } = ""; public string Item { get; set; } = ""; public string Hint { get; set; } = ""; }
+public sealed class QuestPlace
+{
+    public string Zone { get; set; } = ""; public int Territory { get; set; } public uint Map { get; set; }
+    public float X { get; set; } public float Y { get; set; } public float Z { get; set; }
+    public float MapX { get; set; } public float MapY { get; set; }
+    public float? Distance()
+    {
+        var p = WorldInfo.PlayerPos();
+        if (p == null || Plugin.ClientState.TerritoryType != Territory) return null;
+        return System.Numerics.Vector3.Distance(p.Value, new System.Numerics.Vector3(X, Y, Z));
+    }
+}
+public sealed class QuestNow { public string Type { get; set; } = ""; public string Npc { get; set; } = ""; public string Item { get; set; } = ""; public string Hint { get; set; } = ""; public QuestPlace? Place { get; set; } }
 public sealed class QuestGift { public string Name { get; set; } = ""; public string Icon { get; set; } = ""; public string Description { get; set; } = ""; public string Flavor { get; set; } = ""; }
 public sealed class QuestStepView
 {
     public string Type { get; set; } = "talk"; public string Npc { get; set; } = ""; public string Text { get; set; } = ""; public string Hint { get; set; } = "";
-    public string Item { get; set; } = ""; public QuestGift? Gift { get; set; }
+    public string Item { get; set; } = ""; public QuestGift? Gift { get; set; } public QuestPlace? Place { get; set; } public bool Once { get; set; }
 }
 public sealed class QuestPlayer { public string Name { get; set; } = ""; public int Step { get; set; } public bool Done { get; set; } }
+public sealed class QuestClaim { public int Step { get; set; } public string Name { get; set; } = ""; }
 /// <summary>One quest. Players get QuestId/Step/Current; Advocates get Id/Steps/Players.</summary>
 public sealed class QuestView
 {
     public string QuestId { get; set; } = ""; public string Id { get; set; } = ""; public string Title { get; set; } = ""; public string Intro { get; set; } = "";
     public int Step { get; set; } public int Total { get; set; } public bool Done { get; set; } public QuestNow? Current { get; set; }
-    public List<QuestStepView>? Steps { get; set; } public List<QuestPlayer>? Players { get; set; }
+    public List<QuestStepView>? Steps { get; set; } public List<QuestPlayer>? Players { get; set; } public List<QuestClaim>? Claims { get; set; }
 }
 public sealed class TalkLine { public string Quest { get; set; } = ""; public bool Ok { get; set; } public string Text { get; set; } = ""; public bool Finished { get; set; } public List<string>? Gained { get; set; } }
 public sealed record TalkResult(string Npc, List<TalkLine> Lines, string Error);
@@ -28,6 +41,8 @@ public sealed record TalkResult(string Npc, List<TalkLine> Lines, string Error);
 public sealed class StepForm
 {
     public string Type = "talk", Npc = "", Text = "", Hint = "", Item = "", GiftName = "", GiftIcon = "game:20001", GiftDesc = "";
+    public Spot? Place; public bool Once;
+    public bool AtSpot => Type == "look" || Type == "listen" || Type == "search";
 }
 public sealed class QuestForm
 {
@@ -40,6 +55,11 @@ public sealed record QuestSnap(List<QuestView> Mine, List<QuestView> Admin, stri
 public sealed class QuestState
 {
     public const int MaxSteps = 12;
+    public const float ActionRange = 8f;   // how close you must be for the words to show and the buttons to work
+
+    public static string Phrase(string type) => type == "listen" ? "You hear something..." : type == "search" ? "Something may be hidden here..." : "You notice something...";
+    /// <summary>True when one of your quests is waiting on this action and you are standing near its spot.</summary>
+    public bool Ready(string type) => Active().Any(q => q.Current is { Place: not null } c && c.Type == type && c.Place.Distance() is { } d && d <= ActionRange);
     private readonly object gate = new();
     private List<QuestView> mine = new(), admin = new();
     private string error = "", notice = "";
@@ -69,12 +89,17 @@ public sealed class QuestState
         catch (Exception) { /* keep what we have */ }
     }
 
-    public async Task TalkAsync(string npc)
+    /// <summary>Look, listen or search where you are standing. The server checks the zone and what your step needs.</summary>
+    public Task ActAsync(string type) => TalkAsync("", type);
+
+    public async Task TalkAsync(string npc, string? type = null)
     {
         lock (gate) { if (busy) return; busy = true; error = ""; notice = ""; }
         try
         {
-            var r = await ItemsState.SendAsync(HttpMethod.Post, "/quests/talk", new { npc }).ConfigureAwait(false);
+            var r = type == null
+                ? await ItemsState.SendAsync(HttpMethod.Post, "/quests/talk", new { npc }).ConfigureAwait(false)
+                : await ItemsState.SendAsync(HttpMethod.Post, "/quests/act", new { type, territory = (int)Plugin.ClientState.TerritoryType }).ConfigureAwait(false);
             lock (gate) { talk = new TalkResult(npc, r.Results ?? new(), ""); }
         }
         catch (CombatException ex) { lock (gate) { talk = new TalkResult(npc, new(), ex.Message); } }
@@ -108,13 +133,20 @@ public sealed class QuestState
         {
             var d = new Dictionary<string, object?> { ["type"] = s.Type, ["npc"] = s.Npc.Trim(), ["text"] = s.Text.Trim(), ["hint"] = s.Hint.Trim() };
             if (s.Type == "give") d["item"] = s.Item.Trim();
-            if (s.Type == "receive") d["gift"] = new Dictionary<string, object?> { ["name"] = s.GiftName.Trim(), ["icon"] = s.GiftIcon, ["description"] = s.GiftDesc.Trim() };
+            if (s.AtSpot && s.Place != null)
+                d["place"] = new Dictionary<string, object?> { ["zone"] = s.Place.Zone, ["territory"] = (int)s.Place.Territory, ["map"] = (int)s.Place.Map, ["x"] = s.Place.Pos.X, ["y"] = s.Place.Pos.Y, ["z"] = s.Place.Pos.Z, ["mapX"] = s.Place.MapX, ["mapY"] = s.Place.MapY };
+            if ((s.Type == "receive" || s.Type == "search") && s.GiftName.Trim().Length > 0)
+            {
+                d["gift"] = new Dictionary<string, object?> { ["name"] = s.GiftName.Trim(), ["icon"] = s.GiftIcon, ["description"] = s.GiftDesc.Trim() };
+                d["once"] = s.Once;
+            }
             return d;
         }).ToList();
         var body = new Dictionary<string, object?> { ["title"] = f.Title.Trim(), ["intro"] = f.Intro.Trim(), ["steps"] = steps };
         if (f.Id.Length > 0) body["questId"] = f.Id;
         return Admin("save", Auth(body), "Quest saved.");
     }
+    public Task<bool> AdminResetClaimsAsync(string id) => Admin("reset-claims", Auth(new() { ["questId"] = id }), "Finds reset. They can be taken again.");
     public Task<bool> AdminDeleteAsync(string id) => Admin("delete", Auth(new() { ["questId"] = id }), "Quest deleted.");
     public Task<bool> AdminAssignAsync(string id, string to) => Admin("assign", Auth(new() { ["questId"] = id, ["to"] = to }), $"Quest given to {to}.");
     public Task<bool> AdminUnassignAsync(string id, string to) => Admin("unassign", Auth(new() { ["questId"] = id, ["to"] = to }), $"Quest taken from {to}.");

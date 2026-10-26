@@ -19,10 +19,13 @@ public sealed class QuestsTab
     private bool editing;
     private string assignTo = "", assignQuest = "";
 
-    private static string NameOf(string t) => t == "give" ? "Hand over an item" : t == "receive" ? "They give an item" : "They talk";
+    private static string NameOf(string t) => t == "give" ? "Hand over an item" : t == "receive" ? "They give an item" : t == "look" ? "Look at a spot" : t == "listen" ? "Listen at a spot" : t == "search" ? "Search a spot" : "They talk";
 
     internal static string Objective(QuestNow c) =>
-        c.Type == "give" ? $"Bring {c.Item} to {c.Npc}." : $"Speak to {c.Npc}.";
+        c.Type == "give" ? $"Bring {c.Item} to {c.Npc}."
+        : c.Type == "look" ? "Look around" + Where(c) : c.Type == "listen" ? "Listen" + Where(c) : c.Type == "search" ? "Search" + Where(c)
+        : $"Speak to {c.Npc}.";
+    private static string Where(QuestNow c) => c.Place != null && c.Place.Zone.Length > 0 ? " in " + c.Place.Zone + "." : ".";
 
     public void Draw(ItemsSnap inv)
     {
@@ -86,6 +89,9 @@ public sealed class QuestsTab
             ImGui.TextColored(Gold, q.Title); ImGui.SameLine(); ImGui.TextColored(Dim, $"{q.Steps?.Count ?? 0} steps");
             if (q.Players != null)
                 foreach (var p in q.Players) ImGui.TextColored(p.Done ? Green : Dim, $"   {p.Name}: " + (p.Done ? "finished" : $"on step {p.Step + 1}"));
+            if (q.Claims != null)
+                foreach (var c in q.Claims) ImGui.TextColored(Dim, $"   Step {c.Step + 1} was taken by {c.Name}");
+            if (q.Claims is { Count: > 0 } && !s.Busy) { if (ImGui.SmallButton("Reset taken items##qrc" + q.Id)) _ = Plugin.Quests.AdminResetClaimsAsync(q.Id); ImGui.SameLine(); }
             if (ImGui.SmallButton("Edit##qe" + q.Id)) { form = FormFrom(q); editing = true; }
             ImGui.SameLine();
             if (!s.Busy && ImGui.SmallButton("Delete##qd" + q.Id)) _ = Plugin.Quests.AdminDeleteAsync(q.Id);
@@ -132,7 +138,7 @@ public sealed class QuestsTab
     }
 
     private static bool StepOk(StepForm s) =>
-        s.Npc.Trim().Length > 0 && s.Text.Trim().Length > 0 && (s.Type != "give" || s.Item.Trim().Length > 0) && (s.Type != "receive" || (s.GiftName.Trim().Length > 0 && s.GiftIcon.Length > 0));
+        s.Text.Trim().Length > 0 && (s.AtSpot ? s.Place != null : s.Npc.Trim().Length > 0) && (s.Type != "give" || s.Item.Trim().Length > 0) && (s.Type != "receive" || (s.GiftName.Trim().Length > 0 && s.GiftIcon.Length > 0));
 
     private void DrawStep(StepForm st, int i)
     {
@@ -143,21 +149,37 @@ public sealed class QuestsTab
         ImGui.SetNextItemWidth(220f);
         if (ImGui.BeginCombo($"Kind##qk{i}", NameOf(st.Type)))
         {
-            foreach (var t in new[] { "talk", "receive", "give" }) if (ImGui.Selectable(NameOf(t), st.Type == t)) st.Type = t;
+            foreach (var t in new[] { "talk", "receive", "give", "look", "listen", "search" }) if (ImGui.Selectable(NameOf(t), st.Type == t)) st.Type = t;
             ImGui.EndCombo();
         }
-        ImGui.SetNextItemWidth(220f); ImGui.InputText($"Character name##qn{i}", ref st.Npc, 40);
-        ImGui.TextColored(Dim, "Exactly as it shows when you target them in the game.");
-        if (st.Type == "give") { ImGui.SetNextItemWidth(220f); ImGui.InputText($"Item to hand over##qi{i}", ref st.Item, 40); ImGui.TextColored(Dim, "Must be an item an Advocate gave out. It is used up."); }
-        ImGui.Text(st.Type == "give" ? "What they say when given it" : "What they say"); ImGui.InputTextMultiline($"##qt{i}", ref st.Text, 600, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 52f));
-        ImGui.SetNextItemWidth(300f); ImGui.InputText($"Hint for the player (optional)##qh{i}", ref st.Hint, 150);
-        if (st.Type == "receive")
+        if (st.AtSpot)
         {
+            var spot = WorldInfo.Current(out var problem);
+            if (st.Place != null) ImGui.TextColored(Green, $"Location set: {st.Place.Zone} ({st.Place.MapX:0.0}, {st.Place.MapY:0.0})"); else ImGui.TextColored(Red, "No location yet.");
+            if (spot == null) ImGui.TextColored(Dim, problem);
+            else
+            {
+                if (ImGui.Button($"Use this location##qul{i}")) st.Place = spot;
+                ImGui.SameLine(); ImGui.TextColored(Dim, "Stand where it happens, then press this.");
+            }
+        }
+        else
+        {
+            ImGui.SetNextItemWidth(220f); ImGui.InputText($"Character name##qn{i}", ref st.Npc, 40);
+            ImGui.TextColored(Dim, "Exactly as it shows when you target them in the game.");
+        }
+        if (st.Type == "give") { ImGui.SetNextItemWidth(220f); ImGui.InputText($"Item to hand over##qi{i}", ref st.Item, 40); ImGui.TextColored(Dim, "Must be an item an Advocate gave out. It is used up."); }
+        ImGui.Text(st.Type == "give" ? "What they say when given it" : st.AtSpot ? "What the player sees, hears or finds" : "What they say"); ImGui.InputTextMultiline($"##qt{i}", ref st.Text, 600, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 52f));
+        ImGui.SetNextItemWidth(300f); ImGui.InputText($"Hint for the player (optional)##qh{i}", ref st.Hint, 150);
+        if (st.Type == "receive" || st.Type == "search")
+        {
+            if (st.Type == "search") ImGui.TextColored(Dim, "Optional: something they find and keep. Leave the name empty to find nothing.");
             var wrap = ItemIcons.Wrap(st.GiftIcon);
             if (wrap != null) { ImGui.Image(wrap.Handle, new Vector2(32f, 32f)); ImGui.SameLine(); }
             if (ImGui.SmallButton($"Choose item icon##qgi{i}")) { var step = st; picker.Open(v => step.GiftIcon = v); }
             ImGui.SetNextItemWidth(220f); ImGui.InputText($"Item they give##qgn{i}", ref st.GiftName, 40);
             ImGui.SetNextItemWidth(300f); ImGui.InputText($"Item description##qgd{i}", ref st.GiftDesc, 300);
+            ImGui.Checkbox($"Only the first person to get it##qo{i}", ref st.Once);
         }
         ImGui.Unindent();
     }
@@ -166,7 +188,8 @@ public sealed class QuestsTab
     {
         var f = new QuestForm { Id = q.Id, Title = q.Title, Intro = q.Intro, Steps = new() };
         foreach (var s in q.Steps ?? new())
-            f.Steps.Add(new StepForm { Type = s.Type, Npc = s.Npc, Text = s.Text, Hint = s.Hint, Item = s.Item, GiftName = s.Gift?.Name ?? "", GiftIcon = s.Gift?.Icon is { Length: > 0 } ic ? ic : "game:20001", GiftDesc = s.Gift?.Description ?? "" });
+            f.Steps.Add(new StepForm { Type = s.Type, Npc = s.Npc, Text = s.Text, Hint = s.Hint, Item = s.Item, GiftName = s.Gift?.Name ?? "", GiftIcon = s.Gift?.Icon is { Length: > 0 } ic ? ic : "game:20001", GiftDesc = s.Gift?.Description ?? "", Once = s.Once,
+                Place = s.Place == null ? null : new Spot((uint)s.Place.Territory, s.Place.Map, new Vector3(s.Place.X, s.Place.Y, s.Place.Z), s.Place.Zone, s.Place.MapX, s.Place.MapY) });
         if (f.Steps.Count == 0) f.Steps.Add(new StepForm());
         return f;
     }
