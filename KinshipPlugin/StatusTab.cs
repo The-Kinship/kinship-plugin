@@ -26,6 +26,7 @@ public sealed class StatusTab
         Plugin.Status.RefreshIfDue(15);
         var s = Plugin.Status.Snapshot();
         var mine = s.All.Where(x => x.Mine).ToList();
+        var mineReal = mine.Count(x => !x.IsCombined);
 
         ImGui.TextColored(Gold, "Statuses");
         ImGui.TextWrapped("Buffs and debuffs your character has. Everyone can see everyone's. Items can give or remove them, and you can add little ones for yourself.");
@@ -36,12 +37,12 @@ public sealed class StatusTab
         else if (s.Notice.Length > 0) ImGui.TextColored(Green, s.Notice);
         ImGui.Spacing();
 
-        ImGui.TextColored(Gold, $"Mine ({mine.Count} / {StatusState.Max})");
+        ImGui.TextColored(Gold, $"Mine ({mineReal} / {StatusState.Max})");
         if (mine.Count == 0) ImGui.TextColored(Dim, "None right now.");
         foreach (var st in mine) DrawLine(st, s.Busy, false);
 
         ImGui.Spacing();
-        DrawAddSelf(s, mine.Count);
+        DrawAddSelf(s, mineReal);
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         DrawEveryone(s);
     }
@@ -69,7 +70,7 @@ public sealed class StatusTab
         if (st.Description.Length > 0) { ImGui.PushTextWrapPos(ImGui.GetFontSize() * 28f); ImGui.TextUnformatted(st.Description); ImGui.PopTextWrapPos(); }
         if (st.BonusText().Length > 0) ImGui.TextColored(Gold, st.BonusText());
         if (!busy && st.CanRemove && ImGui.SmallButton("Remove##rm" + st.Id)) _ = Plugin.Status.RemoveAsync(st.Id);
-        else if (!busy && advocate && !st.CanRemove && ImGui.SmallButton("Advocate remove##ar" + st.Id)) _ = Plugin.Status.AdminRemoveAsync(st.Id);
+        else if (!busy && advocate && !st.CanRemove && !st.IsCombined && ImGui.SmallButton("Advocate remove##ar" + st.Id)) _ = Plugin.Status.AdminRemoveAsync(st.Id);
         ImGui.EndGroup();
         if (st.Self && ImGui.IsItemHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Right) && !busy) _ = Plugin.Status.RemoveAsync(st.Id);
         ImGui.Spacing();
