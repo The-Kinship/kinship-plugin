@@ -238,6 +238,20 @@ public sealed class QuestsTab
             ImGui.SetNextItemWidth(300f); ImGui.InputText($"Item description##qgd{i}", ref st.GiftDesc, 300);
             ImGui.Checkbox($"Only the first person to get it##qo{i}", ref st.Once);
         }
+        if (ImGui.CollapsingHeader($"Different text for some players (optional)##qvr{i}"))
+        {
+            ImGui.TextWrapped("Say something else to some players. Match on gender (taken from the roster sheet, not the character's base gender), on a status they have, or both. The first matching version is used. Everyone else hears the normal text above.");
+            for (var j = 0; j < st.Variants.Count; j++)
+            {
+                var v = st.Variants[j];
+                ImGui.SetNextItemWidth(100f); ImGui.InputText($"Gender##qvg{i}_{j}", ref v.Gender, 30);
+                ImGui.SameLine(); ImGui.SetNextItemWidth(130f); ImGui.InputText($"Status##qvs{i}_{j}", ref v.Status, 30);
+                ImGui.SameLine(); if (ImGui.SmallButton($"Remove##qvx{i}_{j}")) { st.Variants.RemoveAt(j); break; }
+                ImGui.SetNextItemWidth(360f); ImGui.InputText($"Says##qvt{i}_{j}", ref v.Text, 600);
+                ImGui.Spacing();
+            }
+            if (st.Variants.Count < 6 && ImGui.SmallButton($"Add a version##qva{i}")) st.Variants.Add(new VariantForm());
+        }
         if (ImGui.CollapsingHeader($"Status options (optional)##qso{i}"))
         {
             ImGui.SetNextItemWidth(220f); ImGui.InputText($"Needs this status##qnd{i}", ref st.Needs, 30);
@@ -272,7 +286,7 @@ public sealed class QuestsTab
             f.StartPlace = new Spot((uint)q.StartPlace.Territory, q.StartPlace.Map, new Vector3(q.StartPlace.X, q.StartPlace.Y, q.StartPlace.Z), q.StartPlace.Zone, q.StartPlace.MapX, q.StartPlace.MapY);
         }
         foreach (var s in q.Steps ?? new())
-            f.Steps.Add(new StepForm { Type = s.Type, Npc = s.Npc, Text = s.Text, Hint = s.Hint, Item = s.Item, GiftName = s.Gift?.Name ?? "", GiftIcon = s.Gift?.Icon is { Length: > 0 } ic ? ic : "game:20001", GiftDesc = s.Gift?.Description ?? "", Once = s.Once, NpcHp = s.Fight?.NpcHp ?? 30, NpcDie = s.Fight?.NpcDie ?? 8, NpcBonus = s.Fight?.NpcBonus ?? 0, PlayerHp = s.Fight?.PlayerHp ?? 30, PlayerDie = s.Fight?.PlayerDie ?? 8, PlayerBonus = s.Fight?.PlayerBonus ?? 0, Needs = s.Needs, NeedText = s.NeedText, TakesNeeded = s.TakesNeeded,
+            f.Steps.Add(new StepForm { Type = s.Type, Npc = s.Npc, Text = s.Text, Hint = s.Hint, Item = s.Item, GiftName = s.Gift?.Name ?? "", GiftIcon = s.Gift?.Icon is { Length: > 0 } ic ? ic : "game:20001", GiftDesc = s.Gift?.Description ?? "", Once = s.Once, NpcHp = s.Fight?.NpcHp ?? 30, NpcDie = s.Fight?.NpcDie ?? 8, NpcBonus = s.Fight?.NpcBonus ?? 0, PlayerHp = s.Fight?.PlayerHp ?? 30, PlayerDie = s.Fight?.PlayerDie ?? 8, PlayerBonus = s.Fight?.PlayerBonus ?? 0, Needs = s.Needs, NeedText = s.NeedText, TakesNeeded = s.TakesNeeded, Variants = (s.Variants ?? new()).Select(v => new VariantForm { Gender = v.Gender, Status = v.Status, Text = v.Text }).ToList(),
                 GrantName = s.Grants?.Name ?? "", GrantDesc = s.Grants?.Description ?? "", GrantIcon = s.Grants?.Icon is { Length: > 0 } gi ? gi : "game:10205", GrantMinutes = s.Grants?.Minutes ?? 0, GrantDebuff = s.Grants?.IsDebuff ?? false,
                 Place = s.Place == null ? null : new Spot((uint)s.Place.Territory, s.Place.Map, new Vector3(s.Place.X, s.Place.Y, s.Place.Z), s.Place.Zone, s.Place.MapX, s.Place.MapY) });
         if (f.Steps.Count == 0) f.Steps.Add(new StepForm());

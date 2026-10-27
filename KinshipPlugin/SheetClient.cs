@@ -23,7 +23,7 @@ public static class SheetClient
 
     public sealed record SectRow(string Sect, string Section, string Title, string Text, double Order);
 
-    public sealed record Person(string Name, string Sect, string Rank, string Race, string Age, string Bio, string Portrait, string Carrd, double Order);
+    public sealed record Person(string Name, string Sect, string Rank, string Race, string Age, string Bio, string Portrait, string Carrd, double Order, string Gender = "");
 
     public sealed record IconEntry(string Icon, string Label, string Category);
 
@@ -96,7 +96,7 @@ public static class SheetClient
         return result;
     }
 
-    /// <summary>The Roster tab: name, sect, rank, race, age, bio, portrait, carrd_url, status, order. Rows marked hidden are skipped.</summary>
+    /// <summary>The Roster tab: name, sect, rank, race, age, bio, portrait, carrd_url, gender, status, order. Rows marked hidden are skipped.</summary>
     public static async Task<List<Person>> FetchRosterAsync(string url)
     {
         var rows = await FetchCsvAsync(url).ConfigureAwait(false);
@@ -114,7 +114,7 @@ public static class SheetClient
             var order = double.TryParse(Cell(r, Ix("order")), System.Globalization.NumberStyles.Float,
                 System.Globalization.CultureInfo.InvariantCulture, out var o) ? o : 999;
             result.Add(new Person(name, Cell(r, Ix("sect")), Cell(r, Ix("rank")), Cell(r, Ix("race")), Cell(r, Ix("age")),
-                Cell(r, Ix("bio")), Cell(r, Ix("portrait")), Cell(r, Ix("carrd_url")), order));
+                Cell(r, Ix("bio")), Cell(r, Ix("portrait")), Cell(r, Ix("carrd_url")), order, Cell(r, Ix("gender"))));
         }
         return result;
     }

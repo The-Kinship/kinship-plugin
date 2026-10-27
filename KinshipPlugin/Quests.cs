@@ -30,8 +30,10 @@ public sealed class QuestOffer { public string QuestId { get; set; } = ""; publi
 public sealed class QuestStart { public string QuestId { get; set; } = ""; public QuestPlace Place { get; set; } = new(); }
 public sealed class QuestNow { public string Type { get; set; } = ""; public string Npc { get; set; } = ""; public string Item { get; set; } = ""; public string Hint { get; set; } = ""; public QuestPlace? Place { get; set; } }
 public sealed class QuestGift { public string Name { get; set; } = ""; public string Icon { get; set; } = ""; public string Description { get; set; } = ""; public string Flavor { get; set; } = ""; }
+public sealed class QuestVariant { public string Gender { get; set; } = ""; public string Status { get; set; } = ""; public string Text { get; set; } = ""; }
 public sealed class QuestStepView
 {
+    public List<QuestVariant>? Variants { get; set; }
     public string Type { get; set; } = "talk"; public string Npc { get; set; } = ""; public string Text { get; set; } = ""; public string Hint { get; set; } = "";
     public string Item { get; set; } = ""; public QuestGift? Gift { get; set; } public QuestPlace? Place { get; set; } public bool Once { get; set; } public QuestFightSpec? Fight { get; set; }
     public string Needs { get; set; } = ""; public string NeedText { get; set; } = ""; public bool TakesNeeded { get; set; } public QuestGrant? Grants { get; set; }
@@ -50,8 +52,10 @@ public sealed class TalkLine { public string Quest { get; set; } = ""; public bo
 public sealed record TalkResult(string Npc, List<TalkLine> Lines, string Error);
 
 /// <summary>What the Advocate is typing for one step.</summary>
+public sealed class VariantForm { public string Gender = "", Status = "", Text = ""; }
 public sealed class StepForm
 {
+    public List<VariantForm> Variants = new();
     public string Type = "talk", Npc = "", Text = "", Hint = "", Item = "", GiftName = "", GiftIcon = "game:20001", GiftDesc = "";
     public Spot? Place; public bool Once;
     public int NpcHp = 30, NpcDie = 8, NpcBonus, PlayerHp = 30, PlayerDie = 8, PlayerBonus;
@@ -104,8 +108,8 @@ public sealed class QuestState
         try
         {
             var r = attack
-                ? await ItemsState.SendAsync(HttpMethod.Post, "/quests/fight/attack", new { questId }).ConfigureAwait(false)
-                : await ItemsState.SendAsync(HttpMethod.Post, "/quests/fight/start", new { npc = target, territory = (int)Plugin.ClientState.TerritoryType }).ConfigureAwait(false);
+                ? await ItemsState.SendAsync(HttpMethod.Post, "/quests/fight/attack", new { questId, gender = MyGender() }).ConfigureAwait(false)
+                : await ItemsState.SendAsync(HttpMethod.Post, "/quests/fight/start", new { npc = target, territory = (int)Plugin.ClientState.TerritoryType, gender = MyGender() }).ConfigureAwait(false);
             lock (gate)
             {
                 if (r.Fight != null) fight = r.Fight;
@@ -189,6 +193,20 @@ public sealed class QuestState
     }
 
     /// <summary>Look, listen or search where you are standing. The server checks the zone and what your step needs.</summary>
+    /// <summary>The gender listed for your character on the faction roster (not your character's base gender), or an empty string if there is none.</summary>
+    public static string MyGender()
+    {
+        var people = Plugin.Data.Roster;
+        if (people == null) return "";
+        var registered = Plugin.Config.Me().ItemsName.Trim();
+        var character = Plugin.CharacterName().Trim();
+        static string First(string s) => s.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+        var found = people.FirstOrDefault(p => p.Name.Equals(registered, StringComparison.OrdinalIgnoreCase) || p.Name.Equals(character, StringComparison.OrdinalIgnoreCase))
+            ?? people.FirstOrDefault(p => First(registered).Length > 0 && First(p.Name).Equals(First(registered), StringComparison.OrdinalIgnoreCase))
+            ?? people.FirstOrDefault(p => First(character).Length > 0 && First(p.Name).Equals(First(character), StringComparison.OrdinalIgnoreCase));
+        return found?.Gender.Trim() ?? "";
+    }
+
     public Task ActAsync(string type) => TalkAsync("", type);
 
     public async Task TalkAsync(string npc, string? type = null)
@@ -197,8 +215,8 @@ public sealed class QuestState
         try
         {
             var r = type == null
-                ? await ItemsState.SendAsync(HttpMethod.Post, "/quests/talk", new { npc }).ConfigureAwait(false)
-                : await ItemsState.SendAsync(HttpMethod.Post, "/quests/act", new { type, territory = (int)Plugin.ClientState.TerritoryType }).ConfigureAwait(false);
+                ? await ItemsState.SendAsync(HttpMethod.Post, "/quests/talk", new { npc, gender = MyGender() }).ConfigureAwait(false)
+                : await ItemsState.SendAsync(HttpMethod.Post, "/quests/act", new { type, territory = (int)Plugin.ClientState.TerritoryType, gender = MyGender() }).ConfigureAwait(false);
             lock (gate) { talk = new TalkResult(npc, r.Results ?? new(), ""); }
         }
         catch (CombatException ex) { lock (gate) { talk = new TalkResult(npc, new(), ex.Message); } }
@@ -233,6 +251,8 @@ public sealed class QuestState
         {
             var d = new Dictionary<string, object?> { ["type"] = s.Type, ["npc"] = s.Npc.Trim(), ["text"] = s.Text.Trim(), ["hint"] = s.Hint.Trim() };
             if (s.Type == "give") d["item"] = s.Item.Trim();
+            var alt = s.Variants.Where(v => v.Text.Trim().Length > 0).Select(v => new Dictionary<string, object?> { ["gender"] = v.Gender.Trim(), ["status"] = v.Status.Trim(), ["text"] = v.Text.Trim() }).ToList();
+            if (alt.Count > 0) d["variants"] = alt;
             if (s.Needs.Trim().Length > 0) { d["needs"] = s.Needs.Trim(); d["needText"] = s.NeedText.Trim(); d["takesNeeded"] = s.TakesNeeded; }
             if (s.GrantName.Trim().Length > 0) d["grants"] = new Dictionary<string, object?> { ["name"] = s.GrantName.Trim(), ["icon"] = s.GrantIcon, ["description"] = s.GrantDesc.Trim(), ["minutes"] = s.GrantMinutes, ["isDebuff"] = s.GrantDebuff };
             if (s.Type == "fight")
