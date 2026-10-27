@@ -30,7 +30,7 @@ public sealed class RosterTab
     private static int SectIndex(string sect) { var i = Array.IndexOf(SectData.Order, SectKey(sect)); return i < 0 ? 99 : i; }
 
     /// <summary>Harbinger, then Advocates, then Sect Leaders, then everyone else (the Kin).</summary>
-    private static int RankIndex(string rank)
+    internal static int RankIndex(string rank)
     {
         var t = rank.ToLowerInvariant();
         if (t.Contains("harbinger")) return 0;

@@ -148,7 +148,13 @@ public sealed class SectsTab
 
         List<SheetClient.SectRow> Mine(string section) =>
             rows.Where(r => r.Sect == key && r.Section == section).OrderBy(r => r.Order).ToList();
+        // Who is in this sect comes from the roster, so the count and the list match the real members.
         var members = Mine("member");
+        var roster = Plugin.Data.Roster;
+        if (roster != null)
+            members = roster.Where(p => RosterTab.SectKey(p.Sect) == key)
+                .OrderBy(p => RosterTab.RankIndex(p.Rank)).ThenBy(p => p.Order).ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(p => new SheetClient.SectRow(key, "member", p.Name, p.Rank, p.Order)).ToList();
 
         if (!isCrypt)
         {
