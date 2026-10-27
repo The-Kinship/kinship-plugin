@@ -96,6 +96,10 @@ public sealed class MainWindow : Window, IDisposable
             Plugin.Config.ShowPlotNotice = show;
             Plugin.Config.Save();
         }
+        var bar = Plugin.Config.TopBarButton;
+        if (ImGui.Checkbox("Show the Kinship button in the top bar", ref bar)) { Plugin.Config.TopBarButton = bar; Plugin.Config.Save(); }
+        var stashPop = Plugin.Config.StashPopup;
+        if (ImGui.Checkbox("Show the stash pop-up when I stand on a stash", ref stashPop)) { Plugin.Config.StashPopup = stashPop; Plugin.Config.Save(); }
         ImGui.Spacing();
         var crest = Plugin.Config.CrestHeight;
         if (ImGui.SliderInt("Crest size", ref crest, 60, 400))

@@ -25,6 +25,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static ITargetManager TargetManager { get; private set; } = null!;
     [PluginService] internal static IGameGui GameGui { get; private set; } = null!;
     [PluginService] internal static IDataManager GameData { get; private set; } = null!;
+    [PluginService] internal static IDtrBar DtrBar { get; private set; } = null!;
 
     internal static Configuration Config { get; private set; } = null!;
     internal static DataStore Data { get; private set; } = null!;
@@ -44,6 +45,8 @@ public sealed class Plugin : IDalamudPlugin
     internal static void ShowImage(string file) { viewer?.Show(file); }
 
     private static MainWindow? mainRef;
+    /// <summary>Opens or closes the main window (the top bar button uses this).</summary>
+    internal static void ToggleMainWindow() { mainRef?.Toggle(); }
     /// <summary>Opens the main window (used after joining a combat from an RP popup).</summary>
     internal static void ShowMain() { if (mainRef != null) mainRef.IsOpen = true; }
 
@@ -64,6 +67,9 @@ public sealed class Plugin : IDalamudPlugin
     private readonly QuestReplyWindow questReply;
     private readonly QuestOfferWindow questOffer;
     private readonly QuestFightWindow questFight;
+    private readonly StashReaderWindow stashReader;
+    private readonly TopBarMenu topMenu;
+    private readonly TopBar topBar;
 
     public Plugin()
     {
@@ -109,11 +115,18 @@ public sealed class Plugin : IDalamudPlugin
         questFight = new QuestFightWindow();
         windows.AddWindow(questFight);
 
+        stashReader = new StashReaderWindow();
+        windows.AddWindow(stashReader);
+        topMenu = new TopBarMenu();
+        windows.AddWindow(topMenu);
+        topBar = new TopBar(topMenu);
+
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
             HelpMessage = "Open The Kinship window."
         });
 
+        PluginInterface.UiBuilder.Draw += topBar.Update;
         PluginInterface.UiBuilder.Draw += windows.Draw;
         PluginInterface.UiBuilder.OpenMainUi += ToggleMain;
 
@@ -142,6 +155,7 @@ public sealed class Plugin : IDalamudPlugin
     public void Dispose()
     {
         ClientState.Login -= OnLogin;
+        PluginInterface.UiBuilder.Draw -= topBar.Update;
         PluginInterface.UiBuilder.Draw -= windows.Draw;
         PluginInterface.UiBuilder.OpenMainUi -= ToggleMain;
         CommandManager.RemoveHandler(CommandName);
@@ -160,6 +174,9 @@ public sealed class Plugin : IDalamudPlugin
         questReply.Dispose();
         questOffer.Dispose();
         questFight.Dispose();
+        stashReader.Dispose();
+        topMenu.Dispose();
+        topBar.Dispose();
         Scene.Dispose();
         PopupFont.Dispose();
         Images.Dispose();

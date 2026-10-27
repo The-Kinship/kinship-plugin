@@ -25,7 +25,7 @@ public sealed class StashesTab
     {
         Plugin.Stashes.RefreshIfDue(15);
         var s = Plugin.Stashes.Snapshot();
-        if (s.Open != null) { DrawOpen(s, inv); return; }
+        if (s.Open != null) { DrawOpen(s, inv, false); return; }
 
         ImGui.TextColored(Gold, "Stashes");
         ImGui.TextWrapped("A stash is a spot in the world that holds items. Stand where you want it, name it, and anyone close enough can put things in or take things out.");
@@ -109,10 +109,10 @@ public sealed class StashesTab
     private int goldAmount;
 
     // ---------- an open stash ----------
-    private void DrawOpen(StashSnap s, ItemsSnap inv)
+    internal void DrawOpen(StashSnap s, ItemsSnap inv, bool popup)
     {
         var st = s.Open!;
-        if (ImGui.Button("< All stashes")) { Plugin.Stashes.CloseOpen(); return; }
+        if (ImGui.Button(popup ? "Close##stashpop" : "< All stashes")) { Plugin.Stashes.CloseOpen(); return; }
         ImGui.SameLine(); ImGui.TextColored(Gold, st.Name);
         ImGui.TextColored(Dim, $"{st.Zone}  \u00b7  by {st.OwnerName}  \u00b7  {st.Count}/{st.Capacity}");
         if (s.Error.Length > 0) ImGui.TextColored(Red, s.Error);

@@ -43,6 +43,10 @@ public class Configuration : IPluginConfiguration
     public bool StashLabels { get; set; } = true;
     public bool SignLabels { get; set; } = true;
     public bool StatusBar { get; set; } = true;
+    /// <summary>A small window to open a stash when you stand on it.</summary>
+    public bool StashPopup { get; set; } = true;
+    /// <summary>The little Kinship button in the server info bar at the top of the screen.</summary>
+    public bool TopBarButton { get; set; } = true;
     public bool QuestWindow { get; set; } = true;
 
     public bool ChatEcho { get; set; } = true;
