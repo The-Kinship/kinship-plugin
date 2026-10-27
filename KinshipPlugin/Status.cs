@@ -11,7 +11,8 @@ public sealed class StatusView
 {
     public string Id { get; set; } = ""; public string MemberName { get; set; } = ""; public string Name { get; set; } = "";
     public string Icon { get; set; } = ""; public string Description { get; set; } = ""; public bool IsDebuff { get; set; }
-    public int? SecondsLeft { get; set; } public bool Mine { get; set; } public bool CanRemove { get; set; } public bool Self { get; set; }
+    public int? SecondsLeft { get; set; } public bool Mine { get; set; } public bool CanRemove { get; set; } public bool Self { get; set; } public int AtkBonus { get; set; } public int HealBonus { get; set; }
+    public string BonusText() { var p = new List<string>(); if (AtkBonus != 0) p.Add($"{AtkBonus:+#;-#} to attack rolls"); if (HealBonus != 0) p.Add($"{HealBonus:+#;-#} to heal rolls"); return string.Join(", ", p); }
     [JsonIgnore] public DateTime FetchedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>Seconds left counted down on this computer, or null if it lasts until removed.</summary>
@@ -32,7 +33,7 @@ public sealed class StatusView
 public sealed class StatusForm
 {
     public string Name = "", Description = "", Icon = "";
-    public int Minutes;
+    public int Minutes, Atk, Heal;
     public bool Debuff;
     public string Type = "", Cure = "";   // Advocate only: "sickness" or "curse", and what a diagnosis reveals
 }
@@ -113,6 +114,6 @@ public sealed class StatusState
         if (pw.Length == 0) { lock (gate) { error = "Enter the creation password in the Advocate tools first."; } return Task.FromResult(false); }
         return Exec(() => ItemsState.SendAsync(HttpMethod.Post, path, body), done);
     }
-    public Task<bool> AdminAddAsync(string to, StatusForm f) => Admin("/statuses/admin/add", new { adminPassword = Plugin.Config.CreatePassword, to, name = f.Name.Trim(), description = f.Description.Trim(), icon = f.Icon, minutes = f.Minutes, isDebuff = f.Debuff, statusType = f.Type, cureInfo = f.Cure.Trim() }, $"Status added to {to}.");
+    public Task<bool> AdminAddAsync(string to, StatusForm f) => Admin("/statuses/admin/add", new { adminPassword = Plugin.Config.CreatePassword, to, name = f.Name.Trim(), description = f.Description.Trim(), icon = f.Icon, minutes = f.Minutes, isDebuff = f.Debuff, statusType = f.Type, cureInfo = f.Cure.Trim(), atkBonus = f.Atk, healBonus = f.Heal }, $"Status added to {to}.");
     public Task<bool> AdminRemoveAsync(string id) => Admin("/statuses/admin/remove", new { adminPassword = Plugin.Config.CreatePassword, statusId = id }, "Status removed.");
 }

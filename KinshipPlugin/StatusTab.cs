@@ -63,6 +63,7 @@ public sealed class StatusTab
         ImGui.TextColored(st.IsDebuff ? DebuffColour : BuffColour, st.Name);
         ImGui.SameLine(); ImGui.TextColored(Dim, StatusView.Format(st.Remaining));
         if (st.Description.Length > 0) { ImGui.PushTextWrapPos(ImGui.GetFontSize() * 28f); ImGui.TextUnformatted(st.Description); ImGui.PopTextWrapPos(); }
+        if (st.BonusText().Length > 0) ImGui.TextColored(Gold, st.BonusText());
         if (!busy && st.CanRemove && ImGui.SmallButton("Remove##rm" + st.Id)) _ = Plugin.Status.RemoveAsync(st.Id);
         else if (!busy && advocate && !st.CanRemove && ImGui.SmallButton("Advocate remove##ar" + st.Id)) _ = Plugin.Status.AdminRemoveAsync(st.Id);
         ImGui.EndGroup();
@@ -123,6 +124,10 @@ public sealed class StatusTab
             ImGui.EndCombo();
         }
         IconAndFields(adminForm, "adm");
+        ImGui.SetNextItemWidth(100f); ImGui.InputInt("Attack roll bonus##admatk", ref adminForm.Atk, 1);
+        ImGui.SetNextItemWidth(100f); ImGui.InputInt("Heal roll bonus##admheal", ref adminForm.Heal, 1);
+        adminForm.Atk = Math.Clamp(adminForm.Atk, -5, 5); adminForm.Heal = Math.Clamp(adminForm.Heal, -5, 5);
+        ImGui.TextColored(Dim, "-5 to +5, added to this person's rolls in quest fights and encounters while they have the status. 0 for none.");
         ImGui.SetNextItemWidth(160f);
         if (ImGui.BeginCombo("Kind##admk", adminForm.Type == "sickness" ? "Sickness" : adminForm.Type == "curse" ? "Curse" : "Neither"))
         {

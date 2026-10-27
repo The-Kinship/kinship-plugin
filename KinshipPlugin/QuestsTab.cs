@@ -274,6 +274,9 @@ public sealed class QuestsTab
                 if (st.GrantMinutes < 0) st.GrantMinutes = 0;
                 ImGui.TextColored(Dim, "0 means it lasts until removed.");
                 ImGui.Checkbox($"It is a debuff (bad)##qgsb{i}", ref st.GrantDebuff);
+                ImGui.SetNextItemWidth(100f); ImGui.InputInt($"Attack roll bonus##qgsa{i}", ref st.GrantAtk, 1);
+                ImGui.SetNextItemWidth(100f); ImGui.InputInt($"Heal roll bonus##qgsh{i}", ref st.GrantHeal, 1);
+                st.GrantAtk = Math.Clamp(st.GrantAtk, -5, 5); st.GrantHeal = Math.Clamp(st.GrantHeal, -5, 5);
             }
         }
         ImGui.Unindent();
@@ -289,7 +292,7 @@ public sealed class QuestsTab
         }
         foreach (var s in q.Steps ?? new())
             f.Steps.Add(new StepForm { Type = s.Type, Npc = s.Npc, Text = s.Text, Hint = s.Hint, Item = s.Item, GiftName = s.Gift?.Name ?? "", GiftIcon = s.Gift?.Icon is { Length: > 0 } ic ? ic : "game:20001", GiftDesc = s.Gift?.Description ?? "", Once = s.Once, NpcHp = s.Fight?.NpcHp ?? 30, NpcDie = s.Fight?.NpcDie ?? 8, NpcBonus = s.Fight?.NpcBonus ?? 0, PlayerHp = s.Fight?.PlayerHp ?? 30, PlayerDie = s.Fight?.PlayerDie ?? 8, PlayerBonus = s.Fight?.PlayerBonus ?? 0, Needs = s.Needs, NeedText = s.NeedText, TakesNeeded = s.TakesNeeded, Variants = (s.Variants ?? new()).Select(v => new VariantForm { Gender = v.Gender, Status = v.Status, Text = v.Text }).ToList(),
-                GrantName = s.Grants?.Name ?? "", GrantDesc = s.Grants?.Description ?? "", GrantIcon = s.Grants?.Icon is { Length: > 0 } gi ? gi : "game:10205", GrantMinutes = s.Grants?.Minutes ?? 0, GrantDebuff = s.Grants?.IsDebuff ?? false,
+                GrantName = s.Grants?.Name ?? "", GrantDesc = s.Grants?.Description ?? "", GrantIcon = s.Grants?.Icon is { Length: > 0 } gi ? gi : "game:10205", GrantMinutes = s.Grants?.Minutes ?? 0, GrantDebuff = s.Grants?.IsDebuff ?? false, GrantAtk = s.Grants?.Atk ?? 0, GrantHeal = s.Grants?.Heal ?? 0,
                 Place = s.Place == null ? null : new Spot((uint)s.Place.Territory, s.Place.Map, new Vector3(s.Place.X, s.Place.Y, s.Place.Z), s.Place.Zone, s.Place.MapX, s.Place.MapY) });
         if (f.Steps.Count == 0) f.Steps.Add(new StepForm());
         return f;

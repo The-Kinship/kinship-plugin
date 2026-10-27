@@ -60,6 +60,7 @@ public sealed class StatusBar : Window, IDisposable
                 ImGui.PushTextWrapPos(ImGui.GetFontSize() * 20f);
                 if (s.Description.Length > 0) ImGui.TextUnformatted(s.Description);
                 ImGui.PopTextWrapPos();
+                if (s.BonusText().Length > 0) ImGui.TextColored(Gold, s.BonusText());
                 ImGui.TextColored(Dim, StatusView.Format(s.Remaining));
                 if (s.Self) ImGui.TextColored(Dim, "Right-click to remove");
                 ImGui.EndTooltip();

@@ -288,7 +288,7 @@ public sealed class ItemsTab
         var f = new ItemForm
         {
             Name = it.Name, Icon = it.Icon, Description = it.Description, Flavor = it.Flavor, UseLabel = it.UseLabel, UseText = it.UseText ?? "", Consumable = it.Consumable,
-            Requires = it.Requires, RequiresConsume = it.RequiresConsume, StName = it.StName, StDesc = it.StDesc, StIcon = it.StIcon, StDebuff = it.StDebuff, StMinutes = it.StMinutes, Cures = it.Cures, StType = it.StType, StCure = it.StCure,
+            Requires = it.Requires, RequiresConsume = it.RequiresConsume, StName = it.StName, StDesc = it.StDesc, StIcon = it.StIcon, StDebuff = it.StDebuff, StMinutes = it.StMinutes, StAtk = it.StAtk, StHeal = it.StHeal, Cures = it.Cures, StType = it.StType, StCure = it.StCure,
         };
         if (recipe && it.CombineWith != null)
         {
@@ -392,6 +392,13 @@ public sealed class ItemsTab
             if (form.StMinutes < 0) form.StMinutes = 0;
             ImGui.TextColored(Dim, "0 means it lasts until something removes it.");
             ImGui.Checkbox("It is a debuff (bad)", ref form.StDebuff);
+            if (gift)
+            {
+                ImGui.SetNextItemWidth(100f); ImGui.InputInt("Attack roll bonus##fsta", ref form.StAtk, 1);
+                ImGui.SetNextItemWidth(100f); ImGui.InputInt("Heal roll bonus##fsth", ref form.StHeal, 1);
+                form.StAtk = Math.Clamp(form.StAtk, -5, 5); form.StHeal = Math.Clamp(form.StHeal, -5, 5);
+                ImGui.TextColored(Dim, "-5 to +5 added to rolls in quest fights and encounters while the status lasts. Only Advocate gifts can do this.");
+            }
             ImGui.SetNextItemWidth(160f);
             if (ImGui.BeginCombo("Kind##fstt", form.StType == "sickness" ? "Sickness" : form.StType == "curse" ? "Curse" : "Neither"))
             {

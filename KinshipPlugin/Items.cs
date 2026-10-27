@@ -21,7 +21,7 @@ public sealed class ItemView
     public string Requires { get; set; } = ""; public bool RequiresConsume { get; set; } public int Holds { get; set; } public int Qty { get; set; } = 1;
     public string StName { get; set; } = ""; public string StDesc { get; set; } = ""; public string StIcon { get; set; } = "";
     public bool StDebuff { get; set; } public int StMinutes { get; set; } public string Cures { get; set; } = "";
-    public string StType { get; set; } = ""; public string StCure { get; set; } = "";
+    public string StType { get; set; } = ""; public string StCure { get; set; } = ""; public int StAtk { get; set; } public int StHeal { get; set; }
     public bool CanCombine { get; set; } public List<string>? CombineWith { get; set; } public ItemView? Result { get; set; }
 }
 public sealed class ItemReply
@@ -47,7 +47,7 @@ public sealed class ItemForm
     public string StName = "", StDesc = "", StIcon = "", Cures = "", StType = "", StCure = "", StartsQuest = "";
     public string[] With = { "", "", "" };   // other reagents this combines with
     public ItemForm? Result;                 // what the combination makes
-    public int StMinutes;
+    public int StMinutes, StAtk, StHeal;
     public bool Consumable, RequiresConsume, StDebuff;
 }
 public sealed record ItemsSnap(bool SignedIn, string Name, int Capacity, List<ItemView> Items, List<string> Members, string Error, string Notice, bool Busy, string Recovery);
@@ -241,7 +241,7 @@ public sealed class ItemsState
         {
             ["name"] = f.Name.Trim(), ["icon"] = f.Icon, ["description"] = f.Description.Trim(), ["flavor"] = f.Flavor.Trim(),
             ["useLabel"] = f.UseLabel.Trim(), ["useText"] = f.UseText.Trim(), ["requires"] = f.Requires.Trim(), ["requiresConsume"] = f.RequiresConsume,
-            ["stName"] = f.StName.Trim(), ["stDesc"] = f.StDesc.Trim(), ["stIcon"] = f.StIcon, ["stDebuff"] = f.StDebuff, ["stMinutes"] = f.StMinutes, ["startsQuest"] = f.StartsQuest, ["stType"] = f.StType, ["stCure"] = f.StCure.Trim(),
+            ["stName"] = f.StName.Trim(), ["stDesc"] = f.StDesc.Trim(), ["stIcon"] = f.StIcon, ["stDebuff"] = f.StDebuff, ["stMinutes"] = f.StMinutes, ["startsQuest"] = f.StartsQuest, ["stType"] = f.StType, ["stCure"] = f.StCure.Trim(), ["stAtk"] = f.StAtk, ["stHeal"] = f.StHeal,
             ["cures"] = f.Cures.Trim(), ["consumable"] = f.Consumable,
         };
         var with = f.With.Select(x => x.Trim()).Where(x => x.Length > 0).ToList();

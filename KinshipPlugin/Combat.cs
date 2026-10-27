@@ -255,7 +255,7 @@ public sealed class CombatState
         {
             try
             {
-                var body = new { type, payload, revision, actionId = Guid.NewGuid().ToString() };
+                var body = new { type, payload, revision, actionId = Guid.NewGuid().ToString(), itemsToken = type == "roll" ? Plugin.Config.Me().ItemsToken : "" };
                 var r = await SendAsync(HttpMethod.Post, $"/rooms/{cd}/actions", body, tk).ConfigureAwait(false);
                 lock (gate) { if (r.Room != null) { room = r.Room; lastPoll = DateTime.UtcNow; } }
             }

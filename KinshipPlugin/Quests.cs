@@ -18,7 +18,7 @@ public sealed class QuestPlace
         return System.Numerics.Vector3.Distance(p.Value, new System.Numerics.Vector3(X, Y, Z));
     }
 }
-public sealed class QuestGrant { public string Name { get; set; } = ""; public string Icon { get; set; } = ""; public string Description { get; set; } = ""; public int Minutes { get; set; } public bool IsDebuff { get; set; } }
+public sealed class QuestGrant { public string Name { get; set; } = ""; public string Icon { get; set; } = ""; public string Description { get; set; } = ""; public int Minutes { get; set; } public bool IsDebuff { get; set; } public int Atk { get; set; } public int Heal { get; set; } }
 public sealed class QuestFightSpec { public int NpcHp { get; set; } = 30; public int NpcDie { get; set; } = 8; public int NpcBonus { get; set; } public int PlayerHp { get; set; } = 30; public int PlayerDie { get; set; } = 8; public int PlayerBonus { get; set; } }
 public sealed class QuestFight
 {
@@ -60,7 +60,7 @@ public sealed class StepForm
     public Spot? Place; public bool Once;
     public int NpcHp = 30, NpcDie = 8, NpcBonus, PlayerHp = 30, PlayerDie = 8, PlayerBonus;
     public string Needs = "", NeedText = "", GrantName = "", GrantDesc = "", GrantIcon = "game:10205";
-    public int GrantMinutes; public bool TakesNeeded, GrantDebuff;
+    public int GrantMinutes, GrantAtk, GrantHeal; public bool TakesNeeded, GrantDebuff;
     public bool AtSpot => Type == "look" || Type == "listen" || Type == "search";
 }
 public sealed class QuestForm
@@ -254,7 +254,7 @@ public sealed class QuestState
             var alt = s.Variants.Where(v => v.Text.Trim().Length > 0).Select(v => new Dictionary<string, object?> { ["gender"] = v.Gender.Trim(), ["status"] = v.Status.Trim(), ["text"] = v.Text.Trim() }).ToList();
             if (alt.Count > 0) d["variants"] = alt;
             if (s.Needs.Trim().Length > 0) { d["needs"] = s.Needs.Trim(); d["needText"] = s.NeedText.Trim(); d["takesNeeded"] = s.TakesNeeded; }
-            if (s.GrantName.Trim().Length > 0) d["grants"] = new Dictionary<string, object?> { ["name"] = s.GrantName.Trim(), ["icon"] = s.GrantIcon, ["description"] = s.GrantDesc.Trim(), ["minutes"] = s.GrantMinutes, ["isDebuff"] = s.GrantDebuff };
+            if (s.GrantName.Trim().Length > 0) d["grants"] = new Dictionary<string, object?> { ["name"] = s.GrantName.Trim(), ["icon"] = s.GrantIcon, ["description"] = s.GrantDesc.Trim(), ["minutes"] = s.GrantMinutes, ["isDebuff"] = s.GrantDebuff, ["atk"] = s.GrantAtk, ["heal"] = s.GrantHeal };
             if (s.Type == "fight")
                 d["fight"] = new Dictionary<string, object?> { ["npcHp"] = s.NpcHp, ["npcDie"] = s.NpcDie, ["npcBonus"] = s.NpcBonus, ["playerHp"] = s.PlayerHp, ["playerDie"] = s.PlayerDie, ["playerBonus"] = s.PlayerBonus };
             if ((s.AtSpot || s.Type == "fight") && s.Place != null)
