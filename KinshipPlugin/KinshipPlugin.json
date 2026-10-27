@@ -5,5 +5,6 @@
   "Description": "Shows The Kinship's faction info, plots and sects in game. Type /kinship to open.",
   "ApplicableVersion": "any",
   "Tags": [ "roleplay", "free company", "kinship" ],
-  "RepoUrl": "https://github.com/The-Kinship/kinship-plugin"
+  "RepoUrl": "https://github.com/The-Kinship/kinship-plugin",
+  "IconUrl": "https://raw.githubusercontent.com/The-Kinship/kinship-plugin/main/images/icon.png"
 }
