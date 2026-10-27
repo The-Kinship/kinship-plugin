@@ -37,7 +37,7 @@ public sealed class SignReaderWindow : Window, IDisposable
     {
         var territory = Plugin.ClientState.TerritoryType;
         var range = shown ? SignState.PopupStay : SignState.PopupRange;
-        shown = Plugin.Signs.All.Any(s => s.Territory == territory && Close(s, range));
+        shown = Plugin.Signs.All.Any(s => s.Territory == territory && s.Room == WorldInfo.CurrentRoom && Close(s, range));
         return shown;
     }
 
@@ -53,7 +53,7 @@ public sealed class SignReaderWindow : Window, IDisposable
         if (reading != null) { DrawReading(reading); return; }
 
         ImGui.TextColored(Parchment, "Something here");
-        var near = Plugin.Signs.All.Where(s => s.Territory == Plugin.ClientState.TerritoryType && Close(s, SignState.PopupStay))
+        var near = Plugin.Signs.All.Where(s => s.Territory == Plugin.ClientState.TerritoryType && s.Room == WorldInfo.CurrentRoom && Close(s, SignState.PopupStay))
             .OrderBy(s => s.Distance() ?? 0f).Take(5).ToList();
         foreach (var s in near)
         {

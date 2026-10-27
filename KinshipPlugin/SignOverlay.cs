@@ -41,7 +41,7 @@ public sealed class SignOverlay : Window, IDisposable
         var territory = Plugin.ClientState.TerritoryType;
         foreach (var s in Plugin.Signs.All)
         {
-            if (s.Territory != territory) continue;
+            if (s.Territory != territory || s.Room != WorldInfo.CurrentRoom) continue;
             var pos = new Vector3(s.X, s.Y, s.Z);
             var dist = Vector3.Distance(me.Value, pos);
             if (dist > SignState.LabelRange) continue;

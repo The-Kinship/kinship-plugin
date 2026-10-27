@@ -41,7 +41,7 @@ public sealed class StashOverlay : Window, IDisposable
         var territory = Plugin.ClientState.TerritoryType;
         foreach (var s in Plugin.Stashes.All)
         {
-            if (s.Territory != territory) continue;
+            if (s.Territory != territory || s.Room != WorldInfo.CurrentRoom) continue;
             var pos = new Vector3(s.X, s.Y, s.Z);
             var dist = Vector3.Distance(me.Value, pos);
             if (dist > WorldInfo.LabelRange) continue;
