@@ -8,7 +8,7 @@ namespace KinshipPlugin;
 
 public sealed class MailView
 {
-    public string Id { get; set; } = ""; public string From { get; set; } = ""; public string To { get; set; } = ""; public string Subject { get; set; } = "";
+    public string Id { get; set; } = ""; public string From { get; set; } = ""; public string To { get; set; } = ""; public string Subject { get; set; } = ""; public string Look { get; set; } = "";
     public string? Body { get; set; } public bool Anonymous { get; set; } public int Gold { get; set; } public int Slots { get; set; }
     public bool Unread { get; set; } public bool Returned { get; set; } public string SentAt { get; set; } = ""; public string ExpiresAt { get; set; } = "";
     public List<ItemView>? Items { get; set; }
@@ -93,11 +93,11 @@ public sealed class MailState
         var r = await Exec(() => ItemsState.SendAsync(HttpMethod.Get, "/mail/" + id, null)).ConfigureAwait(false);
         if (r?.Mail != null) { lock (gate) { open = r.Mail; } await RefreshAsync().ConfigureAwait(false); }
     }
-    public async Task<bool> SendAsync(string to, string subject, string body, bool anonymous, int gold, List<(string Id, int Count)> items)
+    public async Task<bool> SendAsync(string to, string subject, string look, string body, bool anonymous, int gold, List<(string Id, int Count)> items)
     {
         var r = await Exec(() => ItemsState.SendAsync(HttpMethod.Post, "/mail", new
         {
-            to, subject, body, anonymous, gold = gold > 0 ? gold : (int?)null,
+            to, subject, look, body, anonymous, gold = gold > 0 ? gold : (int?)null,
             items = items.Select(i => new { itemId = i.Id, count = i.Count }).ToList()
         }), $"Mail sent to {to}.").ConfigureAwait(false);
         if (r == null) return false;

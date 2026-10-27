@@ -17,7 +17,7 @@ public sealed class MailTab
     private const float Slot = 36f;
 
     private bool writing, membersAsked, confirmDelete;
-    private string to = "", subject = "", body = "";
+    private string to = "", subject = "", body = "", look = "";
     private bool anonymous;
     private int sendGold;
     private readonly List<(ItemView Item, int Count)> attach = new();
@@ -48,6 +48,7 @@ public sealed class MailTab
         foreach (var m in s.Inbox)
         {
             ImGui.TextColored(m.Unread ? Gold : Dim, (m.Unread ? "● " : "   ") + m.Subject);
+            if (m.Look.Length > 0) ImGui.TextColored(Dim, "   " + m.Look);
             ImGui.TextColored(Dim, $"From {m.From}  ·  {m.DaysLeft()} days left" + (m.Gold > 0 ? $"  ·  {m.Gold:N0} gold" : "") + (m.Slots > 0 ? $"  ·  {m.Slots} item" + (m.Slots == 1 ? "" : "s") : ""));
             if (ImGui.SmallButton("Open##mo" + m.Id)) { confirmDelete = false; _ = Plugin.Mail.OpenAsync(m.Id); }
             ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
@@ -72,6 +73,7 @@ public sealed class MailTab
     {
         if (ImGui.SmallButton("< Back##mail")) { Plugin.Mail.CloseOpen(); return; }
         ImGui.TextColored(Gold, m.Subject);
+        if (m.Look.Length > 0) ImGui.TextColored(Dim, m.Look);
         ImGui.TextColored(Dim, $"From {m.From}" + (m.Returned ? "  (nobody collected it)" : "") + $"  ·  {m.DaysLeft()} days left");
         ImGui.Separator();
         Wrapped(new Vector4(1f, 1f, 1f, 1f), string.IsNullOrWhiteSpace(m.Body) ? "(no message)" : m.Body!);
@@ -124,6 +126,8 @@ public sealed class MailTab
         }
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - 8f); ImGui.InputText("##mailsub", ref subject, 60);
         ImGui.TextColored(Dim, "Subject");
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - 8f); ImGui.InputText("##maillook", ref look, 60);
+        ImGui.TextColored(Dim, "What it looks like, shown in their mailbox (optional), e.g. a sealed envelope, a pretty wrapped giftbox, a crumpled up note");
         ImGui.InputTextMultiline("##mailbody", ref body, 1500, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 130f));
         ImGui.Checkbox("Send anonymously##mail", ref anonymous);
         if (anonymous) ImGui.TextColored(Dim, "They won't see your name. The SMs can still see who sent it.");
@@ -178,8 +182,8 @@ public sealed class MailTab
 
     private async System.Threading.Tasks.Task Send()
     {
-        var ok = await Plugin.Mail.SendAsync(to, subject.Trim(), body.Trim(), anonymous, sendGold, attach.Select(a => (a.Item.Id, a.Count)).ToList()).ConfigureAwait(false);
-        if (ok) { subject = ""; body = ""; sendGold = 0; anonymous = false; attach.Clear(); writing = false; }
+        var ok = await Plugin.Mail.SendAsync(to, subject.Trim(), look.Trim(), body.Trim(), anonymous, sendGold, attach.Select(a => (a.Item.Id, a.Count)).ToList()).ConfigureAwait(false);
+        if (ok) { subject = ""; look = ""; body = ""; sendGold = 0; anonymous = false; attach.Clear(); writing = false; }
     }
 
     private static void Wrapped(Vector4 colour, string text)
