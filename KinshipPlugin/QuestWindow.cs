@@ -133,6 +133,7 @@ public sealed class QuestReplyWindow : Window, IDisposable
                 ImGui.TextColored(Gold, t.Npc.Length > 0 ? t.Npc + "  ·  " + l.Quest : l.Quest);
                 ImGui.TextUnformatted(l.Text);
                 if (l.Gained != null) foreach (var g in l.Gained) ImGui.TextColored(Green, "You received: " + g);
+                if (!string.IsNullOrEmpty(l.StatusGained)) ImGui.TextColored(Green, "You gain: " + l.StatusGained);
                 if (l.Ok && l.Finished) ImGui.TextColored(Green, "Quest complete!");
                 ImGui.Spacing();
             }

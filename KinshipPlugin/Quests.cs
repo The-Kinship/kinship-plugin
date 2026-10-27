@@ -18,12 +18,14 @@ public sealed class QuestPlace
         return System.Numerics.Vector3.Distance(p.Value, new System.Numerics.Vector3(X, Y, Z));
     }
 }
+public sealed class QuestGrant { public string Name { get; set; } = ""; public string Icon { get; set; } = ""; public string Description { get; set; } = ""; public int Minutes { get; set; } public bool IsDebuff { get; set; } }
 public sealed class QuestNow { public string Type { get; set; } = ""; public string Npc { get; set; } = ""; public string Item { get; set; } = ""; public string Hint { get; set; } = ""; public QuestPlace? Place { get; set; } }
 public sealed class QuestGift { public string Name { get; set; } = ""; public string Icon { get; set; } = ""; public string Description { get; set; } = ""; public string Flavor { get; set; } = ""; }
 public sealed class QuestStepView
 {
     public string Type { get; set; } = "talk"; public string Npc { get; set; } = ""; public string Text { get; set; } = ""; public string Hint { get; set; } = "";
     public string Item { get; set; } = ""; public QuestGift? Gift { get; set; } public QuestPlace? Place { get; set; } public bool Once { get; set; }
+    public string Needs { get; set; } = ""; public string NeedText { get; set; } = ""; public bool TakesNeeded { get; set; } public QuestGrant? Grants { get; set; }
 }
 public sealed class QuestPlayer { public string Name { get; set; } = ""; public int Step { get; set; } public bool Done { get; set; } }
 public sealed class QuestClaim { public int Step { get; set; } public string Name { get; set; } = ""; }
@@ -34,7 +36,7 @@ public sealed class QuestView
     public int Step { get; set; } public int Total { get; set; } public bool Done { get; set; } public QuestNow? Current { get; set; }
     public List<QuestStepView>? Steps { get; set; } public List<QuestPlayer>? Players { get; set; } public List<QuestClaim>? Claims { get; set; }
 }
-public sealed class TalkLine { public string Quest { get; set; } = ""; public bool Ok { get; set; } public string Text { get; set; } = ""; public bool Finished { get; set; } public List<string>? Gained { get; set; } }
+public sealed class TalkLine { public string Quest { get; set; } = ""; public bool Ok { get; set; } public string Text { get; set; } = ""; public bool Finished { get; set; } public List<string>? Gained { get; set; } public string? StatusGained { get; set; } }
 public sealed record TalkResult(string Npc, List<TalkLine> Lines, string Error);
 
 /// <summary>What the Advocate is typing for one step.</summary>
@@ -42,6 +44,8 @@ public sealed class StepForm
 {
     public string Type = "talk", Npc = "", Text = "", Hint = "", Item = "", GiftName = "", GiftIcon = "game:20001", GiftDesc = "";
     public Spot? Place; public bool Once;
+    public string Needs = "", NeedText = "", GrantName = "", GrantDesc = "", GrantIcon = "game:10205";
+    public int GrantMinutes; public bool TakesNeeded, GrantDebuff;
     public bool AtSpot => Type == "look" || Type == "listen" || Type == "search";
 }
 public sealed class QuestForm
@@ -107,6 +111,7 @@ public sealed class QuestState
         finally { lock (gate) { busy = false; } }
         await RefreshAsync().ConfigureAwait(false);
         _ = Plugin.Items.RefreshAsync(true);
+        _ = Plugin.Status.RefreshAsync();
     }
 
     // ---------- Advocate tools (creation password) ----------
@@ -133,6 +138,8 @@ public sealed class QuestState
         {
             var d = new Dictionary<string, object?> { ["type"] = s.Type, ["npc"] = s.Npc.Trim(), ["text"] = s.Text.Trim(), ["hint"] = s.Hint.Trim() };
             if (s.Type == "give") d["item"] = s.Item.Trim();
+            if (s.Needs.Trim().Length > 0) { d["needs"] = s.Needs.Trim(); d["needText"] = s.NeedText.Trim(); d["takesNeeded"] = s.TakesNeeded; }
+            if (s.GrantName.Trim().Length > 0) d["grants"] = new Dictionary<string, object?> { ["name"] = s.GrantName.Trim(), ["icon"] = s.GrantIcon, ["description"] = s.GrantDesc.Trim(), ["minutes"] = s.GrantMinutes, ["isDebuff"] = s.GrantDebuff };
             if (s.AtSpot && s.Place != null)
                 d["place"] = new Dictionary<string, object?> { ["zone"] = s.Place.Zone, ["territory"] = (int)s.Place.Territory, ["map"] = (int)s.Place.Map, ["x"] = s.Place.Pos.X, ["y"] = s.Place.Pos.Y, ["z"] = s.Place.Pos.Z, ["mapX"] = s.Place.MapX, ["mapY"] = s.Place.MapY };
             if ((s.Type == "receive" || s.Type == "search") && s.GiftName.Trim().Length > 0)

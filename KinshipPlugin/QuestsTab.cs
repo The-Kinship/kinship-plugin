@@ -181,6 +181,28 @@ public sealed class QuestsTab
             ImGui.SetNextItemWidth(300f); ImGui.InputText($"Item description##qgd{i}", ref st.GiftDesc, 300);
             ImGui.Checkbox($"Only the first person to get it##qo{i}", ref st.Once);
         }
+        if (ImGui.CollapsingHeader($"Status options (optional)##qso{i}"))
+        {
+            ImGui.SetNextItemWidth(220f); ImGui.InputText($"Needs this status##qnd{i}", ref st.Needs, 30);
+            ImGui.TextColored(Dim, "Exact status name, like Blessed. Without it, this step won't go ahead.");
+            if (st.Needs.Trim().Length > 0)
+            {
+                ImGui.SetNextItemWidth(300f); ImGui.InputText($"Message if they don't have it##qnt{i}", ref st.NeedText, 200);
+                ImGui.Checkbox($"Uses up the status when the step is done##qtk{i}", ref st.TakesNeeded);
+            }
+            ImGui.SetNextItemWidth(220f); ImGui.InputText($"Gives this status##qgs{i}", ref st.GrantName, 30);
+            if (st.GrantName.Trim().Length > 0)
+            {
+                var gw = ItemIcons.Wrap(st.GrantIcon);
+                if (gw != null) { ImGui.Image(gw.Handle, new Vector2(32f, 32f)); ImGui.SameLine(); }
+                if (ImGui.SmallButton($"Choose status icon##qgsi{i}")) { var step = st; picker.Open(v => step.GrantIcon = v); }
+                ImGui.SetNextItemWidth(300f); ImGui.InputText($"What it does##qgsd{i}", ref st.GrantDesc, 200);
+                ImGui.SetNextItemWidth(120f); ImGui.InputInt($"Minutes##qgsm{i}", ref st.GrantMinutes, 1);
+                if (st.GrantMinutes < 0) st.GrantMinutes = 0;
+                ImGui.TextColored(Dim, "0 means it lasts until removed.");
+                ImGui.Checkbox($"It is a debuff (bad)##qgsb{i}", ref st.GrantDebuff);
+            }
+        }
         ImGui.Unindent();
     }
 
@@ -188,7 +210,8 @@ public sealed class QuestsTab
     {
         var f = new QuestForm { Id = q.Id, Title = q.Title, Intro = q.Intro, Steps = new() };
         foreach (var s in q.Steps ?? new())
-            f.Steps.Add(new StepForm { Type = s.Type, Npc = s.Npc, Text = s.Text, Hint = s.Hint, Item = s.Item, GiftName = s.Gift?.Name ?? "", GiftIcon = s.Gift?.Icon is { Length: > 0 } ic ? ic : "game:20001", GiftDesc = s.Gift?.Description ?? "", Once = s.Once,
+            f.Steps.Add(new StepForm { Type = s.Type, Npc = s.Npc, Text = s.Text, Hint = s.Hint, Item = s.Item, GiftName = s.Gift?.Name ?? "", GiftIcon = s.Gift?.Icon is { Length: > 0 } ic ? ic : "game:20001", GiftDesc = s.Gift?.Description ?? "", Once = s.Once, Needs = s.Needs, NeedText = s.NeedText, TakesNeeded = s.TakesNeeded,
+                GrantName = s.Grants?.Name ?? "", GrantDesc = s.Grants?.Description ?? "", GrantIcon = s.Grants?.Icon is { Length: > 0 } gi ? gi : "game:10205", GrantMinutes = s.Grants?.Minutes ?? 0, GrantDebuff = s.Grants?.IsDebuff ?? false,
                 Place = s.Place == null ? null : new Spot((uint)s.Place.Territory, s.Place.Map, new Vector3(s.Place.X, s.Place.Y, s.Place.Z), s.Place.Zone, s.Place.MapX, s.Place.MapY) });
         if (f.Steps.Count == 0) f.Steps.Add(new StepForm());
         return f;
