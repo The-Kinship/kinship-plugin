@@ -26,7 +26,7 @@ public sealed class ItemView
 }
 public sealed class ItemReply
 {
-    public string? Token { get; set; } public string? Name { get; set; } public string? RecoveryCode { get; set; }
+    public string? Token { get; set; } public string? Name { get; set; } public string? RecoveryCode { get; set; } public List<string>? Characters { get; set; } public bool Linked { get; set; }
     public int Capacity { get; set; } public List<ItemView>? Items { get; set; } public List<string>? Members { get; set; }
     public string? Text { get; set; } public bool Consumed { get; set; } public string? Error { get; set; }
     public List<StashView>? Stashes { get; set; } public StashView? Stash { get; set; } public List<ItemView>? StashItems { get; set; }
@@ -132,14 +132,28 @@ public sealed class ItemsState
     public void SetInventory(List<ItemView> list) { lock (gate) { items = list; lastRefresh = DateTime.UtcNow; } }
     public void SignOut() { SignOutLocal(); ClearMessages(); }
 
-    public async Task RegisterAsync(string name, string memberPassword)
+    /// <summary>Registers this character. With a recovery code it joins that player (one of your other characters) instead of getting a new code.</summary>
+    public async Task RegisterAsync(string name, string memberPassword, string joinCode = "")
     {
-        var r = await Run(() => SendAsync(HttpMethod.Post, "/items/register", new { name = name.Trim(), memberPassword }), false).ConfigureAwait(false);
+        object body = joinCode.Length > 0 ? new { name = name.Trim(), memberPassword, recoveryCode = joinCode } : new { name = name.Trim(), memberPassword };
+        var r = await Run(() => SendAsync(HttpMethod.Post, "/items/register", body), false).ConfigureAwait(false);
         if (r?.Token == null) return;
-        Plugin.Config.Me().ItemsToken = r.Token; Plugin.Config.Me().ItemsName = r.Name ?? name.Trim(); Plugin.Config.Me().ItemsRecovery = r.RecoveryCode ?? "";
+        Plugin.Config.Me().ItemsToken = r.Token; Plugin.Config.Me().ItemsName = r.Name ?? name.Trim(); Plugin.Config.Me().ItemsRecovery = r.RecoveryCode ?? joinCode;
         Plugin.Config.Save();
-        lock (gate) { notice = "You're in. Write down your recovery code below."; loadedOnce = false; }
+        lock (gate) { notice = r.Linked ? "You're in. This character shares your recovery code with your other characters." : "You're in. Write down your recovery code below."; loadedOnce = false; }
         await RefreshAsync(true).ConfigureAwait(false);
+    }
+
+    private List<string> found = new();
+    /// <summary>The characters a recovery code covers, after "Find my characters".</summary>
+    public List<string> Found() { lock (gate) { return found.ToList(); } }
+    public void ClearFound() { lock (gate) { found = new(); } }
+
+    /// <summary>Asks which characters a recovery code covers, so you can pick the one this is.</summary>
+    public async Task FindCharactersAsync(string code)
+    {
+        var r = await Run(() => SendAsync(HttpMethod.Post, "/items/recover", new { recoveryCode = code.Trim() }), false).ConfigureAwait(false);
+        lock (gate) { found = r?.Characters ?? new(); if (r != null && found.Count == 0) error = "That code doesn't cover any characters."; }
     }
 
     public async Task RecoverAsync(string name, string code)
@@ -148,7 +162,7 @@ public sealed class ItemsState
         if (r?.Token == null) return;
         Plugin.Config.Me().ItemsToken = r.Token; Plugin.Config.Me().ItemsName = r.Name ?? name.Trim(); Plugin.Config.Me().ItemsRecovery = code.Trim().ToUpperInvariant();
         Plugin.Config.Save();
-        lock (gate) { notice = "Welcome back."; loadedOnce = false; }
+        lock (gate) { notice = "Welcome back."; loadedOnce = false; found = new(); }
         await RefreshAsync(true).ConfigureAwait(false);
     }
 

@@ -97,6 +97,13 @@ public class Configuration : IPluginConfiguration
         current = p;
     }
 
+    /// <summary>A recovery code saved for any character on this computer (your other characters can join it), or an empty string.</summary>
+    public string KnownRecoveryCode()
+    {
+        foreach (var p in Profiles.Values) if (p.ItemsRecovery.Length > 0) return p.ItemsRecovery;
+        return !LegacyClaimed ? ItemsRecovery : "";
+    }
+
     /// <summary>True while a sign-in from before characters were separated is still waiting for a character.</summary>
     public bool HasLegacy() => !LegacyClaimed && (ItemsToken.Length > 0 || CombatToken.Length > 0 || SceneToken.Length > 0 || Unlocked.Count > 0);
 

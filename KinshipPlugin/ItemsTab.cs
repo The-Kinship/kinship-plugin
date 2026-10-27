@@ -21,7 +21,8 @@ public sealed class ItemsTab
 
     // sign in
     private string name = Plugin.Config.Me().ItemsName.Length > 0 ? Plugin.Config.Me().ItemsName : Plugin.Config.Me().CombatName;
-    private string memberPassword = "", recoveryName = "", recoveryCode = "";
+    private string memberPassword = "", recoveryCode = "";
+    private bool joinExisting = true;
 
     // item form
     private ItemForm form = new();
@@ -58,7 +59,7 @@ public sealed class ItemsTab
             seenCharacter = Plugin.CharacterId;
             name = Plugin.Config.Me().ItemsName.Length > 0 ? Plugin.Config.Me().ItemsName : Plugin.Config.Me().CombatName;
             if (name.Length == 0) name = Plugin.CharacterName();
-            memberPassword = ""; recoveryName = ""; recoveryCode = ""; mode = Mode.Inventory; editingId = null; giving = null; sealing = null; confirmDelete = null;
+            memberPassword = ""; recoveryCode = Plugin.Config.KnownRecoveryCode(); joinExisting = true; Plugin.Items.ClearFound(); mode = Mode.Inventory; editingId = null; giving = null; sealing = null; confirmDelete = null;
         }
         var s = Plugin.Items.Snapshot();
         if (mode == Mode.Gift) { DrawForm(s); return; }   // DMs can gift without being signed in as a member
@@ -98,8 +99,8 @@ public sealed class ItemsTab
         ImGui.Spacing();
         ImGui.TextColored(Gold, "How it works");
         ImGui.TextWrapped("1. Register once below with your character's name and the member password. Ask your FC leader for the password.");
-        ImGui.TextWrapped("2. You'll get a recovery code. Write it down somewhere safe. It's the only way back in if you move to a new computer or reinstall.");
-        ImGui.TextWrapped("3. After that you stay signed in on this computer. Each of your characters has their own sign-in, so alts never share items, gold or quests.");
+        ImGui.TextWrapped("2. You'll get one recovery code that covers all of your characters. Write it down somewhere safe. It's the only way back in if you move to a new computer or reinstall.");
+        ImGui.TextWrapped("3. After that you stay signed in on this computer. Each of your characters has their own sign-in, so alts never share items, gold or quests. Register each alt the same way and it joins your recovery code.");
         ImGui.TextWrapped("4. Every time you open this tab you'll go straight to your own tabs.");
         ImGui.TextColored(Dim, "Only visiting? Use the Guest tab to join an encounter or a scene with just an invite link.");
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
@@ -109,13 +110,23 @@ public sealed class ItemsTab
         ImGui.TextColored(Dim, "Ask your FC leader for the member password.");
         if (s.Error.Length > 0) ImGui.TextColored(Red, s.Error);
         if (s.Busy) ImGui.TextColored(Dim, "Working...");
-        else if (ImGui.Button("Register")) _ = Plugin.Items.RegisterAsync(name, memberPassword);
+        var known = Plugin.Config.KnownRecoveryCode();
+        if (known.Length > 0) ImGui.Checkbox("This is another of my characters (use my existing recovery code)", ref joinExisting);
+        if (s.Busy) { }
+        else if (ImGui.Button("Register")) _ = Plugin.Items.RegisterAsync(name, memberPassword, known.Length > 0 && joinExisting ? known : "");
 
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
-        ImGui.TextColored(Gold, "Already joined on another computer?");
-        ImGui.SetNextItemWidth(240f); ImGui.InputText("Your name##rc", ref recoveryName, 40);
+        ImGui.TextColored(Gold, "Already registered?");
+        ImGui.TextWrapped("On a new computer, or for another of your characters that you registered before, enter your recovery code and pick which character this is.");
         ImGui.SetNextItemWidth(240f); ImGui.InputText("Recovery code##rc", ref recoveryCode, 40);
-        if (!s.Busy && ImGui.Button("Get my items back")) _ = Plugin.Items.RecoverAsync(recoveryName, recoveryCode);
+        if (!s.Busy && ImGui.Button("Find my characters")) _ = Plugin.Items.FindCharactersAsync(recoveryCode);
+        var foundNames = Plugin.Items.Found();
+        if (foundNames.Count > 0)
+        {
+            ImGui.TextColored(Gold, "Which one is " + (who.Length > 0 ? who : "this character") + "?");
+            for (var i = 0; i < foundNames.Count; i++)
+                if (!s.Busy && ImGui.Button(foundNames[i] + "##rec" + i)) _ = Plugin.Items.RecoverAsync(foundNames[i], recoveryCode);
+        }
 
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         DrawDmTools();
@@ -196,7 +207,7 @@ public sealed class ItemsTab
         ImGui.Spacing();
         if (ImGui.CollapsingHeader("My recovery code"))
         {
-            ImGui.TextWrapped("Write this down. If you play on another computer or reinstall, enter your name and this code on the RP tab to get your things back.");
+            ImGui.TextWrapped("This one code covers all of your characters. Write it down. If you play on another computer or reinstall, enter it on the RP tab and pick your character to get everything back.");
             ImGui.TextColored(Gold, s.Recovery.Length > 0 ? s.Recovery : "(not saved on this computer)");
             if (ImGui.SmallButton("Sign out")) { Plugin.Items.SignOut(); mode = Mode.Inventory; }
         }
