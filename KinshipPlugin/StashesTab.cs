@@ -31,7 +31,7 @@ public sealed class StashesTab
         ImGui.TextWrapped("A stash is a spot in the world that holds items. Stand where you want it, name it, and anyone close enough can put things in or take things out.");
         var labels = Plugin.Config.StashLabels;
         if (ImGui.Checkbox("Show stash names in the world", ref labels)) { Plugin.Config.StashLabels = labels; Plugin.Config.Save(); }
-        if (s.Error.Length > 0) ImGui.TextColored(Red, s.Error);
+        if (s.Error.Length > 0) Wrapped(Red, s.Error);
         else if (s.Notice.Length > 0) ImGui.TextColored(Green, s.Notice);
         ImGui.Spacing();
 
@@ -45,12 +45,12 @@ public sealed class StashesTab
     {
         if (!ImGui.CollapsingHeader("Make a stash here")) return;
         var spot = WorldInfo.Current(out var problem);
-        if (spot == null) { ImGui.TextColored(Red, problem); return; }
+        if (spot == null) { Wrapped(Red, problem); return; }
         ImGui.Text("You are in: " + spot.Zone);
         ImGui.SetNextItemWidth(240f); ImGui.InputText("Name##stash", ref newName, 40);
         ImGui.Checkbox("Private (only I can see it)", ref newPrivate);
         var mine = s.Stashes.Count(x => x.Mine);
-        if (mine >= 3) ImGui.TextColored(Dim, "You already have 3 stashes. Delete one to make another.");
+        if (mine >= 3) Wrapped(Dim, "You already have 3 stashes. Delete one to make another.");
         var ok = newName.Trim().Length > 0 && !s.Busy && mine < 3;
         if (!ok) ImGui.BeginDisabled();
         if (ImGui.Button("Make stash here")) { _ = Plugin.Stashes.CreateAsync(newName, newPrivate, spot); newName = ""; }
@@ -98,7 +98,7 @@ public sealed class StashesTab
         if (spot != null) { ImGui.SameLine(); if (ImGui.SmallButton("Move it here##mv" + st.Id)) { _ = Plugin.Stashes.MoveHereAsync(st, spot); managing = null; } }
         if (confirmDelete == st.Id)
         {
-            ImGui.TextColored(Red, "Delete this stash? It has to be empty, with no gold in it.");
+            Wrapped(Red, "Delete this stash? It has to be empty, with no gold in it.");
             if (ImGui.SmallButton("Yes, delete##dl" + st.Id)) { _ = Plugin.Stashes.DeleteAsync(st.Id); confirmDelete = null; managing = null; }
             ImGui.SameLine(); if (ImGui.SmallButton("No##dn" + st.Id)) confirmDelete = null;
         }
@@ -109,6 +109,13 @@ public sealed class StashesTab
     private int goldAmount;
 
     // ---------- an open stash ----------
+    private static void Wrapped(Vector4 colour, string text)
+    {
+        ImGui.PushTextWrapPos(0f);   // wrap at the edge of the window so nothing is cut off
+        ImGui.TextColored(colour, text);
+        ImGui.PopTextWrapPos();
+    }
+
     private static int moveAmount = 1;   // how many items one click moves
     private static void DrawAmount()
     {
@@ -121,15 +128,15 @@ public sealed class StashesTab
         var st = s.Open!;
         if (ImGui.Button(popup ? "Close##stashpop" : "< All stashes")) { Plugin.Stashes.CloseOpen(); return; }
         ImGui.SameLine(); ImGui.TextColored(Gold, st.Name);
-        ImGui.TextColored(Dim, $"{st.Zone}  \u00b7  by {st.OwnerName}  \u00b7  {st.Count}/{st.Capacity}");
-        if (s.Error.Length > 0) ImGui.TextColored(Red, s.Error);
+        Wrapped(Dim, $"{st.Zone}  \u00b7  by {st.OwnerName}  \u00b7  {st.Count}/{st.Capacity}");
+        if (s.Error.Length > 0) Wrapped(Red, s.Error);
 
         var near = WorldInfo.Near(st);
-        if (!near) ImGui.TextColored(Red, "You've moved away. Get within 10 yalms of the stash to use it.");
+        if (!near) Wrapped(Red, "You've moved away. Get within 10 yalms of the stash to use it.");
         ImGui.Spacing();
 
         ImGui.TextColored(Gold, "In the stash");
-        ImGui.TextColored(Dim, "Click an item to take it. Clicking moves the number below (or the whole stack if it is smaller).");
+        Wrapped(Dim, "Click an item to take it. Clicking moves the number below (or the whole stack if it is smaller).");
         DrawAmount();
         ItemView? hovered = null;
         if (!near) ImGui.BeginDisabled();
@@ -160,10 +167,10 @@ public sealed class StashesTab
         ImGui.SameLine(); if (ImGui.SmallButton("Take out##sgt") && goldAmount > 0 && !s.Busy) { _ = Plugin.Stashes.TakeGoldAsync(st.Id, goldAmount); }
         ImGui.SameLine(); if (st.Gold > 0 && ImGui.SmallButton("Take all##sga") && !s.Busy) { _ = Plugin.Stashes.TakeGoldAsync(st.Id, st.Gold); }
         if (!near) ImGui.EndDisabled();
-        ImGui.TextColored(Dim, $"Your purse: {Plugin.Items.Gold:N0} gold. Anyone who can open this stash can take its gold.");
+        Wrapped(Dim, $"Your purse: {Plugin.Items.Gold:N0} gold. Anyone who can open this stash can take its gold.");
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         ImGui.TextColored(Gold, $"Your items  {inv.Items.Count}/{inv.Capacity}");
-        ImGui.TextColored(Dim, "Click an item to put it in the stash. Clicking moves the number above.");
+        Wrapped(Dim, "Click an item to put it in the stash. Clicking moves the number above.");
         hovered = null;
         if (!near) ImGui.BeginDisabled();
         for (var i = 0; i < inv.Capacity; i++)
