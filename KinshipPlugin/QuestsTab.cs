@@ -128,9 +128,23 @@ public sealed class QuestsTab
         ImGui.TextColored(Gold, editing && form.Id.Length > 0 ? "Edit quest" : "New quest");
         ImGui.SetNextItemWidth(260f); ImGui.InputText("Title##qf", ref form.Title, 60);
         ImGui.Text("Introduction (optional)"); ImGui.InputTextMultiline("##qfi", ref form.Intro, 400, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 52f));
+        if (ImGui.CollapsingHeader("Starting spot (optional)##qstart"))
+        {
+            ImGui.Checkbox("Players can find this quest at a spot in the world##qhs", ref form.HasStart);
+            if (form.HasStart)
+            {
+                var spot = WorldInfo.Current(out var problem);
+                if (form.StartPlace != null) ImGui.TextColored(Green, $"Location set: {form.StartPlace.Zone} ({form.StartPlace.MapX:0.0}, {form.StartPlace.MapY:0.0})"); else ImGui.TextColored(Red, "No location yet.");
+                if (spot == null) ImGui.TextColored(Dim, problem);
+                else if (ImGui.Button("Use this location##qsl")) form.StartPlace = spot;
+                ImGui.Text("What the player sees there"); ImGui.InputTextMultiline("##qst", ref form.StartText, 600, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 52f));
+                ImGui.TextColored(Dim, "Anyone who walks up and presses Look is asked if they want the quest. Nobody has to be online.");
+            }
+            ImGui.TextColored(Dim, "A quest can also be started by an item. In the Items tab, gift an item and pick this quest under \"Starts a quest\".");
+        }
         for (var i = 0; i < form.Steps.Count; i++) DrawStep(form.Steps[i], i);
         if (form.Steps.Count < QuestState.MaxSteps && ImGui.Button("Add a step##qas")) form.Steps.Add(new StepForm());
-        var valid = form.Title.Trim().Length > 0 && form.Steps.All(StepOk) && !s.Busy;
+        var valid = form.Title.Trim().Length > 0 && form.Steps.All(StepOk) && !s.Busy && (!form.HasStart || (form.StartPlace != null && form.StartText.Trim().Length > 0));
         if (!valid) ImGui.BeginDisabled();
         if (ImGui.Button((form.Id.Length > 0 ? "Save changes" : "Create quest") + "##qsave")) { _ = Plugin.Quests.AdminSaveAsync(form); form = new QuestForm(); editing = false; }
         if (!valid) ImGui.EndDisabled();
@@ -209,6 +223,11 @@ public sealed class QuestsTab
     private static QuestForm FormFrom(QuestView q)
     {
         var f = new QuestForm { Id = q.Id, Title = q.Title, Intro = q.Intro, Steps = new() };
+        if (q.StartPlace != null)
+        {
+            f.HasStart = true; f.StartText = q.StartText;
+            f.StartPlace = new Spot((uint)q.StartPlace.Territory, q.StartPlace.Map, new Vector3(q.StartPlace.X, q.StartPlace.Y, q.StartPlace.Z), q.StartPlace.Zone, q.StartPlace.MapX, q.StartPlace.MapY);
+        }
         foreach (var s in q.Steps ?? new())
             f.Steps.Add(new StepForm { Type = s.Type, Npc = s.Npc, Text = s.Text, Hint = s.Hint, Item = s.Item, GiftName = s.Gift?.Name ?? "", GiftIcon = s.Gift?.Icon is { Length: > 0 } ic ? ic : "game:20001", GiftDesc = s.Gift?.Description ?? "", Once = s.Once, Needs = s.Needs, NeedText = s.NeedText, TakesNeeded = s.TakesNeeded,
                 GrantName = s.Grants?.Name ?? "", GrantDesc = s.Grants?.Description ?? "", GrantIcon = s.Grants?.Icon is { Length: > 0 } gi ? gi : "game:10205", GrantMinutes = s.Grants?.Minutes ?? 0, GrantDebuff = s.Grants?.IsDebuff ?? false,

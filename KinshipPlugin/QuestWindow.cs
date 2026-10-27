@@ -33,20 +33,31 @@ public sealed class QuestWindow : Window, IDisposable
         PositionCondition = ImGuiCond.FirstUseEver;
     }
 
+    private bool dismissedStart;
+
     public override bool DrawConditions()
     {
-        if (Plugin.Config.ItemsToken.Length == 0 || !Plugin.Config.QuestWindow) return false;
+        if (Plugin.Config.ItemsToken.Length == 0) return false;
         Plugin.Quests.RefreshIfDue(30);
-        return Plugin.Quests.Active().Count > 0;
+        var near = Plugin.Quests.StartNear() != null;
+        if (!near) dismissedStart = false;
+        if (near && !dismissedStart) return true;     // shows even with the window turned off, so a quest can be picked up
+        return Plugin.Config.QuestWindow && Plugin.Quests.Active().Count > 0;
     }
 
-    public override void OnClose() { Plugin.Config.QuestWindow = false; Plugin.Config.Save(); IsOpen = true; }
+    public override void OnClose()
+    {
+        if (Plugin.Quests.Active().Count > 0) { Plugin.Config.QuestWindow = false; Plugin.Config.Save(); }
+        else dismissedStart = true;
+        IsOpen = true;
+    }
 
     public override void Draw()
     {
         var s = Plugin.Quests.Snapshot();
         var active = Plugin.Quests.Active();
 
+        if (active.Count == 0) ImGui.TextColored(Dim, "Something here catches your eye.");
         // The action bar is pinned to the bottom; the quests scroll above it.
         var barHeight = 64f;
         if (ImGui.BeginChild("##questlist", new Vector2(0f, Math.Max(40f, ImGui.GetContentRegionAvail().Y - barHeight))))
@@ -84,9 +95,11 @@ public sealed class QuestWindow : Window, IDisposable
         foreach (var (type, label) in new[] { ("look", "Look"), ("listen", "Listen"), ("search", "Search") })
         {
             ImGui.SameLine();
-            var ready = !s.Busy && Plugin.Quests.Ready(type);
+            var start = type == "look" ? Plugin.Quests.StartNear() : null;
+            var stepReady = Plugin.Quests.Ready(type);
+            var ready = !s.Busy && (stepReady || start != null);
             if (!ready) ImGui.BeginDisabled();
-            if (ImGui.Button(label + "##qw" + type)) _ = Plugin.Quests.ActAsync(type);
+            if (ImGui.Button(label + "##qw" + type)) { if (stepReady) _ = Plugin.Quests.ActAsync(type); else if (start != null) _ = Plugin.Quests.OfferAsync(start.QuestId); }
             if (!ready) ImGui.EndDisabled();
         }
         ImGui.TextColored(target.Length > 0 ? Gold : Dim, target.Length > 0 ? target : "Target someone to speak");
@@ -139,5 +152,47 @@ public sealed class QuestReplyWindow : Window, IDisposable
             }
         ImGui.PopTextWrapPos();
         if (ImGui.Button("Close##qr")) Plugin.Quests.DismissTalk();
+    }
+}
+
+/// <summary>"Do you want to take this quest?" with Accept and Decline. Shown when you look at a quest spot or use a quest item.</summary>
+public sealed class QuestOfferWindow : Window, IDisposable
+{
+    private static readonly Vector4 Gold = new(0.92f, 0.78f, 0.35f, 1f);
+    private static readonly Vector4 Dim = new(0.65f, 0.65f, 0.7f, 1f);
+
+    public QuestOfferWindow() : base("A quest##KinshipQuestOffer", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse)
+    {
+        RespectCloseHotkey = false;
+        IsOpen = true;
+        BgAlpha = 0.92f;
+    }
+
+    public void Dispose() { }
+
+    public override void PreDraw()
+    {
+        var vp = ImGuiHelpers.MainViewport;
+        Position = new Vector2(vp.Pos.X + vp.Size.X / 2f - 170f, vp.Pos.Y + vp.Size.Y / 2f - 120f);
+        PositionCondition = ImGuiCond.Appearing;
+    }
+
+    public override bool DrawConditions() => Plugin.Quests.LastOffer() != null;
+    public override void OnClose() { Plugin.Quests.DismissOffer(); IsOpen = true; }
+
+    public override void Draw()
+    {
+        var o = Plugin.Quests.LastOffer();
+        if (o == null) return;
+        ImGui.PushTextWrapPos(ImGui.GetFontSize() * 26f);
+        if (o.Text.Length > 0) { ImGui.TextUnformatted(o.Text); ImGui.Spacing(); }
+        ImGui.TextColored(Gold, o.Title);
+        if (o.Intro.Length > 0) ImGui.TextUnformatted(o.Intro);
+        ImGui.Spacing();
+        ImGui.TextColored(Dim, "Do you want to take this quest?");
+        ImGui.PopTextWrapPos();
+        if (ImGui.Button("Accept##qo")) _ = Plugin.Quests.AcceptAsync(o);
+        ImGui.SameLine();
+        if (ImGui.Button("Decline##qo")) Plugin.Quests.DismissOffer();
     }
 }

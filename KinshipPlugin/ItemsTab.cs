@@ -299,6 +299,18 @@ public sealed class ItemsTab
 
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         ImGui.TextColored(Gold, "Status (optional)");
+        if (gift && !inResult)
+        {
+            var qs = Plugin.Quests.Snapshot().Admin;
+            ImGui.SetNextItemWidth(240f);
+            if (ImGui.BeginCombo("Starts a quest##fsq", form.StartsQuest.Length > 0 ? qs.FirstOrDefault(x => x.Id == form.StartsQuest)?.Title ?? "(quest)" : "No quest"))
+            {
+                if (ImGui.Selectable("No quest", form.StartsQuest.Length == 0)) form.StartsQuest = "";
+                foreach (var q in qs) if (ImGui.Selectable(q.Title + "##fsq" + q.Id, q.Id == form.StartsQuest)) form.StartsQuest = q.Id;
+                ImGui.EndCombo();
+            }
+            ImGui.TextColored(Dim, qs.Count == 0 ? "Open the Quests tab, Advocate tools, and press Load quests to see your quests here." : "Using the item offers the quest with Accept and Decline. Needs an action below, like Read.");
+        }
         ImGui.SetNextItemWidth(240f); ImGui.InputText("Gives the status##fst", ref form.StName, 30);
         ImGui.TextColored(Dim, "A buff or debuff the person gets when they use this, like Chocolate poison.");
         if (form.StName.Trim().Length > 0)

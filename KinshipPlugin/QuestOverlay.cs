@@ -30,10 +30,19 @@ public sealed class QuestOverlay : Window, IDisposable
         Size = vp.Size; SizeCondition = ImGuiCond.Always;
     }
 
-    public override bool DrawConditions() => Plugin.Config.ItemsToken.Length > 0 && Plugin.Quests.Active().Count > 0;
+    public override bool DrawConditions() => Plugin.Config.ItemsToken.Length > 0 && (Plugin.Quests.Active().Count > 0 || Plugin.Quests.Starts().Count > 0);
 
     public override void Draw()
     {
+        foreach (var st in Plugin.Quests.Starts())
+        {
+            var d0 = st.Place.Distance();
+            if (d0 == null || d0 > QuestState.ActionRange) continue;
+            if (!Plugin.GameGui.WorldToScreen(new Vector3(st.Place.X, st.Place.Y, st.Place.Z) + new Vector3(0, 1.0f, 0), out var sp)) continue;
+            var t0 = QuestState.Phrase("look");
+            ImGui.SetCursorScreenPos(new Vector2(sp.X - ImGui.CalcTextSize(t0).X / 2f, sp.Y - 8f));
+            ImGui.TextColored(Parchment, t0);
+        }
         foreach (var q in Plugin.Quests.Active())
         {
             var c = q.Current;

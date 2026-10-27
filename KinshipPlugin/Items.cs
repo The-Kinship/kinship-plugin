@@ -34,6 +34,7 @@ public sealed class ItemReply
     public List<string>? Gained { get; set; } public string? KeyUsed { get; set; }
     public int? Gold { get; set; } public string? To { get; set; } public long? Total { get; set; }
     public string? StatusGained { get; set; } public string? StatusCured { get; set; } public List<StatusView>? Statuses { get; set; }
+    public QuestOffer? Offer { get; set; } public List<QuestStart>? Starts { get; set; }
     public List<QuestView>? Quests { get; set; } public List<TalkLine>? Results { get; set; }
     public int? Roll { get; set; } public string? Patient { get; set; } public bool? Success { get; set; } public string? Condition { get; set; } public string? Cure { get; set; }
     public string? Combined { get; set; } public List<string>? Used { get; set; } public int? Copies { get; set; }
@@ -42,7 +43,7 @@ public sealed class ItemReply
 public sealed class ItemForm
 {
     public string Name = "", Icon = "", Description = "", Flavor = "", UseLabel = "", UseText = "", Requires = "";
-    public string StName = "", StDesc = "", StIcon = "", Cures = "", StType = "", StCure = "";
+    public string StName = "", StDesc = "", StIcon = "", Cures = "", StType = "", StCure = "", StartsQuest = "";
     public string[] With = { "", "", "" };   // other reagents this combines with
     public ItemForm? Result;                 // what the combination makes
     public int StMinutes;
@@ -225,7 +226,7 @@ public sealed class ItemsState
         {
             ["name"] = f.Name.Trim(), ["icon"] = f.Icon, ["description"] = f.Description.Trim(), ["flavor"] = f.Flavor.Trim(),
             ["useLabel"] = f.UseLabel.Trim(), ["useText"] = f.UseText.Trim(), ["requires"] = f.Requires.Trim(), ["requiresConsume"] = f.RequiresConsume,
-            ["stName"] = f.StName.Trim(), ["stDesc"] = f.StDesc.Trim(), ["stIcon"] = f.StIcon, ["stDebuff"] = f.StDebuff, ["stMinutes"] = f.StMinutes, ["stType"] = f.StType, ["stCure"] = f.StCure.Trim(),
+            ["stName"] = f.StName.Trim(), ["stDesc"] = f.StDesc.Trim(), ["stIcon"] = f.StIcon, ["stDebuff"] = f.StDebuff, ["stMinutes"] = f.StMinutes, ["startsQuest"] = f.StartsQuest, ["stType"] = f.StType, ["stCure"] = f.StCure.Trim(),
             ["cures"] = f.Cures.Trim(), ["consumable"] = f.Consumable,
         };
         var with = f.With.Select(x => x.Trim()).Where(x => x.Length > 0).ToList();
@@ -261,6 +262,7 @@ public sealed class ItemsState
         if (!string.IsNullOrEmpty(r.KeyUsed)) text += "\n\n(" + r.KeyUsed + " was used up.)";
         if (!string.IsNullOrEmpty(r.StatusGained)) text += "\n\nYou are now affected by: " + r.StatusGained + ".";
         if (!string.IsNullOrEmpty(r.StatusCured)) text += "\n\n" + r.StatusCured + " has been lifted.";
+        if (r.Offer != null) Plugin.Quests.SetOffer(r.Offer);
         if (!string.IsNullOrEmpty(r.StatusGained) || !string.IsNullOrEmpty(r.StatusCured)) _ = Plugin.Status.RefreshAsync();
         _ = Plugin.Framework.RunOnFrameworkThread(() => Plugin.Scene.ShowLocal(text));
     }
