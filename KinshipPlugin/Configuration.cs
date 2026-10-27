@@ -67,6 +67,8 @@ public class Configuration : IPluginConfiguration
     public bool StatusBar { get; set; } = true;
     /// <summary>Show a character's RP profile when you mouse over them (and optionally when you target them).</summary>
     public bool ProfileTips { get; set; } = true;
+    /// <summary>Set by the "Don't show this again" button on the login disclaimer.</summary>
+    public bool HideDisclaimer { get; set; } = false;
     public bool ProfileTipsTarget { get; set; } = false;
     /// <summary>Keep the profile card in one place (set by dragging) instead of following the mouse.</summary>
     public bool ProfileTipAnchored { get; set; } = false;

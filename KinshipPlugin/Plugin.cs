@@ -131,6 +131,7 @@ public sealed class Plugin : IDalamudPlugin
     private readonly SignOverlay signOverlay;
     private readonly SignReaderWindow signReader;
     private readonly StatusBar statusBar;
+    private readonly DisclaimerWindow disclaimer;
     private readonly ProfileTooltip profileTip;
     private readonly QuestWindow questWindow;
     private readonly QuestOverlay questOverlay;
@@ -182,6 +183,8 @@ public sealed class Plugin : IDalamudPlugin
         windows.AddWindow(signReader);
         statusBar = new StatusBar();
         windows.AddWindow(statusBar);
+        disclaimer = new DisclaimerWindow();
+        windows.AddWindow(disclaimer);
         profileTip = new ProfileTooltip();
         windows.AddWindow(profileTip);
         questOverlay = new QuestOverlay();
@@ -213,10 +216,12 @@ public sealed class Plugin : IDalamudPlugin
 
         // Show the plot notice at login (or right now, if you are already logged in).
         ClientState.Login += OnLogin;
-        if (ClientState.IsLoggedIn) _ = ShowNoticeAsync();
+        if (ClientState.IsLoggedIn) { ShowDisclaimer(); _ = ShowNoticeAsync(); }
     }
 
-    private void OnLogin() => _ = ShowNoticeAsync();
+    private void OnLogin() { ShowDisclaimer(); _ = ShowNoticeAsync(); }
+
+    private void ShowDisclaimer() { if (!Config.HideDisclaimer) disclaimer.IsOpen = true; }
 
     private async Task ShowNoticeAsync()
     {
@@ -253,6 +258,7 @@ public sealed class Plugin : IDalamudPlugin
         signOverlay.Dispose();
         signReader.Dispose();
         statusBar.Dispose();
+        disclaimer.Dispose();
         profileTip.Dispose();
         questWindow.Dispose();
         questOverlay.Dispose();

@@ -18,6 +18,7 @@ public sealed class MainWindow : Window, IDisposable
     private readonly CombatTab combat = new();
     private readonly RpTab rp = new();
     private readonly RosterTab roster = new();
+    private readonly AboutPluginTab aboutPlugin = new();
     private readonly ItemsTab items;
 
     public MainWindow() : base("The Kinship##KinshipMain", ImGuiWindowFlags.None)
@@ -75,6 +76,7 @@ public sealed class MainWindow : Window, IDisposable
         {
             if (ImGui.BeginTabItem("Home")) { DrawHome(f); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("About")) { AboutTab.Draw(); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("About Plugin")) { aboutPlugin.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Roster")) { roster.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Announcements")) { DrawAnnouncements(f); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Plots")) { DrawPlots(p); ImGui.EndTabItem(); }

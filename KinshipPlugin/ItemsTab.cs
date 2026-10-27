@@ -530,6 +530,7 @@ public sealed class ItemsTab
         questsTab.DrawTools(s);
         statusTab.DrawTools(s);
         bankTab.DrawTools();
+        ReportsAdmin.Draw();
     }
 
     private void DrawDmTools()
