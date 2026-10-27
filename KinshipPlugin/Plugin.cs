@@ -45,6 +45,9 @@ public sealed class Plugin : IDalamudPlugin
     internal static IFontHandle PopupFont { get; private set; } = null!;
 
     private static ImageViewerWindow? viewer;
+    private static ArmoryViewWindow? armoryView;
+    /// <summary>Opens a small window with what another character is wearing.</summary>
+    internal static void ShowArmory(string name) { armoryView?.Show(name); }
     /// <summary>Opens a website image in the large viewer window.</summary>
     internal static void ShowImage(string file) { viewer?.Show(file); }
 
@@ -157,6 +160,8 @@ public sealed class Plugin : IDalamudPlugin
         windows.AddWindow(popup);
         viewer = new ImageViewerWindow();
         windows.AddWindow(viewer);
+        armoryView = new ArmoryViewWindow();
+        windows.AddWindow(armoryView);
         overlay = new StashOverlay();
         windows.AddWindow(overlay);
         signOverlay = new SignOverlay();
@@ -227,6 +232,7 @@ public sealed class Plugin : IDalamudPlugin
         notice.Dispose();
         popupWindow = null;
         viewer = null;
+        armoryView = null;
         popup.Dispose();
         overlay.Dispose();
         signOverlay.Dispose();

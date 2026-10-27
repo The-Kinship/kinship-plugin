@@ -9,6 +9,7 @@ namespace KinshipPlugin;
 public sealed class ArmorySlot { public string Slot { get; set; } = ""; public ItemView? Item { get; set; } }
 public sealed class ArmoryBonus { public int Atk { get; set; } public int Heal { get; set; } public bool Capped { get; set; } }
 public sealed record ArmorySnap(List<ArmorySlot> Slots, ArmoryBonus Bonus, string Error, string Notice, bool Busy);
+public sealed record ArmoryLook(string Name, List<ArmorySlot> Slots, ArmoryBonus Bonus, string Error, bool Loading);
 
 /// <summary>Your armory: what you are wearing. Worn gear is out of your bag; its bonuses count in rolls (all gear together is capped at +5).</summary>
 public sealed class ArmoryState
@@ -81,6 +82,22 @@ public sealed class ArmoryState
         catch (Exception ex) { Plugin.Log.Warning(ex, "Armory request failed"); lock (gate) { error = "Couldn't reach the server. Check your connection and try again."; } }
         finally { lock (gate) { busy = false; } }
         return null;
+    }
+
+    // ---------- looking at someone else's armory (from the roster) ----------
+    private string lookName = "", lookError = ""; private List<ArmorySlot> lookSlots = new(); private ArmoryBonus lookBonus = new(); private bool looking;
+    public ArmoryLook Look() { lock (gate) { return new ArmoryLook(lookName, lookSlots, lookBonus, lookError, looking); } }
+    public async Task LookAsync(string name)
+    {
+        lock (gate) { lookName = name; lookError = ""; lookSlots = new(); lookBonus = new(); looking = true; }
+        try
+        {
+            var r = await ItemsState.SendAsync(HttpMethod.Get, "/armory/of?name=" + Uri.EscapeDataString(name), null).ConfigureAwait(false);
+            lock (gate) { lookSlots = r.Slots ?? new(); lookBonus = r.Bonus ?? new(); if (!string.IsNullOrEmpty(r.Name)) lookName = r.Name; }
+        }
+        catch (CombatException ex) { lock (gate) { lookError = ex.Status == 401 ? "Sign in on the RP tab first to see other people's armory." : ex.Message; } }
+        catch (Exception) { lock (gate) { lookError = "Couldn't reach the server. Try again."; } }
+        finally { lock (gate) { looking = false; } }
     }
 
     public Task EquipAsync(string itemId, string? slot = null) => Exec(() => ItemsState.SendAsync(HttpMethod.Post, "/armory/equip", new { itemId, slot }));

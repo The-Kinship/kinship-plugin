@@ -133,9 +133,11 @@ public sealed class RosterTab
         if (p.Race.Length > 0) ImGui.Text("Race: " + p.Race);
         if (p.Age.Length > 0) ImGui.Text("Age: " + p.Age);
         if (p.Bio.Length > 0) { ImGui.Spacing(); ImGui.TextWrapped(p.Bio); }
+        ImGui.Spacing();
+        if (ImGui.Button("Armory##rosterarmory")) Plugin.ShowArmory(p.Name);
         if (p.Carrd.StartsWith("http"))
         {
-            ImGui.Spacing();
+            ImGui.SameLine();
             if (ImGui.Button("Open their Carrd")) AboutTab.OpenLink(p.Carrd);
         }
     }

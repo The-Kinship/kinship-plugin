@@ -201,15 +201,6 @@ public sealed class SceneState : IDisposable
         catch (Exception) { SetError("Can't reach the server right now. Retrying..."); }
     }
 
-    private int localId;
-    /// <summary>Shows a popup that only you see (for example "Your necklace broke!").</summary>
-    public void ShowLocal(string text)
-    {
-        var popup = new Popup { Id = System.Threading.Interlocked.Decrement(ref localId), Text = text };
-        lock (gate) { popups.Add(popup); history.Add(popup); if (history.Count > 20) history.RemoveAt(0); }
-        Plugin.ShowPopups();
-    }
-
     private void Enqueue(SEvent ev)
     {
         var popup = new Popup { Id = ev.Id, Text = ev.Text, Ooc = ev.Ooc, Combat = ev.Combat ?? "" };
