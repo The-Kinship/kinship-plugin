@@ -16,6 +16,7 @@ public sealed class SignView
     public float MapX { get; set; } public float MapY { get; set; }
     public string OwnerName { get; set; } = ""; public bool Mine { get; set; }
     public string? Description { get; set; }   // only comes with a single sign, not the list
+    public int Gold { get; set; }               // likewise: gold left at the sign shows only once you read it
 
     public float? Distance()
     {
@@ -90,13 +91,20 @@ public sealed class SignState
         if (s != null) lock (gate) { reading = s; }
     }
 
-    public async Task CreateAsync(string name, string text, Spot s)
+    public async Task CreateAsync(string name, string text, Spot s, int gold = 0)
     {
         var r = await Exec(() => ItemsState.SendAsync(HttpMethod.Post, "/signs", new
         {
-            name = name.Trim(), description = text.Trim(), territory = (int)s.Territory, map = (int)s.Map, x = s.Pos.X, y = s.Pos.Y, z = s.Pos.Z, zone = s.Zone, mapX = s.MapX, mapY = s.MapY
-        }), "Sign made. It stays right here.").ConfigureAwait(false);
-        if (r != null) await RefreshAsync().ConfigureAwait(false);
+            name = name.Trim(), description = text.Trim(), territory = (int)s.Territory, map = (int)s.Map, x = s.Pos.X, y = s.Pos.Y, z = s.Pos.Z, zone = s.Zone, mapX = s.MapX, mapY = s.MapY, gold
+        }), gold > 0 ? $"Sign made, with {gold:N0} gold left under it." : "Sign made. It stays right here.").ConfigureAwait(false);
+        if (r != null) { await RefreshAsync().ConfigureAwait(false); if (gold > 0) _ = Plugin.Bank.RefreshAsync(); }
+    }
+
+    /// <summary>Takes the gold left at the sign you are reading. First come, first served.</summary>
+    public async Task ClaimAsync(string id)
+    {
+        var r = await Exec(() => ItemsState.SendAsync(HttpMethod.Post, $"/signs/{id}/claim", new { }), "").ConfigureAwait(false);
+        if (r?.Sign != null) { lock (gate) { reading = r.Sign; notice = $"You take {r.Claimed:N0} gold."; } _ = Plugin.Bank.RefreshAsync(); }
     }
 
     public async Task UpdateAsync(string id, string name, string text)
@@ -117,7 +125,7 @@ public sealed class SignState
     public async Task DeleteAsync(string id)
     {
         var r = await Exec(() => ItemsState.SendAsync(HttpMethod.Post, $"/signs/{id}/delete", new { }), "Sign deleted.").ConfigureAwait(false);
-        if (r != null) { CloseReading(); await RefreshAsync().ConfigureAwait(false); }
+        if (r != null) { CloseReading(); await RefreshAsync().ConfigureAwait(false); _ = Plugin.Bank.RefreshAsync(); }
     }
 
     /// <summary>Advocates (creation password) can delete any sign.</summary>

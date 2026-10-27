@@ -98,13 +98,15 @@ public sealed class StashesTab
         if (spot != null) { ImGui.SameLine(); if (ImGui.SmallButton("Move it here##mv" + st.Id)) { _ = Plugin.Stashes.MoveHereAsync(st, spot); managing = null; } }
         if (confirmDelete == st.Id)
         {
-            ImGui.TextColored(Red, "Delete this stash? It has to be empty.");
+            ImGui.TextColored(Red, "Delete this stash? It has to be empty, with no gold in it.");
             if (ImGui.SmallButton("Yes, delete##dl" + st.Id)) { _ = Plugin.Stashes.DeleteAsync(st.Id); confirmDelete = null; managing = null; }
             ImGui.SameLine(); if (ImGui.SmallButton("No##dn" + st.Id)) confirmDelete = null;
         }
         else if (ImGui.SmallButton("Delete##dl" + st.Id)) confirmDelete = st.Id;
         ImGui.Unindent();
     }
+
+    private int goldAmount;
 
     // ---------- an open stash ----------
     private void DrawOpen(StashSnap s, ItemsSnap inv)
@@ -139,6 +141,16 @@ public sealed class StashesTab
         if (!near) ImGui.EndDisabled();
         if (hovered != null) ItemsTab.DrawTooltip(hovered);
 
+        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        ImGui.TextColored(Gold, $"Gold in the stash: {st.Gold:N0}");
+        if (!near) ImGui.BeginDisabled();
+        ImGui.SetNextItemWidth(110f); ImGui.InputInt("Gold##stashgold", ref goldAmount, 0);
+        if (goldAmount < 0) goldAmount = 0;
+        ImGui.SameLine(); if (ImGui.SmallButton("Put in##sgp") && goldAmount > 0 && !s.Busy) { _ = Plugin.Stashes.PutGoldAsync(st.Id, goldAmount); }
+        ImGui.SameLine(); if (ImGui.SmallButton("Take out##sgt") && goldAmount > 0 && !s.Busy) { _ = Plugin.Stashes.TakeGoldAsync(st.Id, goldAmount); }
+        ImGui.SameLine(); if (st.Gold > 0 && ImGui.SmallButton("Take all##sga") && !s.Busy) { _ = Plugin.Stashes.TakeGoldAsync(st.Id, st.Gold); }
+        if (!near) ImGui.EndDisabled();
+        ImGui.TextColored(Dim, $"Your purse: {Plugin.Items.Gold:N0} gold. Anyone who can open this stash can take its gold.");
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         ImGui.TextColored(Gold, $"Your items  {inv.Items.Count}/{inv.Capacity}");
         ImGui.TextColored(Dim, "Click an item to put it in the stash.");

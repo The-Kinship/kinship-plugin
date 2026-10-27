@@ -72,6 +72,20 @@ public sealed class SignReaderWindow : Window, IDisposable
         ImGui.PushTextWrapPos(Width - 16f);
         ImGui.TextUnformatted(s.Description ?? "");
         ImGui.PopTextWrapPos();
+        if (s.Gold > 0)
+        {
+            ImGui.Spacing();
+            if (s.Mine) ImGui.TextColored(Dim, $"Your {s.Gold:N0} gold waits here. Delete the sign to take it back.");
+            else
+            {
+                ImGui.TextColored(new Vector4(0.92f, 0.78f, 0.35f, 1f), $"{s.Gold:N0} gold lies here.");
+                ImGui.SameLine();
+                if (ImGui.SmallButton("Take it##sg")) _ = Plugin.Signs.ClaimAsync(s.Id);
+            }
+        }
+        var gerr = Plugin.Signs.Snapshot();
+        if (gerr.Error.Length > 0) ImGui.TextColored(new Vector4(0.95f, 0.4f, 0.35f, 1f), gerr.Error);
+        else if (gerr.Notice.Length > 0) ImGui.TextColored(new Vector4(0.4f, 0.8f, 0.5f, 1f), gerr.Notice);
         ImGui.Separator();
         ImGui.TextColored(Dim, $"left by {s.OwnerName}  ·  {s.Zone}");
         if (ImGui.SmallButton("Close##sr")) Plugin.Signs.CloseReading();

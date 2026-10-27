@@ -37,6 +37,8 @@ public sealed class SignsTab
         DrawList(s);
     }
 
+    private int newGold;
+
     private void DrawMake(SignSnap s)
     {
         if (!ImGui.CollapsingHeader("Make a sign here")) return;
@@ -46,11 +48,14 @@ public sealed class SignsTab
         ImGui.SetNextItemWidth(260f); ImGui.InputText("Name##sign", ref newName, 40);
         ImGui.Text("What it says");
         ImGui.InputTextMultiline("##signtext", ref newText, 1000, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 110f));
+        ImGui.SetNextItemWidth(110f); ImGui.InputInt("Gold to leave (optional)##signgold", ref newGold, 0);
+        if (newGold < 0) newGold = 0;
+        ImGui.TextColored(Dim, $"Comes out of your purse ({Plugin.Items.Gold:N0} gold). The first person to read the sign takes it. Delete the sign to get it back.");
         var mine = s.Signs.Count(x => x.Mine);
         if (mine >= MaxMine) ImGui.TextColored(Dim, $"You already have {MaxMine} signs. Delete one to make another.");
         var ok = newName.Trim().Length > 0 && newText.Trim().Length > 0 && !s.Busy && mine < MaxMine;
         if (!ok) ImGui.BeginDisabled();
-        if (ImGui.Button("Make sign here")) { _ = Plugin.Signs.CreateAsync(newName, newText, spot); newName = ""; newText = ""; }
+        if (ImGui.Button("Make sign here")) { _ = Plugin.Signs.CreateAsync(newName, newText, spot, newGold); newName = ""; newText = ""; newGold = 0; }
         if (!ok) ImGui.EndDisabled();
     }
 

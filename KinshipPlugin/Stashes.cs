@@ -17,7 +17,7 @@ public sealed class StashView
     public float X { get; set; } public float Y { get; set; } public float Z { get; set; }
     public float MapX { get; set; } public float MapY { get; set; }
     public string OwnerName { get; set; } = ""; public bool Mine { get; set; } public bool IsPrivate { get; set; }
-    public int Count { get; set; } public int Capacity { get; set; }
+    public int Count { get; set; } public int Capacity { get; set; } public int Gold { get; set; }
     public string? Owner { get; set; }   // only filled in by the Advocate list
 }
 
@@ -150,6 +150,8 @@ public sealed class StashState
     }
 
     public async Task OpenAsync(string id) => await Exec(() => ItemsState.SendAsync(HttpMethod.Get, "/stashes/" + id, null)).ConfigureAwait(false);
+    public async Task PutGoldAsync(string id, int amount) { var r = await Exec(() => ItemsState.SendAsync(HttpMethod.Post, $"/stashes/{id}/put-gold", new { amount })).ConfigureAwait(false); if (r != null) _ = Plugin.Bank.RefreshAsync(); }
+    public async Task TakeGoldAsync(string id, int amount) { var r = await Exec(() => ItemsState.SendAsync(HttpMethod.Post, $"/stashes/{id}/take-gold", new { amount })).ConfigureAwait(false); if (r != null) _ = Plugin.Bank.RefreshAsync(); }
     public async Task PutAsync(string id, string itemId) => await Exec(() => ItemsState.SendAsync(HttpMethod.Post, $"/stashes/{id}/put", new { itemId })).ConfigureAwait(false);
     public async Task TakeAsync(string id, string itemId) => await Exec(() => ItemsState.SendAsync(HttpMethod.Post, $"/stashes/{id}/take", new { itemId })).ConfigureAwait(false);
 
