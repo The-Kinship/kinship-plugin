@@ -106,9 +106,9 @@ public sealed class CombatState
 
     public CombatState()
     {
-        token = Plugin.Config.CombatToken;
-        memberId = Plugin.Config.CombatMemberId;
-        code = Plugin.Config.CombatCode;
+        token = Plugin.Config.Me().CombatToken;
+        memberId = Plugin.Config.Me().CombatMemberId;
+        code = Plugin.Config.Me().CombatCode;
     }
 
     public bool Connected { get { lock (gate) { return token.Length > 0 && code.Length > 0; } } }
@@ -155,8 +155,8 @@ public sealed class CombatState
             var r = await SendAsync(HttpMethod.Post, $"/rooms/{roomCode}/join", new { name = name.Trim() }, null).ConfigureAwait(false);
             if (r.Token == null || r.MemberId == null || r.Room == null) throw new CombatException("The join reply was incomplete.", 500);
             lock (gate) { token = r.Token; memberId = r.MemberId; code = roomCode; room = r.Room; lastPoll = DateTime.UtcNow; }
-            Plugin.Config.CombatName = name.Trim();
-            Plugin.Config.CombatCode = roomCode; Plugin.Config.CombatToken = r.Token; Plugin.Config.CombatMemberId = r.MemberId;
+            Plugin.Config.Me().CombatName = name.Trim();
+            Plugin.Config.Me().CombatCode = roomCode; Plugin.Config.Me().CombatToken = r.Token; Plugin.Config.Me().CombatMemberId = r.MemberId;
             Plugin.Config.Save();
         }
         catch (CombatException ex) { SetError(ex.Message); }
@@ -175,8 +175,8 @@ public sealed class CombatState
             var r = await SendAsync(HttpMethod.Post, "/rooms", new { name = name.Trim(), encounter = encounter.Trim(), createPassword = Plugin.Config.CreatePassword }, null).ConfigureAwait(false);
             if (r.Token == null || r.MemberId == null || r.Room == null) throw new CombatException("The reply was incomplete.", 500);
             lock (gate) { token = r.Token; memberId = r.MemberId; code = r.Room.Code; room = r.Room; lastPoll = DateTime.UtcNow; }
-            Plugin.Config.CombatName = name.Trim();
-            Plugin.Config.CombatCode = r.Room.Code; Plugin.Config.CombatToken = r.Token; Plugin.Config.CombatMemberId = r.MemberId;
+            Plugin.Config.Me().CombatName = name.Trim();
+            Plugin.Config.Me().CombatCode = r.Room.Code; Plugin.Config.Me().CombatToken = r.Token; Plugin.Config.Me().CombatMemberId = r.MemberId;
             Plugin.Config.Save();
         }
         catch (CombatException ex) { SetError(ex.Message); }
@@ -203,7 +203,7 @@ public sealed class CombatState
     public void Leave()
     {
         lock (gate) { token = ""; memberId = ""; code = ""; room = null; error = ""; }
-        Plugin.Config.CombatCode = ""; Plugin.Config.CombatToken = ""; Plugin.Config.CombatMemberId = "";
+        Plugin.Config.Me().CombatCode = ""; Plugin.Config.Me().CombatToken = ""; Plugin.Config.Me().CombatMemberId = "";
         Plugin.Config.Save();
     }
 

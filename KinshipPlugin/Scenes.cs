@@ -42,8 +42,8 @@ public sealed class SceneState : IDisposable
 
     public SceneState()
     {
-        token = Plugin.Config.SceneToken; memberId = Plugin.Config.SceneMemberId;
-        code = Plugin.Config.SceneCode; role = Plugin.Config.SceneRole; title = Plugin.Config.SceneTitle;
+        token = Plugin.Config.Me().SceneToken; memberId = Plugin.Config.Me().SceneMemberId;
+        code = Plugin.Config.Me().SceneCode; role = Plugin.Config.Me().SceneRole; title = Plugin.Config.Me().SceneTitle;
     }
 
     public SceneSnap Snapshot()
@@ -84,8 +84,8 @@ public sealed class SceneState : IDisposable
             token = r.Token ?? ""; memberId = r.MemberId ?? ""; code = r.Code ?? ""; role = r.Role ?? "player"; title = r.Title ?? "";
             members = r.Members ?? new(); lastId = -1; error = ""; status = "";
         }
-        Plugin.Config.SceneToken = token; Plugin.Config.SceneMemberId = memberId; Plugin.Config.SceneCode = code;
-        Plugin.Config.SceneRole = role; Plugin.Config.SceneTitle = title; Plugin.Config.SceneName = name;
+        Plugin.Config.Me().SceneToken = token; Plugin.Config.Me().SceneMemberId = memberId; Plugin.Config.Me().SceneCode = code;
+        Plugin.Config.Me().SceneRole = role; Plugin.Config.Me().SceneTitle = title; Plugin.Config.Me().SceneName = name;
         Plugin.Config.Save();
     }
 
@@ -125,7 +125,7 @@ public sealed class SceneState : IDisposable
     {
         StopLoop();
         lock (gate) { token = ""; memberId = ""; code = ""; role = ""; title = ""; members = new(); listening = false; lastId = -1; popups.Clear(); }
-        Plugin.Config.SceneToken = ""; Plugin.Config.SceneMemberId = ""; Plugin.Config.SceneCode = ""; Plugin.Config.SceneRole = ""; Plugin.Config.SceneTitle = "";
+        Plugin.Config.Me().SceneToken = ""; Plugin.Config.Me().SceneMemberId = ""; Plugin.Config.Me().SceneCode = ""; Plugin.Config.Me().SceneRole = ""; Plugin.Config.Me().SceneTitle = "";
         Plugin.Config.Save();
     }
 

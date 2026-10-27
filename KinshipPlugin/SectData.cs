@@ -32,12 +32,12 @@ public static class SectData
         return System.Convert.ToHexString(bytes).ToLowerInvariant() == sect.Hash;
     }
 
-    public static bool IsUnlocked(string key) => Plugin.Config.Unlocked.Contains(key);
+    public static bool IsUnlocked(string key) => Plugin.Config.Me().Unlocked.Contains(key);
 
     public static void SetUnlocked(string key, bool remember)
     {
         if (!remember) { SessionUnlocked.Add(key); return; }
-        if (!Plugin.Config.Unlocked.Contains(key)) Plugin.Config.Unlocked.Add(key);
+        if (!Plugin.Config.Me().Unlocked.Contains(key)) Plugin.Config.Me().Unlocked.Add(key);
         Plugin.Config.Save();
     }
 

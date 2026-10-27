@@ -34,7 +34,7 @@ public sealed class StatusBar : Window, IDisposable
 
     public override bool DrawConditions()
     {
-        if (Plugin.Config.ItemsToken.Length == 0) return false;
+        if (Plugin.Config.Me().ItemsToken.Length == 0) return false;
         Plugin.Status.RefreshIfDue(30);   // keeps everyone's statuses fresh even when the tab is closed
         return Plugin.Config.StatusBar && Plugin.Status.Mine().Count > 0;
     }

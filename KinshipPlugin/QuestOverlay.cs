@@ -30,7 +30,7 @@ public sealed class QuestOverlay : Window, IDisposable
         Size = vp.Size; SizeCondition = ImGuiCond.Always;
     }
 
-    public override bool DrawConditions() => Plugin.Config.ItemsToken.Length > 0 && (Plugin.Quests.Active().Count > 0 || Plugin.Quests.Starts().Count > 0);
+    public override bool DrawConditions() => Plugin.Config.Me().ItemsToken.Length > 0 && (Plugin.Quests.Active().Count > 0 || Plugin.Quests.Starts().Count > 0);
 
     public override void Draw()
     {

@@ -38,7 +38,7 @@ public sealed class QuestWindow : Window, IDisposable
 
     public override bool DrawConditions()
     {
-        if (Plugin.Config.ItemsToken.Length == 0) return false;
+        if (Plugin.Config.Me().ItemsToken.Length == 0) return false;
         Plugin.Quests.RefreshIfDue(30);
         var near = Plugin.Quests.StartNear() != null;
         if (!near) dismissedStart = false;

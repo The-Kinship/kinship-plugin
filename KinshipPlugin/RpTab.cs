@@ -14,7 +14,7 @@ public sealed class RpTab
     private static readonly Vector4 Red = new(0.95f, 0.4f, 0.35f, 1f);
     private static readonly Vector4 Green = new(0.4f, 0.8f, 0.5f, 1f);
 
-    private string name = Plugin.Config.SceneName.Length > 0 ? Plugin.Config.SceneName : Plugin.Config.CombatName;
+    private string name = Plugin.Config.Me().SceneName.Length > 0 ? Plugin.Config.Me().SceneName : Plugin.Config.Me().CombatName;
     private string codeInput = "";
     private string newTitle = "";
     private string text = "", ooc = "";
@@ -22,8 +22,11 @@ public sealed class RpTab
     private bool attachCombat;
     private readonly HashSet<string> picked = new();
 
+    private ulong seenCharacter = ulong.MaxValue;
+
     public void Draw()
     {
+        if (seenCharacter != Plugin.CharacterId) { seenCharacter = Plugin.CharacterId; name = Plugin.Config.Me().SceneName.Length > 0 ? Plugin.Config.Me().SceneName : Plugin.Config.Me().CombatName; codeInput = ""; }
         var s = Plugin.Scene.Snapshot();
         if (!s.Connected) { DrawConnect(s); return; }
         if (s.Role == "dm") DrawDm(s); else DrawPlayer(s);

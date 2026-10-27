@@ -31,7 +31,7 @@ public sealed class SignOverlay : Window, IDisposable
         Size = vp.Size; SizeCondition = ImGuiCond.Always;
     }
 
-    public override bool DrawConditions() => Plugin.Config.SignLabels && Plugin.Config.ItemsToken.Length > 0;
+    public override bool DrawConditions() => Plugin.Config.SignLabels && Plugin.Config.Me().ItemsToken.Length > 0;
 
     public override void Draw()
     {

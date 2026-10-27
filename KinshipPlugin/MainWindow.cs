@@ -110,7 +110,7 @@ public sealed class MainWindow : Window, IDisposable
         ImGui.Spacing();
         if (ImGui.Button("Forget my unlocked sects"))
         {
-            Plugin.Config.Unlocked.Clear();
+            Plugin.Config.Me().Unlocked.Clear();
             SectData.SessionUnlocked.Clear();
             Plugin.Config.Save();
         }

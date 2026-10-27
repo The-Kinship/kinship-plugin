@@ -16,7 +16,7 @@ public sealed class CombatTab
     private static readonly int[] Dice = { 4, 6, 8, 10, 12, 20, 100 };
     private const string Banner = ImageCache.SiteImages + "kinship-combat-banner.jpg";
 
-    private string name = Plugin.Config.CombatName;
+    private string name = Plugin.Config.Me().CombatName;
     private string codeInput = "";
     private string kind = "attack";
     private int dieIndex = 5;      // d20
@@ -50,8 +50,11 @@ public sealed class CombatTab
     private int fType;                 // 0 = Player, 1 = NPC
     private int fHp = 10, fMax = 10, fNumber = 1;
 
+    private ulong seenCharacter = ulong.MaxValue;
+
     public void Draw()
     {
+        if (seenCharacter != Plugin.CharacterId) { seenCharacter = Plugin.CharacterId; name = Plugin.Config.Me().CombatName; codeInput = ""; }
         DrawBanner();
         var (room, myId, error, busy) = Plugin.Combat.Snapshot();
 

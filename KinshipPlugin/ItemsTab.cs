@@ -20,7 +20,7 @@ public sealed class ItemsTab
     private Mode mode = Mode.Inventory;
 
     // sign in
-    private string name = Plugin.Config.ItemsName.Length > 0 ? Plugin.Config.ItemsName : Plugin.Config.CombatName;
+    private string name = Plugin.Config.Me().ItemsName.Length > 0 ? Plugin.Config.Me().ItemsName : Plugin.Config.Me().CombatName;
     private string memberPassword = "", recoveryName = "", recoveryCode = "";
 
     // item form
@@ -45,8 +45,17 @@ public sealed class ItemsTab
     private readonly Stack<ItemForm> parents = new();   // when editing what a combination makes, the form we came from
     private readonly IconPicker picker = new("pickicon");
 
+    private ulong seenCharacter = ulong.MaxValue;
+
     public void Draw()
     {
+        if (seenCharacter != Plugin.CharacterId)
+        {
+            seenCharacter = Plugin.CharacterId;
+            name = Plugin.Config.Me().ItemsName.Length > 0 ? Plugin.Config.Me().ItemsName : Plugin.Config.Me().CombatName;
+            if (name.Length == 0) name = Plugin.CharacterName();
+            memberPassword = ""; recoveryName = ""; recoveryCode = ""; mode = Mode.Inventory; editingId = null; giving = null; sealing = null; confirmDelete = null;
+        }
         var s = Plugin.Items.Snapshot();
         if (mode == Mode.Gift) { DrawForm(s); return; }   // DMs can gift without being signed in as a member
         if (!s.SignedIn) { DrawSignIn(s); return; }
@@ -68,6 +77,16 @@ public sealed class ItemsTab
     private void DrawSignIn(ItemsSnap s)
     {
         ImGui.TextColored(Gold, "RP items");
+        var who = Plugin.CharacterName();
+        if (who.Length > 0) ImGui.TextColored(Dim, "Signing in as your character: " + who);
+        if (Plugin.Config.HasLegacy())
+        {
+            ImGui.Spacing();
+            var old = Plugin.Config.ItemsName.Length > 0 ? Plugin.Config.ItemsName : "a saved sign-in";
+            ImGui.TextWrapped($"Your plugin has {old} saved from before each character got their own. Is that this character?");
+            if (ImGui.Button("Yes, use it for " + (who.Length > 0 ? who : "this character") + "##claim")) { Plugin.Config.ClaimLegacy(); Plugin.ResetStates(); }
+            ImGui.Spacing(); ImGui.Separator();
+        }
         ImGui.TextWrapped("Make items for your character, keep them in your inventory, give them to others, and use them in RP. Items only exist in this plugin. They never touch the game.");
         ImGui.Spacing();
         ImGui.TextColored(Gold, "Join the item system");

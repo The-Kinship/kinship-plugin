@@ -47,7 +47,7 @@ public sealed class StashReaderWindow : Window, IDisposable
 
     public override bool DrawConditions()
     {
-        if (Plugin.Config.ItemsToken.Length == 0 || !Plugin.Config.StashPopup) return false;
+        if (Plugin.Config.Me().ItemsToken.Length == 0 || !Plugin.Config.StashPopup) return false;
         Plugin.Stashes.RefreshIfDue(60);
         var open = Plugin.Stashes.Snapshot().Open;
         if (!mine || open == null)

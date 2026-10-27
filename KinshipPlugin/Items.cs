@@ -84,7 +84,7 @@ public sealed class ItemsState
 
     public ItemsSnap Snapshot()
     {
-        lock (gate) { return new ItemsSnap(Plugin.Config.ItemsToken.Length > 0, Plugin.Config.ItemsName, capacity, items.ToList(), members.ToList(), error, notice, busy, Plugin.Config.ItemsRecovery); }
+        lock (gate) { return new ItemsSnap(Plugin.Config.Me().ItemsToken.Length > 0, Plugin.Config.Me().ItemsName, capacity, items.ToList(), members.ToList(), error, notice, busy, Plugin.Config.Me().ItemsRecovery); }
     }
     private void SetError(string m) { lock (gate) { error = m; notice = ""; } }
     public void ClearMessages() { lock (gate) { error = ""; notice = ""; } }
@@ -92,7 +92,7 @@ public sealed class ItemsState
     internal static async Task<ItemReply> SendAsync(HttpMethod method, string path, object? body)
     {
         using var req = new HttpRequestMessage(method, CombatState.BaseUrl + "/api" + path);
-        if (Plugin.Config.ItemsToken.Length > 0) req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Plugin.Config.ItemsToken);
+        if (Plugin.Config.Me().ItemsToken.Length > 0) req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Plugin.Config.Me().ItemsToken);
         if (body != null) req.Content = new StringContent(JsonSerializer.Serialize(body, Json), Encoding.UTF8, "application/json");
         using var res = await Http.SendAsync(req).ConfigureAwait(false);
         var text = await res.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -125,7 +125,7 @@ public sealed class ItemsState
 
     private void SignOutLocal()
     {
-        Plugin.Config.ItemsToken = ""; Plugin.Config.Save();
+        Plugin.Config.Me().ItemsToken = ""; Plugin.Config.Save();
         lock (gate) { items = new(); loadedOnce = false; }
     }
     /// <summary>Lets the stash screen update your inventory after you put something in or take something out.</summary>
@@ -136,7 +136,7 @@ public sealed class ItemsState
     {
         var r = await Run(() => SendAsync(HttpMethod.Post, "/items/register", new { name = name.Trim(), memberPassword }), false).ConfigureAwait(false);
         if (r?.Token == null) return;
-        Plugin.Config.ItemsToken = r.Token; Plugin.Config.ItemsName = r.Name ?? name.Trim(); Plugin.Config.ItemsRecovery = r.RecoveryCode ?? "";
+        Plugin.Config.Me().ItemsToken = r.Token; Plugin.Config.Me().ItemsName = r.Name ?? name.Trim(); Plugin.Config.Me().ItemsRecovery = r.RecoveryCode ?? "";
         Plugin.Config.Save();
         lock (gate) { notice = "You're in. Write down your recovery code below."; loadedOnce = false; }
         await RefreshAsync(true).ConfigureAwait(false);
@@ -146,7 +146,7 @@ public sealed class ItemsState
     {
         var r = await Run(() => SendAsync(HttpMethod.Post, "/items/recover", new { name = name.Trim(), recoveryCode = code.Trim() }), false).ConfigureAwait(false);
         if (r?.Token == null) return;
-        Plugin.Config.ItemsToken = r.Token; Plugin.Config.ItemsName = r.Name ?? name.Trim(); Plugin.Config.ItemsRecovery = code.Trim().ToUpperInvariant();
+        Plugin.Config.Me().ItemsToken = r.Token; Plugin.Config.Me().ItemsName = r.Name ?? name.Trim(); Plugin.Config.Me().ItemsRecovery = code.Trim().ToUpperInvariant();
         Plugin.Config.Save();
         lock (gate) { notice = "Welcome back."; loadedOnce = false; }
         await RefreshAsync(true).ConfigureAwait(false);
@@ -163,7 +163,7 @@ public sealed class ItemsState
     public void RefreshIfDue()
     {
         bool due;
-        lock (gate) { due = !busy && Plugin.Config.ItemsToken.Length > 0 && (!loadedOnce || (DateTime.UtcNow - lastRefresh).TotalSeconds > 15); if (due) lastRefresh = DateTime.UtcNow; }
+        lock (gate) { due = !busy && Plugin.Config.Me().ItemsToken.Length > 0 && (!loadedOnce || (DateTime.UtcNow - lastRefresh).TotalSeconds > 15); if (due) lastRefresh = DateTime.UtcNow; }
         if (due) _ = RefreshAsync(true);
     }
 

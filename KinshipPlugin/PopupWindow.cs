@@ -44,7 +44,7 @@ public sealed class PopupWindow : Window, IDisposable
             ImGui.TextColored(new Vector4(0.4f, 0.8f, 0.5f, 1f), "You are in this encounter. It is in the Combat tab.");
             return;
         }
-        var saved = Plugin.Config.CombatName.Length > 0 ? Plugin.Config.CombatName : Plugin.Config.SceneName.Length > 0 ? Plugin.Config.SceneName : Plugin.Config.ItemsName;
+        var saved = Plugin.Config.Me().CombatName.Length > 0 ? Plugin.Config.Me().CombatName : Plugin.Config.Me().SceneName.Length > 0 ? Plugin.Config.Me().SceneName : Plugin.Config.Me().ItemsName;
         var nameToUse = saved.Length > 0 ? saved : joinName.Trim();
         if (saved.Length == 0) { ImGui.SetNextItemWidth(220f); ImGui.InputText("Your name##pjn" + p.Id, ref joinName, 60); }
         var busy = Plugin.Combat.Snapshot().Busy;

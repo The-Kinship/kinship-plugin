@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Dalamud.Game.Command;
 using Dalamud.Interface.ManagedFontAtlas;
@@ -53,6 +54,53 @@ public sealed class Plugin : IDalamudPlugin
     private static PopupWindow? popupWindow;
     /// <summary>Opens the RP popup window (called when a popup arrives).</summary>
     internal static void ShowPopups() { if (popupWindow != null) popupWindow.IsOpen = true; }
+
+    private ulong seenCharacter = ulong.MaxValue;
+    internal static string CharacterName()
+    {
+        try { return ObjectTable.LocalPlayer?.Name.ToString() ?? ""; } catch (Exception) { return ""; }
+    }
+    /// <summary>The first word of a name, so "Sesen Vale" and "Sesen" count as the same character.</summary>
+    private static string FirstWord(string s) => s.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+
+    /// <summary>Runs every frame. When you log in as a different character, switches to that character's own saved sign-in and starts their data fresh.</summary>
+    private void CheckCharacter()
+    {
+        var id = ClientState.LocalContentId;
+        var name = id == 0 ? "" : CharacterName();
+        if (id != 0 && name.Length == 0) return;            // still loading in
+        if (id == seenCharacter) return;
+        seenCharacter = id;
+        Config.SetCharacter(id, name);
+        // The sign-in saved before characters were separated goes to the character it was made for: the one with the same name,
+        // or the first one to log in if it never registered a name. Otherwise the sign-in screen offers it as a button.
+        if (id != 0 && Config.HasLegacy())
+        {
+            var legacy = Config.ItemsName;
+            if (legacy.Length == 0 || string.Equals(FirstWord(legacy), FirstWord(name), StringComparison.OrdinalIgnoreCase)) Config.ClaimLegacy();
+        }
+        Config.Save();
+        ResetForCharacter();
+    }
+
+    internal static void ResetStates() => ResetForCharacter();
+
+    private static void ResetForCharacter()
+    {
+        Scene?.Dispose();
+        Combat = new CombatState();
+        Scene = new SceneState();
+        Items = new ItemsState();
+        Stashes = new StashState();
+        Signs = new SignState();
+        Bank = new BankState();
+        Status = new StatusState();
+        Quests = new QuestState();
+        SectData.SessionUnlocked.Clear();
+        CharacterId = ClientState.LocalContentId;
+    }
+    /// <summary>Changes when the logged in character changes, so screens can clear what was typed for the last one.</summary>
+    internal static ulong CharacterId { get; private set; }
 
     private readonly WindowSystem windows = new("KinshipPlugin");
     private readonly MainWindow main;
@@ -126,6 +174,7 @@ public sealed class Plugin : IDalamudPlugin
             HelpMessage = "Open The Kinship window."
         });
 
+        PluginInterface.UiBuilder.Draw += CheckCharacter;
         PluginInterface.UiBuilder.Draw += topBar.Update;
         PluginInterface.UiBuilder.Draw += windows.Draw;
         PluginInterface.UiBuilder.OpenMainUi += ToggleMain;
@@ -155,6 +204,7 @@ public sealed class Plugin : IDalamudPlugin
     public void Dispose()
     {
         ClientState.Login -= OnLogin;
+        PluginInterface.UiBuilder.Draw -= CheckCharacter;
         PluginInterface.UiBuilder.Draw -= topBar.Update;
         PluginInterface.UiBuilder.Draw -= windows.Draw;
         PluginInterface.UiBuilder.OpenMainUi -= ToggleMain;
