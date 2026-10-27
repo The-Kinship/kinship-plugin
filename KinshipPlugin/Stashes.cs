@@ -152,8 +152,8 @@ public sealed class StashState
     public async Task OpenAsync(string id) => await Exec(() => ItemsState.SendAsync(HttpMethod.Get, "/stashes/" + id, null)).ConfigureAwait(false);
     public async Task PutGoldAsync(string id, int amount) { var r = await Exec(() => ItemsState.SendAsync(HttpMethod.Post, $"/stashes/{id}/put-gold", new { amount })).ConfigureAwait(false); if (r != null) _ = Plugin.Bank.RefreshAsync(); }
     public async Task TakeGoldAsync(string id, int amount) { var r = await Exec(() => ItemsState.SendAsync(HttpMethod.Post, $"/stashes/{id}/take-gold", new { amount })).ConfigureAwait(false); if (r != null) _ = Plugin.Bank.RefreshAsync(); }
-    public async Task PutAsync(string id, string itemId) => await Exec(() => ItemsState.SendAsync(HttpMethod.Post, $"/stashes/{id}/put", new { itemId })).ConfigureAwait(false);
-    public async Task TakeAsync(string id, string itemId) => await Exec(() => ItemsState.SendAsync(HttpMethod.Post, $"/stashes/{id}/take", new { itemId })).ConfigureAwait(false);
+    public async Task PutAsync(string id, string itemId, int count = 1) => await Exec(() => ItemsState.SendAsync(HttpMethod.Post, $"/stashes/{id}/put", new { itemId, count })).ConfigureAwait(false);
+    public async Task TakeAsync(string id, string itemId, int count = 1) => await Exec(() => ItemsState.SendAsync(HttpMethod.Post, $"/stashes/{id}/take", new { itemId, count })).ConfigureAwait(false);
 
     public async Task UpdateAsync(string id, string name, bool isPrivate)
     {

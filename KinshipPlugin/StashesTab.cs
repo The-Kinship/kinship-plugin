@@ -109,6 +109,13 @@ public sealed class StashesTab
     private int goldAmount;
 
     // ---------- an open stash ----------
+    private static int moveAmount = 1;   // how many items one click moves
+    private static void DrawAmount()
+    {
+        ImGui.SetNextItemWidth(100f); ImGui.InputInt("How many per click##stashqty", ref moveAmount, 1);
+        moveAmount = Math.Clamp(moveAmount, 1, 100);
+    }
+
     internal void DrawOpen(StashSnap s, ItemsSnap inv, bool popup)
     {
         var st = s.Open!;
@@ -122,7 +129,8 @@ public sealed class StashesTab
         ImGui.Spacing();
 
         ImGui.TextColored(Gold, "In the stash");
-        ImGui.TextColored(Dim, "Click an item to take it.");
+        ImGui.TextColored(Dim, "Click an item to take it. Clicking moves the number below (or the whole stack if it is smaller).");
+        DrawAmount();
         ItemView? hovered = null;
         if (!near) ImGui.BeginDisabled();
         for (var i = 0; i < st.Capacity; i++)
@@ -136,7 +144,7 @@ public sealed class StashesTab
                 if (wrap != null) ImGui.Image(wrap.Handle, new Vector2(Slot, Slot)); else ImGui.Button("?##so" + i, new Vector2(Slot, Slot));
                 ItemsTab.DrawQty(it, origin, Slot);
                 if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) hovered = it;
-                if (near && !s.Busy && ImGui.IsItemClicked(ImGuiMouseButton.Left)) _ = Plugin.Stashes.TakeAsync(st.Id, it.Id);
+                if (near && !s.Busy && ImGui.IsItemClicked(ImGuiMouseButton.Left)) _ = Plugin.Stashes.TakeAsync(st.Id, it.Id, Math.Min(moveAmount, Math.Max(1, it.Qty)));
             }
             else { ImGui.BeginDisabled(); ImGui.Button("##se" + i, new Vector2(Slot, Slot)); ImGui.EndDisabled(); }
         }
@@ -155,7 +163,7 @@ public sealed class StashesTab
         ImGui.TextColored(Dim, $"Your purse: {Plugin.Items.Gold:N0} gold. Anyone who can open this stash can take its gold.");
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         ImGui.TextColored(Gold, $"Your items  {inv.Items.Count}/{inv.Capacity}");
-        ImGui.TextColored(Dim, "Click an item to put it in the stash.");
+        ImGui.TextColored(Dim, "Click an item to put it in the stash. Clicking moves the number above.");
         hovered = null;
         if (!near) ImGui.BeginDisabled();
         for (var i = 0; i < inv.Capacity; i++)
@@ -169,7 +177,7 @@ public sealed class StashesTab
                 if (wrap != null) ImGui.Image(wrap.Handle, new Vector2(Slot, Slot)); else ImGui.Button("?##si" + i, new Vector2(Slot, Slot));
                 ItemsTab.DrawQty(it, origin, Slot);
                 if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) hovered = it;
-                if (near && !s.Busy && ImGui.IsItemClicked(ImGuiMouseButton.Left)) _ = Plugin.Stashes.PutAsync(st.Id, it.Id);
+                if (near && !s.Busy && ImGui.IsItemClicked(ImGuiMouseButton.Left)) _ = Plugin.Stashes.PutAsync(st.Id, it.Id, Math.Min(moveAmount, Math.Max(1, it.Qty)));
             }
             else { ImGui.BeginDisabled(); ImGui.Button("##sj" + i, new Vector2(Slot, Slot)); ImGui.EndDisabled(); }
         }
