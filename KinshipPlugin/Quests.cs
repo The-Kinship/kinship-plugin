@@ -231,7 +231,7 @@ public sealed class QuestState
     private async Task<bool> Admin(string path, object body, string done, bool reload = true)
     {
         var pw = Plugin.Config.CreatePassword;
-        lock (gate) { if (busy) return false; if (pw.Length == 0) { error = "Enter the creation password in the Advocate tools first."; return false; } busy = true; error = ""; notice = ""; }
+        lock (gate) { if (busy) return false; if (pw.Length == 0) { error = "Enter the creation password in the SM Tools tab first."; return false; } busy = true; error = ""; notice = ""; }
         try
         {
             var r = await ItemsState.SendAsync(HttpMethod.Post, "/quests/admin/" + path, body).ConfigureAwait(false);

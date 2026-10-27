@@ -134,7 +134,7 @@ public sealed class SignState
     public async Task AdminDeleteAsync(string id)
     {
         var pw = Plugin.Config.CreatePassword;
-        if (pw.Length == 0) { lock (gate) { error = "Enter the creation password in the Advocate tools first."; } return; }
+        if (pw.Length == 0) { lock (gate) { error = "Enter the creation password in the SM Tools tab first."; } return; }
         var r = await Exec(() => ItemsState.SendAsync(HttpMethod.Post, "/signs/admin/delete", new { adminPassword = pw, signId = id }), "Sign deleted.").ConfigureAwait(false);
         if (r != null) { CloseReading(); await RefreshAsync().ConfigureAwait(false); }
     }

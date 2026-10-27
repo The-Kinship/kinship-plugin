@@ -44,7 +44,11 @@ public sealed class StatusTab
         DrawAddSelf(s, mine.Count);
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         DrawEveryone(s);
-        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+    }
+
+    internal void DrawTools(ItemsSnap inv)
+    {
+        var s = Plugin.Status.Snapshot();
         DrawAdvocate(s, inv);
         picker.Draw();
     }
@@ -113,7 +117,7 @@ public sealed class StatusTab
 
     private void DrawAdvocate(StatusSnap s, ItemsSnap inv)
     {
-        if (!ImGui.CollapsingHeader("Advocate tools##statuses")) return;
+        if (!ImGui.CollapsingHeader("Statuses##statustools")) return;
         ImGui.TextWrapped("Add a status to any member, or remove any status (the Remove buttons above show for Advocates). Uses the creation password.");
         UiUtil.CreatePasswordInput();
         var members = inv.Members.Append(inv.Name).Where(m => m.Length > 0).Distinct().OrderBy(m => m).ToList();

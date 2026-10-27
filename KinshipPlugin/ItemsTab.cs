@@ -132,8 +132,6 @@ public sealed class ItemsTab
                 if (!s.Busy && ImGui.Button(foundNames[i] + "##rec" + i)) _ = Plugin.Items.RecoverAsync(foundNames[i], recoveryCode);
         }
 
-        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
-        DrawDmTools();
     }
 
     // ---------- the inventory ----------
@@ -218,8 +216,6 @@ public sealed class ItemsTab
             if (ImGui.SmallButton("Sign out")) { Plugin.Items.SignOut(); mode = Mode.Inventory; }
         }
 
-        ImGui.Spacing();
-        DrawDmTools();
     }
 
     private void DrawGive(ItemsSnap s)
@@ -384,7 +380,7 @@ public sealed class ItemsTab
                 foreach (var q in qs) if (ImGui.Selectable(q.Title + "##fsq" + q.Id, q.Id == form.StartsQuest)) form.StartsQuest = q.Id;
                 ImGui.EndCombo();
             }
-            ImGui.TextColored(Dim, qs.Count == 0 ? "Open the Quests tab, Advocate tools, and press Load quests to see your quests here." : "Using the item offers the quest with Accept and Decline. Needs an action below, like Read.");
+            ImGui.TextColored(Dim, qs.Count == 0 ? "Open the SM Tools tab, Quests, and press Load quests to see your quests here." : "Using the item offers the quest with Accept and Decline. Needs an action below, like Read.");
         }
         ImGui.SetNextItemWidth(240f); ImGui.InputText("Gives the status##fst", ref form.StName, 30);
         ImGui.TextColored(Dim, "A buff or debuff the person gets when they use this, like Chocolate poison.");
@@ -478,9 +474,23 @@ public sealed class ItemsTab
     }
 
     // ---------- Advocate tools (leader and officers) ----------
+    /// <summary>The SM Tools tab: every Advocate tool in one place, whether or not you're signed in to the RP system.</summary>
+    public void DrawSmTools()
+    {
+        var s = Plugin.Items.Snapshot();
+        if (mode == Mode.Gift) { DrawForm(s); return; }
+        ImGui.TextColored(Gold, "SM Tools");
+        ImGui.TextWrapped("For the Harbinger, Advocates and anyone holding the bank password. Each section asks for its password. Without it, nothing here works.");
+        ImGui.Spacing();
+        DrawDmTools();
+        questsTab.DrawTools(s);
+        statusTab.DrawTools(s);
+        bankTab.DrawTools();
+    }
+
     private void DrawDmTools()
     {
-        if (!ImGui.CollapsingHeader("Advocate tools")) return;
+        if (!ImGui.CollapsingHeader("Items, gifts, stashes, signs, mail and members")) return;
         ImGui.TextWrapped("For the Harbinger and the Advocates. Uses the creation password.");
         UiUtil.CreatePasswordInput();
         var d = Plugin.Items.AdminSnapshot();

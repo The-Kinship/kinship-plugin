@@ -35,8 +35,6 @@ public sealed class BankTab
         DrawPay(inv, s);
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         DrawHistory(s);
-        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
-        DrawTools();
     }
 
     private void DrawPay(ItemsSnap inv, BankSnap s)
@@ -72,9 +70,9 @@ public sealed class BankTab
         }
     }
 
-    private void DrawTools()
+    internal void DrawTools()
     {
-        if (!ImGui.CollapsingHeader("Bank tools")) return;
+        if (!ImGui.CollapsingHeader("Bank (bank password)")) return;
         ImGui.TextWrapped("For whoever holds the bank password. Creates gold as rewards or pay, and takes gold back when it is exchanged for gil.");
         var pw = Plugin.Config.BankPassword;
         ImGui.SetNextItemWidth(240f);

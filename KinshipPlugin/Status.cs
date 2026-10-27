@@ -111,7 +111,7 @@ public sealed class StatusState
     private Task<bool> Admin(string path, object body, string done)
     {
         var pw = Plugin.Config.CreatePassword;
-        if (pw.Length == 0) { lock (gate) { error = "Enter the creation password in the Advocate tools first."; } return Task.FromResult(false); }
+        if (pw.Length == 0) { lock (gate) { error = "Enter the creation password in the SM Tools tab first."; } return Task.FromResult(false); }
         return Exec(() => ItemsState.SendAsync(HttpMethod.Post, path, body), done);
     }
     public Task<bool> AdminAddAsync(string to, StatusForm f) => Admin("/statuses/admin/add", new { adminPassword = Plugin.Config.CreatePassword, to, name = f.Name.Trim(), description = f.Description.Trim(), icon = f.Icon, minutes = f.Minutes, isDebuff = f.Debuff, statusType = f.Type, cureInfo = f.Cure.Trim(), atkBonus = f.Atk, healBonus = f.Heal }, $"Status added to {to}.");

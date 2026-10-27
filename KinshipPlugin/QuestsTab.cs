@@ -97,7 +97,11 @@ public sealed class QuestsTab
         if (finished.Count > 0 && ImGui.CollapsingHeader($"Finished ({finished.Count})##questsdone"))
             foreach (var q in finished) ImGui.TextColored(Green, q.Title);
 
-        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+    }
+
+    internal void DrawTools(ItemsSnap inv)
+    {
+        var s = Plugin.Quests.Snapshot();
         DrawAdvocate(s, inv);
         picker.Draw();
     }
@@ -105,7 +109,7 @@ public sealed class QuestsTab
     // ---------- Advocate tools ----------
     private void DrawAdvocate(QuestSnap s, ItemsSnap inv)
     {
-        if (!ImGui.CollapsingHeader("Advocate tools##quests")) return;
+        if (!ImGui.CollapsingHeader("Quests##questtools")) return;
         ImGui.TextWrapped("Write quests and give them to members. Uses the creation password.");
         UiUtil.CreatePasswordInput();
         if (ImGui.Button("Load quests##qa")) _ = Plugin.Quests.AdminListAsync();
