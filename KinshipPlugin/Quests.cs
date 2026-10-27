@@ -42,11 +42,11 @@ public sealed class QuestClaim { public int Step { get; set; } public string Nam
 public sealed class QuestView
 {
     public string QuestId { get; set; } = ""; public string Id { get; set; } = ""; public string Title { get; set; } = ""; public string Intro { get; set; } = "";
-    public int Step { get; set; } public int Total { get; set; } public bool Done { get; set; } public QuestNow? Current { get; set; }
+    public int Step { get; set; } public int Total { get; set; } public bool Done { get; set; } public bool Failed { get; set; } public QuestNow? Current { get; set; }
     public List<QuestStepView>? Steps { get; set; } public List<QuestPlayer>? Players { get; set; } public List<QuestClaim>? Claims { get; set; }
     public QuestPlace? StartPlace { get; set; } public string StartText { get; set; } = "";
 }
-public sealed class TalkLine { public string Quest { get; set; } = ""; public bool Ok { get; set; } public string Text { get; set; } = ""; public bool Finished { get; set; } public List<string>? Gained { get; set; } public string? StatusGained { get; set; } }
+public sealed class TalkLine { public string Quest { get; set; } = ""; public bool Ok { get; set; } public bool Failed { get; set; } public string Text { get; set; } = ""; public bool Finished { get; set; } public List<string>? Gained { get; set; } public string? StatusGained { get; set; } }
 public sealed record TalkResult(string Npc, List<TalkLine> Lines, string Error);
 
 /// <summary>What the Advocate is typing for one step.</summary>
@@ -156,7 +156,18 @@ public sealed class QuestState
     public QuestSnap Snapshot() { lock (gate) { return new QuestSnap(mine.ToList(), admin.ToList(), error, notice, busy); } }
     public TalkResult? LastTalk() { lock (gate) { return talk; } }
     public void DismissTalk() { lock (gate) { talk = null; } }
-    public List<QuestView> Active() { lock (gate) { return mine.Where(q => !q.Done).ToList(); } }
+    public List<QuestView> Active() { lock (gate) { return mine.Where(q => !q.Done && !q.Failed).ToList(); } }
+    public List<QuestView> Failed() { lock (gate) { return mine.Where(q => q.Failed).ToList(); } }
+
+    public async Task AbandonAsync(string questId)
+    {
+        lock (gate) { if (busy) return; busy = true; error = ""; notice = ""; }
+        try { await ItemsState.SendAsync(HttpMethod.Post, "/quests/abandon", new { questId }).ConfigureAwait(false); }
+        catch (CombatException ex) { lock (gate) { error = ex.Message; } }
+        catch (Exception ex) { Plugin.Log.Warning(ex, "Quest delete failed"); lock (gate) { error = "Couldn't reach the server. Check your connection and try again."; } }
+        finally { lock (gate) { busy = false; } }
+        await RefreshAsync().ConfigureAwait(false);
+    }
     public void ClearMessages() { lock (gate) { error = ""; notice = ""; } }
 
     public void RefreshIfDue(int seconds)

@@ -67,6 +67,13 @@ public sealed class QuestsTab
             ImGui.Unindent();
             ImGui.Spacing();
         }
+        var failedList = s.Mine.Where(q => q.Failed).ToList();
+        foreach (var q in failedList)
+        {
+            ImGui.TextColored(Red, q.Title + "  (failed)");
+            ImGui.SameLine();
+            if (!s.Busy && ImGui.SmallButton("Delete##qdf" + q.QuestId)) _ = Plugin.Quests.AbandonAsync(q.QuestId);
+        }
         var finished = s.Mine.Where(q => q.Done).ToList();
         if (finished.Count > 0 && ImGui.CollapsingHeader($"Finished ({finished.Count})##questsdone"))
             foreach (var q in finished) ImGui.TextColored(Green, q.Title);

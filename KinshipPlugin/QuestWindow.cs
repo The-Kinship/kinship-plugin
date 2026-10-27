@@ -43,7 +43,7 @@ public sealed class QuestWindow : Window, IDisposable
         var near = Plugin.Quests.StartNear() != null;
         if (!near) dismissedStart = false;
         if (near && !dismissedStart) return true;     // shows even with the window turned off, so a quest can be picked up
-        return Plugin.Config.QuestWindow && Plugin.Quests.Active().Count > 0;
+        return Plugin.Config.QuestWindow && (Plugin.Quests.Active().Count > 0 || Plugin.Quests.Failed().Count > 0);
     }
 
     public override void OnClose()
@@ -58,7 +58,8 @@ public sealed class QuestWindow : Window, IDisposable
         var s = Plugin.Quests.Snapshot();
         var active = Plugin.Quests.Active();
 
-        if (active.Count == 0) ImGui.TextColored(Dim, "Something here catches your eye.");
+        var failed = Plugin.Quests.Failed();
+        if (active.Count == 0 && failed.Count == 0) ImGui.TextColored(Dim, "Something here catches your eye.");
         // The action bar is pinned to the bottom; the quests scroll above it.
         var barHeight = 64f;
         if (ImGui.BeginChild("##questlist", new Vector2(0f, Math.Max(40f, ImGui.GetContentRegionAvail().Y - barHeight))))
@@ -82,6 +83,12 @@ public sealed class QuestWindow : Window, IDisposable
                     ImGui.PopTextWrapPos();
                 }
                 ImGui.Spacing();
+            }
+            foreach (var q in failed)
+            {
+                ImGui.TextColored(Red, q.Title + "  (failed)");
+                ImGui.SameLine();
+                if (!s.Busy && ImGui.SmallButton("Delete##qwd" + q.QuestId)) _ = Plugin.Quests.AbandonAsync(q.QuestId);
             }
         }
         ImGui.EndChild();
@@ -153,7 +160,7 @@ public sealed class QuestReplyWindow : Window, IDisposable
             foreach (var l in t.Lines)
             {
                 ImGui.TextColored(Gold, t.Npc.Length > 0 ? t.Npc + "  ·  " + l.Quest : l.Quest);
-                ImGui.TextUnformatted(l.Text);
+                ImGui.TextColored(l.Failed ? Red : new Vector4(0.98f, 0.95f, 0.88f, 1f), l.Text);
                 if (l.Gained != null) foreach (var g in l.Gained) ImGui.TextColored(Green, "You received: " + g);
                 if (!string.IsNullOrEmpty(l.StatusGained)) ImGui.TextColored(Green, "You gain: " + l.StatusGained);
                 if (l.Ok && l.Finished) ImGui.TextColored(Green, "Quest complete!");
@@ -260,7 +267,8 @@ public sealed class QuestFightWindow : Window, IDisposable
             if (!string.IsNullOrEmpty(f.Result.StatusGained)) ImGui.TextColored(Green, "You gain: " + f.Result.StatusGained);
             if (f.Result.Finished) ImGui.TextColored(Green, "Quest complete!");
         }
-        else if (f.Status == "lost") ImGui.TextColored(Red, "You have fallen. You can try again.");
+        else if (f.Status == "lost") { ImGui.TextColored(Red, "Fight lost."); ImGui.TextUnformatted("You have fallen. Try again when you are ready."); }
+        else if (f.Status == "failed" && f.Result != null) ImGui.TextColored(Red, f.Result.Text);
         else if (f.Status == "blocked" && f.Result != null) ImGui.TextColored(Red, f.Result.Text);
         ImGui.PopTextWrapPos();
         ImGui.Spacing();
@@ -271,6 +279,14 @@ public sealed class QuestFightWindow : Window, IDisposable
             if (busy) ImGui.EndDisabled();
             ImGui.SameLine();
             if (ImGui.Button(f.Status == "active" ? "Step back##qfc" : "Close##qfc")) Plugin.Quests.DismissFight();
+        }
+        else if (f.Status == "lost")
+        {
+            if (busy) ImGui.BeginDisabled();
+            if (ImGui.Button("Try again##qft")) _ = Plugin.Quests.FightAsync(f.Npc, false);
+            if (busy) ImGui.EndDisabled();
+            ImGui.SameLine();
+            if (ImGui.Button("Close##qfc")) Plugin.Quests.DismissFight();
         }
         else if (ImGui.Button("Close##qfc")) Plugin.Quests.DismissFight();
     }
