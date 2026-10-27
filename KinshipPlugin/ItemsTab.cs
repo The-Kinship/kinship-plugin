@@ -297,6 +297,7 @@ public sealed class ItemsTab
         if (recipe && it.CombineWith != null)
         {
             for (var i = 0; i < 3 && i < it.CombineWith.Count; i++) f.With[i] = it.CombineWith[i];
+            f.FailChance = it.CombineFail;
             if (it.Result != null) f.Result = FormFrom(it.Result, false);
         }
         return f;
@@ -425,14 +426,22 @@ public sealed class ItemsTab
         {
             ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
             ImGui.TextColored(Gold, "Combining (optional)");
-            ImGui.TextColored(Dim, "Makes this a reagent. Click it to combine it with up to 3 other items and make something new. All of them are used up.");
+            ImGui.TextColored(Dim, "Makes this a reagent. Click it to combine it with up to 3 other items and make something new. All of them are used up (and also if it fails, if you allow that).");
             for (var i = 0; i < 3; i++) { ImGui.SetNextItemWidth(240f); ImGui.InputText($"Needs this item##with{i}", ref form.With[i], 40); }
             if (form.With.Any(w => w.Trim().Length > 0))
             {
                 if (form.Result == null || form.Result.Name.Trim().Length == 0) ImGui.TextColored(Dim, "Nothing set up to make yet.");
                 else ImGui.TextColored(Green, "Makes: " + form.Result.Name);
                 if (ImGui.Button("Set up what it makes...")) { form.Result ??= new ItemForm(); parents.Push(form); form = form.Result; }
-                ImGui.TextColored(Dim, "Combining always works for now. A chance of failing may be added later.");
+                var canFail = form.FailChance > 0;
+                if (ImGui.Checkbox("This combination can fail", ref canFail)) form.FailChance = canFail ? 25 : 0;
+                if (form.FailChance > 0)
+                {
+                    ImGui.SetNextItemWidth(100f); ImGui.InputInt("Chance of failing (%)##failchance", ref form.FailChance, 5);
+                    form.FailChance = Math.Clamp(form.FailChance, 1, 99);
+                    ImGui.TextColored(Dim, "If it fails, every item put in is used up and nothing is made.");
+                }
+                else ImGui.TextColored(Dim, "Left unticked, it always works.");
             }
         }
 

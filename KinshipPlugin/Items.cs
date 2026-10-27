@@ -22,7 +22,7 @@ public sealed class ItemView
     public string StName { get; set; } = ""; public string StDesc { get; set; } = ""; public string StIcon { get; set; } = "";
     public bool StDebuff { get; set; } public int StMinutes { get; set; } public string Cures { get; set; } = "";
     public string StType { get; set; } = ""; public string StCure { get; set; } = ""; public int StAtk { get; set; } public int StHeal { get; set; }
-    public bool CanCombine { get; set; } public List<string>? CombineWith { get; set; } public ItemView? Result { get; set; }
+    public bool CanCombine { get; set; } public int CombineFail { get; set; } public List<string>? CombineWith { get; set; } public ItemView? Result { get; set; }
 }
 public sealed class ItemReply
 {
@@ -38,13 +38,14 @@ public sealed class ItemReply
     public QuestOffer? Offer { get; set; } public List<QuestStart>? Starts { get; set; }
     public List<QuestView>? Quests { get; set; } public List<TalkLine>? Results { get; set; }
     public int? Roll { get; set; } public string? Patient { get; set; } public bool? Success { get; set; } public string? Condition { get; set; } public string? Cure { get; set; }
-    public string? Combined { get; set; } public List<string>? Used { get; set; } public int? Copies { get; set; }
+    public string? Combined { get; set; } public bool Failed { get; set; } public List<string>? Used { get; set; } public int? Copies { get; set; }
     public List<BankEntry>? History { get; set; } public List<BankEntry>? Recent { get; set; } public List<BankMember>? Balances { get; set; }
 }
 public sealed class ItemForm
 {
     public string Name = "", Icon = "", Description = "", Flavor = "", UseLabel = "", UseText = "", Requires = "";
     public string StName = "", StDesc = "", StIcon = "", Cures = "", StType = "", StCure = "", StartsQuest = "";
+    public int FailChance;                   // percent chance the combination fails (0 = never)
     public string[] With = { "", "", "" };   // other reagents this combines with
     public ItemForm? Result;                 // what the combination makes
     public int StMinutes, StAtk, StHeal;
@@ -247,7 +248,7 @@ public sealed class ItemsState
         var with = f.With.Select(x => x.Trim()).Where(x => x.Length > 0).ToList();
         if (recipe && with.Count > 0)
         {
-            d["with"] = with;
+            d["with"] = with; d["failChance"] = Math.Clamp(f.FailChance, 0, 99);
             if (f.Result != null) d["result"] = BodyDict(f.Result, false);
         }
         return d;
@@ -286,10 +287,10 @@ public sealed class ItemsState
     public async Task CombineAsync(string id)
     {
         var r = await Run(() => SendAsync(HttpMethod.Post, $"/items/{id}/combine", new { })).ConfigureAwait(false);
-        if (r?.Combined == null) return;
+        if (r == null || (r.Combined == null && !r.Failed)) return;
         var used = r.Used ?? new();
         var list = used.Count <= 1 ? string.Join("", used) : string.Join(", ", used.Take(used.Count - 1)) + " and " + used[^1];
-        var text = $"You combine {list} and make: {r.Combined}.";
+        var text = r.Failed ? $"You try to combine {list}, but it fails. Everything is used up and nothing is made." : $"You combine {list} and make: {r.Combined}.";
         _ = Plugin.Framework.RunOnFrameworkThread(() => Plugin.Scene.ShowLocal(text));
     }
     public async Task SealAsync(string id, string itemId)
