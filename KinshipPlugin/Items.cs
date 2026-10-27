@@ -22,6 +22,7 @@ public sealed class ItemView
     public string StName { get; set; } = ""; public string StDesc { get; set; } = ""; public string StIcon { get; set; } = "";
     public bool StDebuff { get; set; } public int StMinutes { get; set; } public string Cures { get; set; } = "";
     public string StType { get; set; } = ""; public string StCure { get; set; } = ""; public int StAtk { get; set; } public int StHeal { get; set; }
+    public string WearSlot { get; set; } = ""; public int GearAtk { get; set; } public int GearHeal { get; set; } public int LifespanDays { get; set; } public string WornAt { get; set; } = ""; public string BreaksAt { get; set; } = "";
     public bool CanCombine { get; set; } public int CombineFail { get; set; } public List<string>? CombineWith { get; set; } public ItemView? Result { get; set; }
 }
 public sealed class ItemReply
@@ -32,6 +33,7 @@ public sealed class ItemReply
     public List<StashView>? Stashes { get; set; } public StashView? Stash { get; set; } public List<ItemView>? StashItems { get; set; }
     public List<SignView>? Signs { get; set; } public SignView? Sign { get; set; }
     public List<ZoneCount>? Zones { get; set; } public int Elsewhere { get; set; }
+    public List<ArmorySlot>? Slots { get; set; } public ArmoryBonus? Bonus { get; set; } public List<string>? Broke { get; set; }
     public List<MailView>? Inbox { get; set; } public List<MailView>? Outbox { get; set; } public MailView? Mail { get; set; } public int Unread { get; set; }
     public List<MailState.AdminMail>? Mails { get; set; }
     public List<string>? Gained { get; set; } public string? KeyUsed { get; set; }
@@ -52,6 +54,7 @@ public sealed class ItemForm
     public string[] With = { "", "", "" };   // other reagents this combines with
     public ItemForm? Result;                 // what the combination makes
     public int StMinutes, StAtk, StHeal;
+    public string WearSlot = ""; public int LifespanDays, GearAtk, GearHeal;   // wearable gear
     public bool Consumable, RequiresConsume, StDebuff;
 }
 public sealed record ItemsSnap(bool SignedIn, string Name, int Capacity, List<ItemView> Items, List<string> Members, string Error, string Notice, bool Busy, string Recovery);
@@ -262,6 +265,7 @@ public sealed class ItemsState
             ["useLabel"] = f.UseLabel.Trim(), ["useText"] = f.UseText.Trim(), ["requires"] = f.Requires.Trim(), ["requiresConsume"] = f.RequiresConsume,
             ["stName"] = f.StName.Trim(), ["stDesc"] = f.StDesc.Trim(), ["stIcon"] = f.StIcon, ["stDebuff"] = f.StDebuff, ["stMinutes"] = f.StMinutes, ["startsQuest"] = f.StartsQuest, ["stType"] = f.StType, ["stCure"] = f.StCure.Trim(), ["stAtk"] = f.StAtk, ["stHeal"] = f.StHeal,
             ["cures"] = f.Cures.Trim(), ["consumable"] = f.Consumable,
+            ["wearSlot"] = f.WearSlot, ["lifespanDays"] = f.LifespanDays, ["gearAtk"] = f.GearAtk, ["gearHeal"] = f.GearHeal,
         };
         var with = f.With.Select(x => x.Trim()).Where(x => x.Length > 0).ToList();
         if (recipe && with.Count > 0)

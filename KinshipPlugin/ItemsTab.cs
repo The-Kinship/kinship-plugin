@@ -39,6 +39,7 @@ public sealed class ItemsTab
     private readonly SignsTab signTab = new();
     private readonly BankTab bankTab = new();
     private readonly MailTab mailTab = new();
+    private readonly ArmoryTab armoryTab = new();
     private readonly StatusTab statusTab = new();
     private readonly QuestsTab questsTab = new();
     private string? confirmAdminDelete, confirmAdminRemove, confirmAdminStash, confirmAdminSign, confirmAdminMail;
@@ -71,6 +72,7 @@ public sealed class ItemsTab
         if (ImGui.BeginTabBar("itemsub"))
         {
             if (ImGui.BeginTabItem("Inventory")) { DrawInventory(s); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Armory")) { armoryTab.Draw(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Stashes")) { stashTab.Draw(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Signs")) { signTab.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Status")) { statusTab.Draw(s); ImGui.EndTabItem(); }
@@ -276,6 +278,17 @@ public sealed class ItemsTab
         if (it.Description.Length > 0) { ImGui.Spacing(); ImGui.TextUnformatted(it.Description); }
         if (it.Flavor.Length > 0) { ImGui.Spacing(); ImGui.TextColored(Dim, "“" + it.Flavor + "”"); }
         if (it.Requires.Length > 0) { ImGui.Spacing(); ImGui.TextColored(new Vector4(0.95f, 0.65f, 0.35f, 1f), "Needs: " + it.Requires + (it.RequiresConsume ? "  (used up)" : "")); }
+        if (it.WearSlot.Length > 0)
+        {
+            ImGui.Spacing(); ImGui.TextColored(Gold, "Wearable: " + ArmoryState.SlotName(it.WearSlot));
+            if (it.GearAtk != 0) ImGui.TextColored(Green, (it.GearAtk > 0 ? "+" : "") + it.GearAtk + " to attack rolls");
+            if (it.GearHeal != 0) ImGui.TextColored(Green, (it.GearHeal > 0 ? "+" : "") + it.GearHeal + " to heal rolls");
+            if (it.LifespanDays > 0)
+            {
+                var left = DateTime.TryParse(it.BreaksAt, null, System.Globalization.DateTimeStyles.RoundtripKind, out var t) ? (t - DateTime.UtcNow) : (TimeSpan?)null;
+                ImGui.TextColored(Dim, left == null ? $"Breaks {it.LifespanDays} days after it is first worn." : left.Value.TotalHours < 24 ? "Breaks in less than a day." : $"Breaks in about {Math.Ceiling(left.Value.TotalDays)} days.");
+            }
+        }
         if (it.Qty > 1) { ImGui.Spacing(); ImGui.TextColored(Dim, $"You have {it.Qty}."); }
         if (it.Holds > 0) { ImGui.Spacing(); ImGui.TextColored(Gold, it.Holds == 1 ? "Something is inside." : $"{it.Holds} things are inside."); }
         if (it.CanCombine) { ImGui.Spacing(); ImGui.TextColored(Green, "Click to combine with other reagents"); }
@@ -285,13 +298,38 @@ public sealed class ItemsTab
     }
 
     // ---------- creating and editing ----------
+    private static void DrawGearFields(ItemForm form, bool gift)
+    {
+        if (!ImGui.CollapsingHeader("Wearable gear (optional)##gear")) return;
+        ImGui.TextColored(Dim, "Make this something people can wear in the Armory.");
+        var labels = new[] { ("", "Not wearable"), ("helm", "Head"), ("chest", "Chest"), ("cloak", "Cloak"), ("legs", "Legs"), ("feet", "Feet"), ("ring", "Ring"), ("necklace", "Necklace"), ("weapon", "Weapon") };
+        ImGui.SetNextItemWidth(200f);
+        if (ImGui.BeginCombo("Worn on##gearslot", labels.First(l => l.Item1 == form.WearSlot).Item2))
+        {
+            foreach (var (key, label) in labels) if (ImGui.Selectable(label, key == form.WearSlot)) form.WearSlot = key;
+            ImGui.EndCombo();
+        }
+        if (form.WearSlot.Length == 0) return;
+        ImGui.SetNextItemWidth(100f); ImGui.InputInt("Breaks after (days)##gearlife", ref form.LifespanDays, 1);
+        form.LifespanDays = Math.Clamp(form.LifespanDays, 0, 365);
+        ImGui.TextColored(Dim, "0 means it never breaks. The countdown starts the first time it is worn. Broken gear turns into a useless \"Broken\" item.");
+        if (gift)
+        {
+            ImGui.SetNextItemWidth(100f); ImGui.InputInt("Attack roll bonus##gearatk", ref form.GearAtk, 1);
+            ImGui.SetNextItemWidth(100f); ImGui.InputInt("Heal roll bonus##gearheal", ref form.GearHeal, 1);
+            form.GearAtk = Math.Clamp(form.GearAtk, -5, 5); form.GearHeal = Math.Clamp(form.GearHeal, -5, 5);
+            ImGui.TextColored(Dim, "-5 to +5 added to rolls while worn. All worn gear together is capped at +5. Only Advocate gifts can do this.");
+        }
+        else ImGui.TextColored(Dim, "Roll bonuses can only be added by Advocate gifts.");
+    }
+
     private void StartCreate() { createQty = 1; parents.Clear(); form = new ItemForm(); editingId = null; mode = Mode.Form; Plugin.Items.ClearMessages(); }
     private static ItemForm FormFrom(ItemView it, bool recipe = true)
     {
         var f = new ItemForm
         {
             Name = it.Name, Icon = it.Icon, Description = it.Description, Flavor = it.Flavor, UseLabel = it.UseLabel, UseText = it.UseText ?? "", Consumable = it.Consumable,
-            Requires = it.Requires, RequiresConsume = it.RequiresConsume, StName = it.StName, StDesc = it.StDesc, StIcon = it.StIcon, StDebuff = it.StDebuff, StMinutes = it.StMinutes, StAtk = it.StAtk, StHeal = it.StHeal, Cures = it.Cures, StType = it.StType, StCure = it.StCure,
+            Requires = it.Requires, RequiresConsume = it.RequiresConsume, StName = it.StName, StDesc = it.StDesc, StIcon = it.StIcon, StDebuff = it.StDebuff, WearSlot = it.WearSlot, LifespanDays = it.LifespanDays, GearAtk = it.GearAtk, GearHeal = it.GearHeal, StMinutes = it.StMinutes, StAtk = it.StAtk, StHeal = it.StHeal, Cures = it.Cures, StType = it.StType, StCure = it.StCure,
         };
         if (recipe && it.CombineWith != null)
         {
@@ -361,6 +399,8 @@ public sealed class ItemsTab
         ImGui.TextColored(Dim, "e.g. Eat, Read, Open. Leave blank for an item that can't be used.");
         ImGui.Text("What happens"); ImGui.InputTextMultiline("##fuse", ref form.UseText, 400, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 64f));
         ImGui.Checkbox("Used up when used", ref form.Consumable);
+        ImGui.Spacing();
+        DrawGearFields(form, gift);
         ImGui.Spacing();
         ImGui.SetNextItemWidth(260f); ImGui.InputText("Needs this item##freq", ref form.Requires, 40);
         ImGui.TextColored(Dim, "Optional. The exact name of another item, like The Harbinger's Key. It must be in the user's inventory to use this.");
