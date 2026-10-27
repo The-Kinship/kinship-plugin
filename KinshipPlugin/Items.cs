@@ -18,7 +18,7 @@ public sealed class ItemView
     public string Description { get; set; } = ""; public string Flavor { get; set; } = ""; public string UseLabel { get; set; } = "";
     public string? UseText { get; set; } public bool Consumable { get; set; } public bool CanEdit { get; set; }
     public string? Owner { get; set; } public string? Creator { get; set; }
-    public string Requires { get; set; } = ""; public bool RequiresConsume { get; set; } public int Holds { get; set; }
+    public string Requires { get; set; } = ""; public bool RequiresConsume { get; set; } public int Holds { get; set; } public int Qty { get; set; } = 1;
     public string StName { get; set; } = ""; public string StDesc { get; set; } = ""; public string StIcon { get; set; } = "";
     public bool StDebuff { get; set; } public int StMinutes { get; set; } public string Cures { get; set; } = "";
     public string StType { get; set; } = ""; public string StCure { get; set; } = "";

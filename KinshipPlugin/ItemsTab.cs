@@ -107,8 +107,10 @@ public sealed class ItemsTab
             {
                 var it = s.Items[i];
                 var wrap = ItemIcons.Wrap(it.Icon);
+                var origin = ImGui.GetCursorScreenPos();
                 if (wrap != null) ImGui.Image(wrap.Handle, new Vector2(Slot, Slot));
                 else ImGui.Button("?##slot" + i, new Vector2(Slot, Slot));
+                DrawQty(it, origin, Slot);
                 if (ImGui.IsItemHovered()) { hovered = it; if (it.UseLabel.Length > 0 || it.CanCombine) ImGui.SetMouseCursor(ImGuiMouseCursor.Hand); }
                 if (ImGui.IsItemClicked(ImGuiMouseButton.Left) && !s.Busy)
                 {
@@ -204,6 +206,18 @@ public sealed class ItemsTab
         if (ImGui.Button("Done##seal")) sealing = null;
     }
 
+    /// <summary>Puts the stack size in the corner of an item slot. Call right after drawing the slot, with the cursor position taken just before it.</summary>
+    internal static void DrawQty(ItemView it, Vector2 origin, float size)
+    {
+        if (it.Qty <= 1) return;
+        var t = it.Qty.ToString();
+        var w = ImGui.CalcTextSize(t);
+        var at = new Vector2(origin.X + size - w.X - 3f, origin.Y + size - w.Y - 1f);
+        ImGui.SetCursorScreenPos(at + new Vector2(1f, 1f)); ImGui.TextColored(new Vector4(0f, 0f, 0f, 1f), t);
+        ImGui.SetCursorScreenPos(at); ImGui.TextColored(new Vector4(1f, 1f, 1f, 1f), t);
+        ImGui.SetCursorScreenPos(origin); ImGui.Dummy(new Vector2(size, size));   // gives the slot back as the last item, so hover, click and layout work as before
+    }
+
     internal static void DrawTooltip(ItemView it)
     {
         ImGui.BeginTooltip();
@@ -214,6 +228,7 @@ public sealed class ItemsTab
         if (it.Description.Length > 0) { ImGui.Spacing(); ImGui.TextUnformatted(it.Description); }
         if (it.Flavor.Length > 0) { ImGui.Spacing(); ImGui.TextColored(Dim, "“" + it.Flavor + "”"); }
         if (it.Requires.Length > 0) { ImGui.Spacing(); ImGui.TextColored(new Vector4(0.95f, 0.65f, 0.35f, 1f), "Needs: " + it.Requires + (it.RequiresConsume ? "  (used up)" : "")); }
+        if (it.Qty > 1) { ImGui.Spacing(); ImGui.TextColored(Dim, $"You have {it.Qty}."); }
         if (it.Holds > 0) { ImGui.Spacing(); ImGui.TextColored(Gold, it.Holds == 1 ? "Something is inside." : $"{it.Holds} things are inside."); }
         if (it.CanCombine) { ImGui.Spacing(); ImGui.TextColored(Green, "Click to combine with other reagents"); }
         if (it.UseLabel.Length > 0) { ImGui.Spacing(); ImGui.TextColored(Green, "Click to " + it.UseLabel.ToLowerInvariant() + (it.Consumable ? "  (used up)" : "")); }

@@ -132,7 +132,9 @@ public sealed class StashesTab
             {
                 var it = s.OpenItems[i];
                 var wrap = ItemIcons.Wrap(it.Icon);
+                var origin = ImGui.GetCursorScreenPos();
                 if (wrap != null) ImGui.Image(wrap.Handle, new Vector2(Slot, Slot)); else ImGui.Button("?##so" + i, new Vector2(Slot, Slot));
+                ItemsTab.DrawQty(it, origin, Slot);
                 if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) hovered = it;
                 if (near && !s.Busy && ImGui.IsItemClicked(ImGuiMouseButton.Left)) _ = Plugin.Stashes.TakeAsync(st.Id, it.Id);
             }
@@ -163,7 +165,9 @@ public sealed class StashesTab
             {
                 var it = inv.Items[i];
                 var wrap = ItemIcons.Wrap(it.Icon);
+                var origin = ImGui.GetCursorScreenPos();
                 if (wrap != null) ImGui.Image(wrap.Handle, new Vector2(Slot, Slot)); else ImGui.Button("?##si" + i, new Vector2(Slot, Slot));
+                ItemsTab.DrawQty(it, origin, Slot);
                 if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) hovered = it;
                 if (near && !s.Busy && ImGui.IsItemClicked(ImGuiMouseButton.Left)) _ = Plugin.Stashes.PutAsync(st.Id, it.Id);
             }
