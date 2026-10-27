@@ -64,6 +64,7 @@ jobs:
               "ApplicableVersion": manifest.get("ApplicableVersion", "any"),
               "RepoUrl": manifest.get("RepoUrl", f"https://github.com/{OWNER_REPO}"),
               "Tags": manifest.get("Tags", []),
+              "IconUrl": f"https://raw.githubusercontent.com/{OWNER_REPO}/main/images/icon.png",
               "DalamudApiLevel": manifest["DalamudApiLevel"],
               "IsHide": False,
               "IsTestingExclusive": False,
