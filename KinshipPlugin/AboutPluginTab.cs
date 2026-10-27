@@ -13,7 +13,11 @@ public sealed class AboutPluginTab
     private static readonly Vector4 Green = new(0.4f, 0.8f, 0.5f, 1f);
     private const string DefaultSite = "https://the-kinship.github.io/kinship/";
 
-    private bool abuse;
+    private bool abuse, jump;
+
+    /// <summary>Opens straight at the report form, ready to describe abuse.</summary>
+    public void JumpToReport() { jump = true; abuse = true; }
+
     private string about = "", text = "";
 
     public void Draw()
@@ -36,6 +40,7 @@ public sealed class AboutPluginTab
         if (ImGui.Button("The Kinship website##apsite")) AboutTab.OpenLink(site);
 
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        if (jump) { ImGui.SetScrollHereY(0f); jump = false; }
         ImGui.TextColored(Gold, "Report a bug or abuse");
         ImGui.TextWrapped("Something not working, or someone misusing the system? Tell the SMs here. Your character name is sent with it so we can follow up.");
         ImGui.Spacing();

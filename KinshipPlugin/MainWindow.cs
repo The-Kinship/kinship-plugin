@@ -18,7 +18,6 @@ public sealed class MainWindow : Window, IDisposable
     private readonly CombatTab combat = new();
     private readonly RpTab rp = new();
     private readonly RosterTab roster = new();
-    private readonly AboutPluginTab aboutPlugin = new();
     private readonly ItemsTab items;
 
     public MainWindow() : base("The Kinship##KinshipMain", ImGuiWindowFlags.None)
@@ -27,6 +26,13 @@ public sealed class MainWindow : Window, IDisposable
         Size = new Vector2(440, 520);
         SizeCondition = ImGuiCond.FirstUseEver;
 
+        // The ? button opens "About this plugin" (it is a window of its own, not a tab, because there are a lot of tabs).
+        TitleBarButtons.Add(new TitleBarButton
+        {
+            Icon = FontAwesomeIcon.QuestionCircle,
+            Click = button => { Plugin.ShowAbout(false); },
+            ShowTooltip = () => ImGui.SetTooltip("About this plugin")
+        });
         // Refresh lives in the title bar, top right.
         TitleBarButtons.Add(new TitleBarButton
         {
@@ -76,7 +82,6 @@ public sealed class MainWindow : Window, IDisposable
         {
             if (ImGui.BeginTabItem("Home")) { DrawHome(f); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("About")) { AboutTab.Draw(); ImGui.EndTabItem(); }
-            if (ImGui.BeginTabItem("About Plugin")) { aboutPlugin.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Roster")) { roster.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Announcements")) { DrawAnnouncements(f); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Plots")) { DrawPlots(p); ImGui.EndTabItem(); }

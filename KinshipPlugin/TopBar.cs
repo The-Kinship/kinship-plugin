@@ -135,6 +135,8 @@ public sealed class TopBarMenu : Window, IDisposable
         ImGui.TextColored(Gold, "The Kinship");
         ImGui.Separator();
         if (ImGui.Selectable("Open the Kinship window")) { Plugin.ShowMain(); IsOpen = false; return; }
+        if (ImGui.Selectable("About this plugin")) { Plugin.ShowAbout(false); IsOpen = false; return; }
+        if (ImGui.Selectable("Report a bug or abuse")) { Plugin.ShowAbout(true); IsOpen = false; return; }
         ImGui.Spacing();
         var c = Plugin.Config;
         Toggle("Quest window", c.QuestWindow, v => c.QuestWindow = v);

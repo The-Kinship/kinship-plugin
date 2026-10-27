@@ -50,6 +50,9 @@ public sealed class Plugin : IDalamudPlugin
 
     private static ImageViewerWindow? viewer;
     private static ArmoryViewWindow? armoryView;
+    private static AboutPluginWindow? aboutWin;
+    /// <summary>Opens the About this plugin window (optionally jumping to the report form).</summary>
+    internal static void ShowAbout(bool report) { aboutWin?.Show(report); }
     /// <summary>Opens a small window with what another character is wearing.</summary>
     internal static void ShowArmory(string name) { armoryView?.Show(name); }
     /// <summary>Opens a website image in the large viewer window.</summary>
@@ -173,6 +176,8 @@ public sealed class Plugin : IDalamudPlugin
         windows.AddWindow(viewer);
         armoryView = new ArmoryViewWindow();
         windows.AddWindow(armoryView);
+        aboutWin = new AboutPluginWindow();
+        windows.AddWindow(aboutWin);
         duelWindow = new DuelWindow();
         windows.AddWindow(duelWindow);
         overlay = new StashOverlay();
@@ -252,6 +257,7 @@ public sealed class Plugin : IDalamudPlugin
         popupWindow = null;
         viewer = null;
         armoryView = null;
+        aboutWin = null;
         duelWindow = null;
         popup.Dispose();
         overlay.Dispose();
