@@ -50,7 +50,7 @@ public sealed class SignsTab
         ImGui.InputTextMultiline("##signtext", ref newText, 1000, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 110f));
         ImGui.SetNextItemWidth(110f); ImGui.InputInt("Gold to leave (optional)##signgold", ref newGold, 0);
         if (newGold < 0) newGold = 0;
-        ImGui.TextColored(Dim, $"Comes out of your purse ({Plugin.Items.Gold:N0} gold). The first person to read the sign takes it. Delete the sign to get it back.");
+        ImGui.TextColored(Dim, $"Comes out of your purse ({Plugin.Items.Gold:N0} gold). The first person to read the sign takes it. You can take it back yourself at the sign, or by deleting the sign.");
         var mine = s.Signs.Count(x => x.Mine);
         if (mine >= MaxMine) ImGui.TextColored(Dim, $"You already have {MaxMine} signs. Delete one to make another.");
         var ok = newName.Trim().Length > 0 && newText.Trim().Length > 0 && !s.Busy && mine < MaxMine;
