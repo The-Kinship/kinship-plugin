@@ -6,6 +6,10 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+# Builds queue up one after another instead of running at the same time, so two uploads in a row can't collide.
+concurrency:
+  group: build-plugin
+  cancel-in-progress: false
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -84,4 +88,11 @@ jobs:
           git config user.name "kinship-build"
           git config user.email "actions@users.noreply.github.com"
           git add repo.json
-          git diff --cached --quiet || (git commit -m "Update repo.json" && git push)
+          git diff --cached --quiet && exit 0
+          git commit -m "Update repo.json"
+          # If something else pushed in the meantime, take its changes and try again.
+          for i in 1 2 3 4 5; do
+            git pull --rebase -X theirs origin main && git push && exit 0
+            sleep 3
+          done
+          exit 1
