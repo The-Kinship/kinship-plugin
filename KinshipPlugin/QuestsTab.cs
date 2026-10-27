@@ -35,6 +35,7 @@ public sealed class QuestsTab
 
         ImGui.TextColored(Gold, "Quests");
         ImGui.TextWrapped("Use the quest action buttons to complete your quests! You must target NPCs to interact with them.");
+        ImGui.TextColored(Dim, "New quests and updates can take up to a minute to appear. Please be patient and don't press buttons over and over.");
         string target = "";
         try { target = Plugin.TargetManager.Target?.Name.TextValue ?? ""; } catch (Exception) { target = ""; }
         if (target.Length == 0) ImGui.TextColored(Dim, "Nothing targeted.");
@@ -147,6 +148,7 @@ public sealed class QuestsTab
             if (ImGui.Button("Take quest away##qt")) _ = Plugin.Quests.AdminUnassignAsync(assignQuest, assignTo);
             if (!ok) ImGui.EndDisabled();
             ImGui.TextColored(Dim, "Giving a quest someone already has starts it over.");
+            ImGui.TextWrapped("It can take up to a minute for the quest box to show up for the player. Don't press Give quest again, and let them know to wait.");
             ImGui.Spacing();
         }
 

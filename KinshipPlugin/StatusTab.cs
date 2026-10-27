@@ -66,6 +66,7 @@ public sealed class StatusTab
         if (!busy && st.CanRemove && ImGui.SmallButton("Remove##rm" + st.Id)) _ = Plugin.Status.RemoveAsync(st.Id);
         else if (!busy && advocate && !st.CanRemove && ImGui.SmallButton("Advocate remove##ar" + st.Id)) _ = Plugin.Status.AdminRemoveAsync(st.Id);
         ImGui.EndGroup();
+        if (st.Self && ImGui.IsItemHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Right) && !busy) _ = Plugin.Status.RemoveAsync(st.Id);
         ImGui.Spacing();
     }
 

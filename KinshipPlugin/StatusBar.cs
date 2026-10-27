@@ -54,12 +54,14 @@ public sealed class StatusBar : Window, IDisposable
             ImGui.EndGroup();
             if (ImGui.IsItemHovered())
             {
+                if (s.Self && ImGui.IsMouseClicked(ImGuiMouseButton.Right)) _ = Plugin.Status.RemoveAsync(s.Id);
                 ImGui.BeginTooltip();
                 ImGui.TextColored(s.IsDebuff ? new Vector4(0.95f, 0.45f, 0.4f, 1f) : Gold, s.Name);
                 ImGui.PushTextWrapPos(ImGui.GetFontSize() * 20f);
                 if (s.Description.Length > 0) ImGui.TextUnformatted(s.Description);
                 ImGui.PopTextWrapPos();
                 ImGui.TextColored(Dim, StatusView.Format(s.Remaining));
+                if (s.Self) ImGui.TextColored(Dim, "Right-click to remove");
                 ImGui.EndTooltip();
             }
         }

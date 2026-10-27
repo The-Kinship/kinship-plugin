@@ -11,7 +11,7 @@ public sealed class StatusView
 {
     public string Id { get; set; } = ""; public string MemberName { get; set; } = ""; public string Name { get; set; } = "";
     public string Icon { get; set; } = ""; public string Description { get; set; } = ""; public bool IsDebuff { get; set; }
-    public int? SecondsLeft { get; set; } public bool Mine { get; set; } public bool CanRemove { get; set; }
+    public int? SecondsLeft { get; set; } public bool Mine { get; set; } public bool CanRemove { get; set; } public bool Self { get; set; }
     [JsonIgnore] public DateTime FetchedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>Seconds left counted down on this computer, or null if it lasts until removed.</summary>
