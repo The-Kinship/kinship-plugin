@@ -33,7 +33,7 @@ public static class ProfileCard
 
         ImGui.BeginGroup();
         ImGui.PushTextWrapPos(startX + Width - (hasPortrait ? 126f : 0f));
-        ImGui.TextColored(Gold, p.Name);
+        ImGui.TextColored(Gold, p.DisplayName.Length > 0 ? p.DisplayName : p.Name);
         if (age.Length > 0) ImGui.TextUnformatted("Age: " + age);
         if (race.Length > 0) ImGui.TextUnformatted("Race: " + race);
         if (gender.Length > 0) ImGui.TextUnformatted("Gender: " + gender);

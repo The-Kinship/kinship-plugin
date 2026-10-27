@@ -35,12 +35,26 @@ public sealed class ProfileTooltip : Window, IDisposable
             if (ImGui.GetIO().WantCaptureMouse) return null;   // the mouse is over a window, not the world
             IGameObject? o = Plugin.TargetManager.MouseOverTarget;
             if (o == null && Plugin.Config.ProfileTipsTarget) o = Plugin.TargetManager.Target;
+            if (o == null && OverSelf()) o = Plugin.ObjectTable.LocalPlayer;   // the game does not report the mouse over your own character, so work it out from where you stand on screen
             if (o is not IPlayerCharacter pc) return null;
             Plugin.Profiles.RefreshIfDue(180);
             Plugin.Status.RefreshIfDue(30);
             return Plugin.Profiles.Find(pc.Name.ToString());
         }
         catch (Exception) { return null; }
+    }
+
+    /// <summary>True when the mouse is over your own character's body on screen (read-only: it only projects your position to the screen).</summary>
+    private static bool OverSelf()
+    {
+        var me = Plugin.ObjectTable.LocalPlayer;
+        if (me == null) return false;
+        var p = me.Position;
+        if (!Plugin.GameGui.WorldToScreen(p, out var feet) || !Plugin.GameGui.WorldToScreen(p + new Vector3(0f, 1.8f, 0f), out var head)) return false;
+        var h = Math.Abs(feet.Y - head.Y);
+        if (h < 8f) return false;
+        var m = ImGui.GetMousePos();
+        return Math.Abs(m.X - feet.X) <= h * 0.28f && m.Y >= Math.Min(head.Y, feet.Y) && m.Y <= Math.Max(head.Y, feet.Y);
     }
 
     public override bool DrawConditions() { current = Pick(); return current != null; }

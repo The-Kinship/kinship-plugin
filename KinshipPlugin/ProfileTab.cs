@@ -17,7 +17,7 @@ public sealed class ProfileTab
 
     private ulong loadedFor = ulong.MaxValue;
     private bool formReady, requested;
-    private string age = "", race = "", gender = "", portrait = "", glance = "", ooc = "";
+    private string displayName = "", age = "", race = "", gender = "", portrait = "", glance = "", ooc = "";
     private readonly List<ProfileField> fields = new();
 
     public void Draw()
@@ -40,6 +40,8 @@ public sealed class ProfileTab
         ImGui.Spacing(); ImGui.Separator();
 
         var w = ImGui.GetContentRegionAvail().X - 8f;
+        ImGui.Text("Name shown on your card"); ImGui.SetNextItemWidth(260f); ImGui.InputText("##pname", ref displayName, 40);
+        ImGui.TextColored(Dim, "Leave empty to use " + (s.Mine?.Name ?? "your registered name") + ". Use your full name here if the game only shows your first name.");
         ImGui.Text("Age"); ImGui.SetNextItemWidth(160f); ImGui.InputText("##page", ref age, 30);
         ImGui.Text("Race"); ImGui.SetNextItemWidth(220f); ImGui.InputText("##prace", ref race, 40);
         ImGui.Text("Gender"); ImGui.SetNextItemWidth(160f); ImGui.InputText("##pgender", ref gender, 30);
@@ -94,13 +96,13 @@ public sealed class ProfileTab
 
     private void Load(ProfileView p)
     {
-        age = p.Age; race = p.Race; gender = p.Gender; portrait = p.Portrait; glance = p.Glance; ooc = p.Ooc;
+        displayName = p.DisplayName; age = p.Age; race = p.Race; gender = p.Gender; portrait = p.Portrait; glance = p.Glance; ooc = p.Ooc;
         fields.Clear(); foreach (var f in p.Fields) fields.Add(new ProfileField { Label = f.Label, Value = f.Value });
     }
 
     private ProfileView Build() => new()
     {
-        Age = age, Race = race, Gender = gender, Portrait = portrait, Glance = glance, Ooc = ooc,
+        DisplayName = displayName, Age = age, Race = race, Gender = gender, Portrait = portrait, Glance = glance, Ooc = ooc,
         Fields = fields.Select(f => new ProfileField { Label = f.Label, Value = f.Value }).ToList(),
     };
 }

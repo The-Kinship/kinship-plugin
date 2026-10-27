@@ -9,7 +9,7 @@ namespace KinshipPlugin;
 public sealed class ProfileField { public string Label { get; set; } = ""; public string Value { get; set; } = ""; }
 public sealed class ProfileView
 {
-    public string Name { get; set; } = ""; public string Portrait { get; set; } = "";
+    public string Name { get; set; } = ""; public string DisplayName { get; set; } = ""; public string Portrait { get; set; } = "";
     public string Age { get; set; } = ""; public string Race { get; set; } = ""; public string Gender { get; set; } = "";
     public string Glance { get; set; } = ""; public string Ooc { get; set; } = "";
     public List<ProfileField> Fields { get; set; } = new();
@@ -82,7 +82,7 @@ public sealed class ProfileState
         {
             var body = new
             {
-                portrait = p.Portrait.Trim(), age = p.Age.Trim(), race = p.Race.Trim(), gender = p.Gender.Trim(), glance = p.Glance.Trim(), ooc = p.Ooc.Trim(),
+                displayName = p.DisplayName.Trim(), portrait = p.Portrait.Trim(), age = p.Age.Trim(), race = p.Race.Trim(), gender = p.Gender.Trim(), glance = p.Glance.Trim(), ooc = p.Ooc.Trim(),
                 fields = p.Fields.Where(f => f.Label.Trim().Length > 0).Select(f => new { label = f.Label.Trim(), value = f.Value.Trim() }).ToList(),
             };
             var r = await ItemsState.SendAsync(HttpMethod.Post, "/profile", body).ConfigureAwait(false);
