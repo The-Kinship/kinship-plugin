@@ -38,6 +38,7 @@ public sealed class Plugin : IDalamudPlugin
     internal static StashState Stashes { get; private set; } = null!;
     internal static SignState Signs { get; private set; } = null!;
     internal static BankState Bank { get; private set; } = null!;
+    internal static MailState Mail { get; private set; } = null!;
     internal static StatusState Status { get; private set; } = null!;
     internal static QuestState Quests { get; private set; } = null!;
     internal static IFontHandle PopupFont { get; private set; } = null!;
@@ -71,6 +72,7 @@ public sealed class Plugin : IDalamudPlugin
     private void CheckCharacter()
     {
         WorldInfo.Track();   // remember where you stand; the server uses it to show only nearby stashes and signs
+        Mail?.Poll();        // checks for new mail about once a minute
         var id = ContentId();
         var name = id == 0 ? "" : CharacterName();
         if (id != 0 && name.Length == 0) return;            // still loading in
@@ -99,6 +101,7 @@ public sealed class Plugin : IDalamudPlugin
         Stashes = new StashState();
         Signs = new SignState();
         Bank = new BankState();
+        Mail = new MailState();
         Status = new StatusState();
         Quests = new QuestState();
         SectData.ClearSession();
@@ -135,6 +138,7 @@ public sealed class Plugin : IDalamudPlugin
         Stashes = new StashState();
         Signs = new SignState();
         Bank = new BankState();
+        Mail = new MailState();
         Status = new StatusState();
         Quests = new QuestState();
         PopupFont = PluginInterface.UiBuilder.FontAtlas.NewDelegateFontHandle(e => e.OnPreBuild(tk => tk.AddDalamudDefaultFont(28f)));

@@ -38,9 +38,10 @@ public sealed class ItemsTab
     private readonly StashesTab stashTab = new();
     private readonly SignsTab signTab = new();
     private readonly BankTab bankTab = new();
+    private readonly MailTab mailTab = new();
     private readonly StatusTab statusTab = new();
     private readonly QuestsTab questsTab = new();
-    private string? confirmAdminDelete, confirmAdminRemove, confirmAdminStash, confirmAdminSign;
+    private string? confirmAdminDelete, confirmAdminRemove, confirmAdminStash, confirmAdminSign, confirmAdminMail;
     private string giftRecipient = "", giftStashId = "", giftStashName = "";
     private int giftCopies = 1;
     private int createQty = 1;
@@ -74,6 +75,8 @@ public sealed class ItemsTab
             if (ImGui.BeginTabItem("Signs")) { signTab.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Status")) { statusTab.Draw(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Bank")) { bankTab.Draw(s); ImGui.EndTabItem(); }
+            var unread = Plugin.Mail.Unread;
+            if (ImGui.BeginTabItem((unread > 0 ? $"Mail ({unread})" : "Mail") + "###mailtab")) { mailTab.Draw(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Quests")) { questsTab.Draw(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Combat")) { combat.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Scenes")) { rp.Draw(); ImGui.EndTabItem(); }
@@ -539,6 +542,24 @@ public sealed class ItemsTab
                 ImGui.SameLine(); if (ImGui.SmallButton("No##ag" + sg.Id)) confirmAdminSign = null;
             }
             else if (ImGui.SmallButton("Delete##ag" + sg.Id)) confirmAdminSign = sg.Id;
+        }
+
+        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        var mails = Plugin.Mail.AdminList();
+        ImGui.TextColored(Gold, $"Mail ({mails.Count})");
+        ImGui.SameLine(); if (ImGui.SmallButton("Load mail")) _ = Plugin.Mail.AdminLoadAsync();
+        if (Plugin.Mail.AdminError().Length > 0) ImGui.TextColored(Red, Plugin.Mail.AdminError());
+        foreach (var ml in mails)
+        {
+            ImGui.Text(ml.Subject);
+            ImGui.SameLine(); ImGui.TextColored(Dim, $"{ml.From} to {ml.To}" + (ml.Anonymous ? " (sent as anonymous)" : "") + (ml.Returned ? " (returned)" : "") + (ml.Gold > 0 ? $", {ml.Gold:N0} gold" : ""));
+            ImGui.SameLine();
+            if (confirmAdminMail == ml.Id)
+            {
+                if (ImGui.SmallButton("Really delete##am" + ml.Id)) { _ = Plugin.Mail.AdminDeleteAsync(ml.Id); confirmAdminMail = null; }
+                ImGui.SameLine(); if (ImGui.SmallButton("No##am" + ml.Id)) confirmAdminMail = null;
+            }
+            else if (ImGui.SmallButton("Delete##am" + ml.Id)) confirmAdminMail = ml.Id;
         }
 
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
