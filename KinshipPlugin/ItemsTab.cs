@@ -531,6 +531,7 @@ public sealed class ItemsTab
         statusTab.DrawTools(s);
         bankTab.DrawTools();
         ReportsAdmin.Draw();
+        ProfileAdmin.Draw();
     }
 
     private void DrawDmTools()

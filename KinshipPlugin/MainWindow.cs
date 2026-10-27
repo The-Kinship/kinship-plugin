@@ -118,6 +118,8 @@ public sealed class MainWindow : Window, IDisposable
             Plugin.Config.ShowPlotNotice = show;
             Plugin.Config.Save();
         }
+        var disc = !Plugin.Config.HideDisclaimer;
+        if (ImGui.Checkbox("Show the third-party plugin disclaimer when I log in", ref disc)) { Plugin.Config.HideDisclaimer = !disc; Plugin.Config.Save(); }
         var bar = Plugin.Config.TopBarButton;
         if (ImGui.Checkbox("Show the Kinship button in the top bar", ref bar)) { Plugin.Config.TopBarButton = bar; Plugin.Config.Save(); }
         var stashPop = Plugin.Config.StashPopup;

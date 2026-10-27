@@ -75,6 +75,22 @@ public sealed class ProfileState
         catch (Exception) { lock (gate) { error = "Couldn't load your profile. Try again."; } }
     }
 
+    private string adminError = "", adminNotice = "";
+    public (string Error, string Notice) AdminMessages() { lock (gate) { return (adminError, adminNotice); } }
+    /// <summary>Advocates: removes someone's portrait link (creation password).</summary>
+    public async Task AdminClearPortraitAsync(string name)
+    {
+        if (Plugin.Config.CreatePassword.Length == 0) { lock (gate) { adminError = "Enter the creation password first."; adminNotice = ""; } return; }
+        lock (gate) { adminError = ""; adminNotice = ""; }
+        try
+        {
+            var r = await ItemsState.SendAsync(HttpMethod.Post, "/profile/admin/clear-portrait", new { adminPassword = Plugin.Config.CreatePassword, name = name.Trim() }).ConfigureAwait(false);
+            lock (gate) { adminNotice = "Portrait cleared for " + (r.Name ?? name) + ". Their card updates for everyone within a few minutes."; }
+        }
+        catch (CombatException ex) { lock (gate) { adminError = ex.Message; } }
+        catch (Exception ex) { Plugin.Log.Warning(ex, "Clear portrait failed"); lock (gate) { adminError = "Couldn't reach the server. Check your connection and try again."; } }
+    }
+
     public async Task<bool> SaveAsync(ProfileView p)
     {
         lock (gate) { if (busy) return false; busy = true; error = ""; notice = ""; }

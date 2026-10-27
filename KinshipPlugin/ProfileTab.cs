@@ -115,3 +115,26 @@ public sealed class ProfileTab
         Fields = fields.Select(f => new ProfileField { Label = f.Label, Value = f.Value }).ToList(),
     };
 }
+
+/// <summary>SM Tools: remove an inappropriate portrait link from a profile. Uses the creation password.</summary>
+public static class ProfileAdmin
+{
+    private static readonly Vector4 Dim = new(0.65f, 0.65f, 0.7f, 1f);
+    private static readonly Vector4 Red = new(0.95f, 0.4f, 0.35f, 1f);
+    private static readonly Vector4 Green = new(0.4f, 0.8f, 0.5f, 1f);
+    private static string name = "";
+
+    public static void Draw()
+    {
+        if (!ImGui.CollapsingHeader("Profile pictures")) return;
+        ImGui.TextWrapped("Removes a character's portrait link if the picture is not appropriate. They can set a new one afterwards. Uses the creation password.");
+        UiUtil.CreatePasswordInput();
+        ImGui.Text("Character name"); ImGui.SetNextItemWidth(240f); ImGui.InputText("##clrname", ref name, 60);
+        if (name.Trim().Length == 0) ImGui.BeginDisabled();
+        if (ImGui.Button("Clear their portrait##clrbtn")) _ = Plugin.Profiles.AdminClearPortraitAsync(name);
+        if (name.Trim().Length == 0) ImGui.EndDisabled();
+        var m = Plugin.Profiles.AdminMessages();
+        if (m.Error.Length > 0) ImGui.TextColored(Red, m.Error);
+        else if (m.Notice.Length > 0) ImGui.TextColored(Green, m.Notice);
+    }
+}
