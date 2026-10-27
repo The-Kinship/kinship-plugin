@@ -41,6 +41,7 @@ public sealed class ItemsTab
     private string? confirmAdminDelete, confirmAdminRemove, confirmAdminStash;
     private string giftRecipient = "", giftStashId = "", giftStashName = "";
     private int giftCopies = 1;
+    private int createQty = 1;
     private readonly Stack<ItemForm> parents = new();   // when editing what a combination makes, the form we came from
     private readonly IconPicker picker = new("pickicon");
 
@@ -237,7 +238,7 @@ public sealed class ItemsTab
     }
 
     // ---------- creating and editing ----------
-    private void StartCreate() { parents.Clear(); form = new ItemForm(); editingId = null; mode = Mode.Form; Plugin.Items.ClearMessages(); }
+    private void StartCreate() { createQty = 1; parents.Clear(); form = new ItemForm(); editingId = null; mode = Mode.Form; Plugin.Items.ClearMessages(); }
     private static ItemForm FormFrom(ItemView it, bool recipe = true)
     {
         var f = new ItemForm
@@ -284,7 +285,7 @@ public sealed class ItemsTab
             }
             ImGui.SetNextItemWidth(100f); ImGui.InputInt("Copies##giftn", ref giftCopies, 1);
             if (giftCopies < 1) giftCopies = 1;
-            if (giftCopies > 10) giftCopies = 10;
+            if (giftCopies > 100) giftCopies = 100;
             ImGui.TextColored(Dim, "Up to 10 identical copies at once, like several herbs for a stash.");
         }
 
@@ -298,6 +299,13 @@ public sealed class ItemsTab
         ImGui.Text("Description"); ImGui.InputTextMultiline("##fdesc", ref form.Description, 300, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 56f));
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - 8f); ImGui.InputText("##fflavor", ref form.Flavor, 150);
         ImGui.TextColored(Dim, "Flavor text, shown in quotes.");
+        if (!gift && !inResult && editingId == null)
+        {
+            ImGui.SetNextItemWidth(100f); ImGui.InputInt("Quantity##createn", ref createQty, 1);
+            if (createQty < 1) createQty = 1;
+            if (createQty > 100) createQty = 100;
+            ImGui.SameLine(); ImGui.TextColored(Dim, "How many to make. 10 fit in one slot.");
+        }
 
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         ImGui.TextColored(Gold, "On use (optional)");
@@ -398,7 +406,7 @@ public sealed class ItemsTab
     {
         var f = form; var id = editingId;
         if (mode == Mode.Gift) { if (await Plugin.Items.AdminGrantAsync(f, giftRecipient, giftStashId, giftCopies)) { mode = Mode.Inventory; await Plugin.Items.AdminLoadAsync(); } return; }
-        var ok = id == null ? await Plugin.Items.CreateAsync(f) : await Plugin.Items.UpdateAsync(id, f);
+        var ok = id == null ? await Plugin.Items.CreateAsync(f, createQty) : await Plugin.Items.UpdateAsync(id, f);
         if (ok) { mode = Mode.Inventory; parents.Clear(); }
     }
 

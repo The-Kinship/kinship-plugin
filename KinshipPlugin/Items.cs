@@ -240,10 +240,12 @@ public sealed class ItemsState
     }
     private static object Body(ItemForm f) => BodyDict(f);
 
-    public async Task<bool> CreateAsync(ItemForm f)
+    public async Task<bool> CreateAsync(ItemForm f, int quantity = 1)
     {
-        var r = await Run(() => SendAsync(HttpMethod.Post, "/items", Body(f))).ConfigureAwait(false);
-        if (r != null) lock (gate) { notice = "Item created."; }
+        var body = BodyDict(f);
+        if (quantity > 1) body["quantity"] = quantity;
+        var r = await Run(() => SendAsync(HttpMethod.Post, "/items", body)).ConfigureAwait(false);
+        if (r != null) lock (gate) { notice = quantity > 1 ? $"{quantity} items created." : "Item created."; }
         return r != null;
     }
     public async Task<bool> UpdateAsync(string id, ItemForm f)
