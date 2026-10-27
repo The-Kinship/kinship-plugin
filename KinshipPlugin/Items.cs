@@ -71,7 +71,7 @@ public sealed class ItemsState
     public int Gold { get { lock (gate) { return gold; } } }
     public void SetGold(int g) { lock (gate) { gold = g; } }
 
-    // DM tools (they use the creation password)
+    // SM tools (they use the creation password)
     private List<ItemView> adminItems = new();
     private List<string> adminMembers = new();
     private List<StashView> adminStashes = new();
@@ -188,7 +188,7 @@ public sealed class ItemsState
         catch (Exception) { /* the give list stays as it was */ }
     }
 
-    // ---------- DM tools ----------
+    // ---------- SM tools ----------
     private async Task<ItemReply?> RunAdmin(Func<string, Task<ItemReply>> action, string? done = null)
     {
         var pw = Plugin.Config.CreatePassword;
@@ -201,7 +201,7 @@ public sealed class ItemsState
             return r;
         }
         catch (CombatException ex) { lock (gate) { adminError = ex.Message; } }
-        catch (Exception ex) { Plugin.Log.Warning(ex, "DM request failed"); lock (gate) { adminError = "Couldn't reach the server. Try again."; } }
+        catch (Exception ex) { Plugin.Log.Warning(ex, "SM request failed"); lock (gate) { adminError = "Couldn't reach the server. Try again."; } }
         finally { lock (gate) { adminBusy = false; } }
         return null;
     }

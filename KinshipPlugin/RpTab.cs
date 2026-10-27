@@ -36,7 +36,7 @@ public sealed class RpTab
     private void DrawConnect(SceneSnap s)
     {
         ImGui.TextColored(Gold, "Join a scene");
-        ImGui.TextWrapped("Your DM gives you a scene code. Join it to receive the DM's RP popups. Popups stay off until you join.");
+        ImGui.TextWrapped("Your SM gives you a scene code. Join it to receive the SM's RP popups. Popups stay off until you join.");
         ImGui.Spacing();
         ImGui.SetNextItemWidth(240f); ImGui.InputText("Your name##rp", ref name, 60);
         ImGui.SetNextItemWidth(240f); var enter = ImGui.InputText("Scene code##rp", ref codeInput, 300, ImGuiInputTextFlags.EnterReturnsTrue);
@@ -45,7 +45,7 @@ public sealed class RpTab
         else if (ImGui.Button("Join scene") || enter) _ = Plugin.Scene.JoinAsync(codeInput, name);
 
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
-        ImGui.TextColored(Gold, "Run a scene (DM)");
+        ImGui.TextColored(Gold, "Run a scene (SM)");
         ImGui.TextWrapped("Start a scene for your RP group. Share the code, then send popups to everyone or to chosen people. Different groups can run different scenes at the same time.");
         ImGui.SetNextItemWidth(240f); ImGui.InputText("Scene name##rp", ref newTitle, 80);
         UiUtil.CreatePasswordInput();
@@ -92,7 +92,7 @@ public sealed class RpTab
         }
     }
 
-    // ---------- the DM's panel ----------
+    // ---------- the SM's panel ----------
     private void DrawDm(SceneSnap s)
     {
         Plugin.Scene.RefreshMembersIfDue();
@@ -128,7 +128,7 @@ public sealed class RpTab
         ImGui.InputText("##rpooc", ref ooc, 200);
         ImGui.TextColored(Dim, "Optional OOC note, shown in bold inside (( )).");
         if (ImGui.SmallButton("Fill in: encounter started note"))
-            ooc = "Encounter started! Stay put and wait for the DM to give you the combat code";
+            ooc = "Encounter started! Stay put and wait for the SM to give you the combat code";
         if (Plugin.Combat.Connected)
         {
             ImGui.SameLine();

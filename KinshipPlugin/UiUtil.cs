@@ -31,7 +31,7 @@ public static class UiUtil
         return hover && ImGui.IsMouseReleased(ImGuiMouseButton.Left);
     }
 
-    /// <summary>The creation-password box DMs fill in once before creating a room or scene.</summary>
+    /// <summary>The creation-password box SMs fill in once before creating a room or scene.</summary>
     public static void CreatePasswordInput()
     {
         var pw = Plugin.Config.CreatePassword;

@@ -63,7 +63,7 @@ public sealed class ItemsTab
             memberPassword = ""; recoveryCode = Plugin.Config.KnownRecoveryCode(); joinExisting = true; Plugin.Items.ClearFound(); mode = Mode.Inventory; editingId = null; giving = null; sealing = null; confirmDelete = null;
         }
         var s = Plugin.Items.Snapshot();
-        if (mode == Mode.Gift) { DrawForm(s); return; }   // DMs can gift without being signed in as a member
+        if (mode == Mode.Gift) { DrawForm(s); return; }   // SMs can gift without being signed in as a member
         if (!s.SignedIn) { DrawSignIn(s); return; }
         Plugin.Items.RefreshIfDue();
         if (mode == Mode.Form || mode == Mode.Gift) { DrawForm(s); return; }

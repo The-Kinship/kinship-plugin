@@ -53,7 +53,7 @@ public class Configuration : IPluginConfiguration
     public string SceneMemberId { get; set; } = "";
     public string SceneRole { get; set; } = "";
     public string SceneTitle { get; set; } = "";
-    /// <summary>The creation password (only DMs need it). Stored on this computer only.</summary>
+    /// <summary>The creation password (only SMs need it). Stored on this computer only.</summary>
     public string CreatePassword { get; set; } = "";
     public string BankPassword { get; set; } = "";
     /// <summary>RP items: who you are in the RP system, and how to get back in.</summary>

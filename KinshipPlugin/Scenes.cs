@@ -22,7 +22,7 @@ public sealed class SReply
 public sealed class Popup { public int Id { get; init; } public string Text { get; init; } = ""; public string Ooc { get; init; } = ""; public string Combat { get; init; } = ""; }
 public sealed record SceneSnap(bool Connected, string Code, string Title, string Role, bool Listening, List<SMember> Members, string Error, string Status, bool Busy);
 
-/// <summary>RP scenes: a DM sends popups, players who joined the scene (and turned popups on) receive them.</summary>
+/// <summary>RP scenes: a SM sends popups, players who joined the scene (and turned popups on) receive them.</summary>
 public sealed class SceneState : IDisposable
 {
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(15) };
@@ -194,7 +194,7 @@ public sealed class SceneState : IDisposable
             lock (gate) { lastId = r.LastId; if (error.StartsWith("Can't reach")) error = ""; }
             if (after >= 0) foreach (var ev in r.Events) Enqueue(ev);
         }
-        catch (CombatException ex) when (ex.Status == 404) { ForgetLocal(); SetError("This scene was closed by the DM."); }
+        catch (CombatException ex) when (ex.Status == 404) { ForgetLocal(); SetError("This scene was closed by the SM."); }
         catch (CombatException ex) when (ex.Status == 401) { SetListening(false); SetError("You are no longer in this scene. Join again with the code."); }
         catch (CombatException ex) { SetError(ex.Message); }
         catch (OperationCanceledException) { throw; }
@@ -218,7 +218,7 @@ public sealed class SceneState : IDisposable
         }
     }
 
-    // ---------- DM: member list and sending ----------
+    // ---------- SM: member list and sending ----------
     public void RefreshMembersIfDue()
     {
         string tk, cd;

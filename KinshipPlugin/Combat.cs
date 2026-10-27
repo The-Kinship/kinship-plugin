@@ -164,7 +164,7 @@ public sealed class CombatState
         finally { lock (gate) { busy = false; } }
     }
 
-    /// <summary>Starts a brand new encounter room; you become its DM.</summary>
+    /// <summary>Starts a brand new encounter room; you become its SM.</summary>
     public async Task CreateAsync(string name, string encounter)
     {
         if (name.Trim().Length == 0) { SetError("Enter the name you want to appear under."); return; }
@@ -184,7 +184,7 @@ public sealed class CombatState
         finally { lock (gate) { busy = false; } }
     }
 
-    /// <summary>DM only: closes the encounter for everyone and forgets the room.</summary>
+    /// <summary>SM only: closes the encounter for everyone and forgets the room.</summary>
     public async Task CloseRoomAsync()
     {
         string tk, cd;
@@ -230,7 +230,7 @@ public sealed class CombatState
             catch (CombatException ex) when (ex.Status == 404)
             {
                 Leave();
-                SetError("This encounter was closed by the DM.");
+                SetError("This encounter was closed by the SM.");
             }
             catch (CombatException ex) when (ex.Status == 401)
             {

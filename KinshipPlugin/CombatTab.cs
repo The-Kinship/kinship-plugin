@@ -25,7 +25,7 @@ public sealed class CombatTab
     // create-a-room form
     private string newEncounter = "";
 
-    // DM setup state
+    // SM setup state
     private static readonly string[] Modes = { "random", "manual" };
     private static readonly string[] ModeLabels = { "Random order", "Manual order (use the order numbers)" };
     private static readonly string[] Kinds = { "classic", "lastStanding", "spar", "timed" };
@@ -87,7 +87,7 @@ public sealed class CombatTab
     private void DrawConnect(string error, bool busy)
     {
         ImGui.TextColored(Gold, "Join an encounter");
-        ImGui.TextWrapped("Your DM gives you a room code or an invite link. Paste either one here.");
+        ImGui.TextWrapped("Your SM gives you a room code or an invite link. Paste either one here.");
         ImGui.Spacing();
 
         ImGui.SetNextItemWidth(240f);
@@ -101,8 +101,8 @@ public sealed class CombatTab
 
 
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
-        ImGui.TextColored(Gold, "Run an encounter (DM)");
-        ImGui.TextWrapped("Start a new room. You will be its DM, and you can share the room code or invite link with your players.");
+        ImGui.TextColored(Gold, "Run an encounter (SM)");
+        ImGui.TextWrapped("Start a new room. You will be its SM, and you can share the room code or invite link with your players.");
         ImGui.SetNextItemWidth(240f);
         ImGui.InputText("Encounter name", ref newEncounter, 90);
         UiUtil.CreatePasswordInput();
@@ -154,7 +154,7 @@ public sealed class CombatTab
             if (isDm) DrawSetup(room, busy);
             else
             {
-                ImGui.TextColored(Dim, "Waiting for the DM to start the encounter...");
+                ImGui.TextColored(Dim, "Waiting for the SM to start the encounter...");
                 ImGui.Spacing();
                 foreach (var p in room.People) DrawPerson(p, null, false);
             }
@@ -211,12 +211,12 @@ public sealed class CombatTab
             {
                 ImGui.TextColored(m.Online ? Green : Dim, m.Online ? "●" : "○");
                 ImGui.SameLine();
-                ImGui.Text(m.Name + (m.Role == "dm" ? "  (DM)" : ""));
+                ImGui.Text(m.Name + (m.Role == "dm" ? "  (SM)" : ""));
             }
         }
     }
 
-    // ---------- DM setup ----------
+    // ---------- SM setup ----------
     private void DrawSetup(CRoom room, bool busy)
     {
         if (loadedFor != room.Code)
@@ -227,7 +227,7 @@ public sealed class CombatTab
             loadedFor = room.Code; fNumber = room.People.Count + 1;
         }
 
-        ImGui.TextColored(Gold, "You are the DM. Set up the encounter:");
+        ImGui.TextColored(Gold, "You are the SM. Set up the encounter:");
         ImGui.Spacing();
         ImGui.SetNextItemWidth(260f); ImGui.InputText("Encounter name##s", ref sName, 90);
         ImGui.SetNextItemWidth(260f); ImGui.InputText("Location##s", ref sLocation, 90);
@@ -261,7 +261,7 @@ public sealed class CombatTab
         if (room.People.Count == 0) ImGui.TextColored(Dim, "No characters yet. Add at least two below.");
         foreach (var p in room.People)
         {
-            var owner = p.Type == "Player" ? room.Members.FirstOrDefault(m => m.Id == p.OwnerId)?.Name ?? "unassigned" : "DM";
+            var owner = p.Type == "Player" ? room.Members.FirstOrDefault(m => m.Id == p.OwnerId)?.Name ?? "unassigned" : "SM";
             ImGui.Text($"{p.Name}  ({p.Type})  HP {p.Hp}/{p.Max}  ·  #{p.Number}  ·  {owner}" + (string.IsNullOrEmpty(p.Loot) ? "" : $"  ·  loot: {p.Loot}") + (p.Mods is { Count: > 0 } ? $"  ·  mods: {CMod.Describe(p.Mods)}" : ""));
             ImGui.SameLine();
             if (ImGui.SmallButton("Edit##e" + p.Id)) LoadForm(p);
@@ -294,7 +294,7 @@ public sealed class CombatTab
             if (ImGui.BeginCombo("Played by##f", current))
             {
                 foreach (var m in room.Members)
-                    if (ImGui.Selectable(m.Name + (m.Role == "dm" ? " (DM)" : "") + "##o" + m.Id, m.Id == fOwnerId)) fOwnerId = m.Id;
+                    if (ImGui.Selectable(m.Name + (m.Role == "dm" ? " (SM)" : "") + "##o" + m.Id, m.Id == fOwnerId)) fOwnerId = m.Id;
                 ImGui.EndCombo();
             }
         }
