@@ -54,7 +54,7 @@ public sealed class CombatTab
 
     public void Draw()
     {
-        if (seenCharacter != Plugin.CharacterId) { seenCharacter = Plugin.CharacterId; name = Plugin.Config.Me().CombatName; codeInput = ""; }
+        if (seenCharacter != Plugin.CharacterId) { seenCharacter = Plugin.CharacterId; name = Plugin.Config.Me().CombatName.Length > 0 ? Plugin.Config.Me().CombatName : Plugin.Config.Me().ItemsName; codeInput = ""; }
         DrawBanner();
         var (room, myId, error, busy) = Plugin.Combat.Snapshot();
 

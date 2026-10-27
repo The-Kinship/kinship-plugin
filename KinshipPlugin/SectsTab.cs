@@ -190,7 +190,7 @@ public sealed class SectsTab
         var fresh = Plugin.Status.TakeDiagnosis();
         if (fresh != null) { dxShown = fresh; ImGui.OpenPopup("Diagnosis##dx"); }
 
-        if (!inv.SignedIn) ImGui.TextColored(Dim, "Sign in on the Items tab to use this.");
+        if (!inv.SignedIn) ImGui.TextColored(Dim, "Sign in on the RP tab to use this.");
         else
         {
             if (inv.Members.Count == 0 && (DateTime.UtcNow - dxMembersLoad).TotalSeconds > 30) { dxMembersLoad = DateTime.UtcNow; _ = Plugin.Items.LoadMembersAsync(); }

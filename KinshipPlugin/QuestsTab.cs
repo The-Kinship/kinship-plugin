@@ -148,7 +148,7 @@ public sealed class QuestsTab
                 ImGui.Text("What the player sees there"); ImGui.InputTextMultiline("##qst", ref form.StartText, 600, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 52f));
                 ImGui.TextColored(Dim, "Anyone who walks up and presses Look is asked if they want the quest. Nobody has to be online.");
             }
-            ImGui.TextColored(Dim, "A quest can also be started by an item. In the Items tab, gift an item and pick this quest under \"Starts a quest\".");
+            ImGui.TextColored(Dim, "A quest can also be started by an item. In the RP tab, gift an item and pick this quest under \"Starts a quest\".");
         }
         for (var i = 0; i < form.Steps.Count; i++) DrawStep(form.Steps[i], i);
         if (form.Steps.Count < QuestState.MaxSteps && ImGui.Button("Add a step##qas")) form.Steps.Add(new StepForm());

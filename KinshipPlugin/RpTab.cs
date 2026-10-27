@@ -26,7 +26,7 @@ public sealed class RpTab
 
     public void Draw()
     {
-        if (seenCharacter != Plugin.CharacterId) { seenCharacter = Plugin.CharacterId; name = Plugin.Config.Me().SceneName.Length > 0 ? Plugin.Config.Me().SceneName : Plugin.Config.Me().CombatName; codeInput = ""; }
+        if (seenCharacter != Plugin.CharacterId) { seenCharacter = Plugin.CharacterId; name = Plugin.Config.Me().SceneName.Length > 0 ? Plugin.Config.Me().SceneName : Plugin.Config.Me().CombatName.Length > 0 ? Plugin.Config.Me().CombatName : Plugin.Config.Me().ItemsName; codeInput = ""; }
         var s = Plugin.Scene.Snapshot();
         if (!s.Connected) { DrawConnect(s); return; }
         if (s.Role == "dm") DrawDm(s); else DrawPlayer(s);

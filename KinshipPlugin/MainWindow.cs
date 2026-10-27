@@ -18,10 +18,11 @@ public sealed class MainWindow : Window, IDisposable
     private readonly CombatTab combat = new();
     private readonly RpTab rp = new();
     private readonly RosterTab roster = new();
-    private readonly ItemsTab items = new();
+    private readonly ItemsTab items;
 
     public MainWindow() : base("The Kinship##KinshipMain", ImGuiWindowFlags.None)
     {
+        items = new ItemsTab(combat, rp);
         Size = new Vector2(440, 520);
         SizeCondition = ImGuiCond.FirstUseEver;
 
@@ -78,14 +79,27 @@ public sealed class MainWindow : Window, IDisposable
             if (ImGui.BeginTabItem("Announcements")) { DrawAnnouncements(f); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Plots")) { DrawPlots(p); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Sects")) { sects.Draw(); ImGui.EndTabItem(); }
-            if (ImGui.BeginTabItem("Combat")) { combat.Draw(); ImGui.EndTabItem(); }
-            if (ImGui.BeginTabItem("RP")) { rp.Draw(); ImGui.EndTabItem(); }
-            if (ImGui.BeginTabItem("Items")) { items.Draw(); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("RP")) { items.Draw(); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Guest")) { DrawGuest(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Settings")) { DrawSettings(); ImGui.EndTabItem(); }
             ImGui.EndTabBar();
         }
 
         if (s.Length > 0) { ImGui.Separator(); ImGui.TextColored(Dim, s); }
+    }
+
+    // ---------- guests: join an encounter or a scene with just an invite link or code and a name ----------
+    private void DrawGuest()
+    {
+        ImGui.TextColored(Gold, "Just visiting?");
+        ImGui.TextWrapped("You don't need to register to join an encounter or a scene. Paste the invite link or code you were given, type a name, and join.");
+        ImGui.Spacing();
+        if (ImGui.BeginTabBar("guestsub"))
+        {
+            if (ImGui.BeginTabItem("Combat")) { combat.Draw(); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Scenes")) { rp.Draw(); ImGui.EndTabItem(); }
+            ImGui.EndTabBar();
+        }
     }
 
     private static void DrawSettings()

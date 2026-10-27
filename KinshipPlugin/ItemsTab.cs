@@ -45,6 +45,10 @@ public sealed class ItemsTab
     private readonly Stack<ItemForm> parents = new();   // when editing what a combination makes, the form we came from
     private readonly IconPicker picker = new("pickicon");
 
+    private readonly CombatTab combat;
+    private readonly RpTab rp;
+    public ItemsTab(CombatTab combat, RpTab rp) { this.combat = combat; this.rp = rp; }
+
     private ulong seenCharacter = ulong.MaxValue;
 
     public void Draw()
@@ -69,6 +73,8 @@ public sealed class ItemsTab
             if (ImGui.BeginTabItem("Status")) { statusTab.Draw(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Bank")) { bankTab.Draw(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Quests")) { questsTab.Draw(s); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Combat")) { combat.Draw(); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Scenes")) { rp.Draw(); ImGui.EndTabItem(); }
             ImGui.EndTabBar();
         }
     }
@@ -76,7 +82,7 @@ public sealed class ItemsTab
     // ---------- signing in ----------
     private void DrawSignIn(ItemsSnap s)
     {
-        ImGui.TextColored(Gold, "RP system");
+        ImGui.TextColored(Gold, "Welcome to the Kinship RP system");
         var who = Plugin.CharacterName();
         if (who.Length > 0) ImGui.TextColored(Dim, "Signing in as your character: " + who);
         if (Plugin.Config.HasLegacy())
@@ -87,15 +93,23 @@ public sealed class ItemsTab
             if (ImGui.Button("Yes, use it for " + (who.Length > 0 ? who : "this character") + "##claim")) { Plugin.Config.ClaimLegacy(); Plugin.ResetStates(); }
             ImGui.Spacing(); ImGui.Separator();
         }
-        ImGui.TextWrapped("Make items for your character, keep them in your inventory, give them to others, and use them in RP. Items only exist in this plugin. They never touch the game.");
         ImGui.Spacing();
-        ImGui.TextColored(Gold, "Join the RP system");
+        ImGui.TextWrapped("This is where everything personal to your character lives: your inventory, stashes, signs, statuses, bank, quests, and the combat and scene tools. It only exists inside this plugin and never touches the game.");
+        ImGui.Spacing();
+        ImGui.TextColored(Gold, "How it works");
+        ImGui.TextWrapped("1. Register once below with your character's name and the member password. Ask your FC leader for the password.");
+        ImGui.TextWrapped("2. You'll get a recovery code. Write it down somewhere safe. It's the only way back in if you move to a new computer or reinstall.");
+        ImGui.TextWrapped("3. After that you stay signed in on this computer. Each of your characters has their own sign-in, so alts never share items, gold or quests.");
+        ImGui.TextWrapped("4. Every time you open this tab you'll go straight to your own tabs.");
+        ImGui.TextColored(Dim, "Only visiting? Use the Guest tab to join an encounter or a scene with just an invite link.");
+        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        ImGui.TextColored(Gold, "Register");
         ImGui.SetNextItemWidth(240f); ImGui.InputText("Your name##it", ref name, 40);
         ImGui.SetNextItemWidth(240f); ImGui.InputText("Member password##it", ref memberPassword, 100, ImGuiInputTextFlags.Password);
         ImGui.TextColored(Dim, "Ask your FC leader for the member password.");
         if (s.Error.Length > 0) ImGui.TextColored(Red, s.Error);
         if (s.Busy) ImGui.TextColored(Dim, "Working...");
-        else if (ImGui.Button("Join")) _ = Plugin.Items.RegisterAsync(name, memberPassword);
+        else if (ImGui.Button("Register")) _ = Plugin.Items.RegisterAsync(name, memberPassword);
 
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         ImGui.TextColored(Gold, "Already joined on another computer?");
@@ -182,9 +196,9 @@ public sealed class ItemsTab
         ImGui.Spacing();
         if (ImGui.CollapsingHeader("My recovery code"))
         {
-            ImGui.TextWrapped("Write this down. If you play on another computer or reinstall, enter your name and this code on the Items tab to get your items back.");
+            ImGui.TextWrapped("Write this down. If you play on another computer or reinstall, enter your name and this code on the RP tab to get your things back.");
             ImGui.TextColored(Gold, s.Recovery.Length > 0 ? s.Recovery : "(not saved on this computer)");
-            if (ImGui.SmallButton("Sign out of items")) { Plugin.Items.SignOut(); mode = Mode.Inventory; }
+            if (ImGui.SmallButton("Sign out")) { Plugin.Items.SignOut(); mode = Mode.Inventory; }
         }
 
         ImGui.Spacing();
