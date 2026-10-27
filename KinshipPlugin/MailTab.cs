@@ -144,6 +144,8 @@ public sealed class MailTab
             ImGui.SameLine(); if (ImGui.SmallButton("Remove##mx" + i)) { attach.RemoveAt(i); break; }
         }
         Wrapped(Dim, "Click an item below to attach it. Click again to add more of the same stack.");
+        ImGui.TextColored(Dim, $"Your inventory: {inv.Items.Count}/{inv.Capacity} slots used");
+        if (inv.Items.Count == 0) ImGui.TextColored(Dim, "You have no items to attach. Items you hold in your Inventory tab show up here.");
         ItemView? hovered = null;
         for (var i = 0; i < inv.Items.Count; i++)
         {
