@@ -27,6 +27,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IGameGui GameGui { get; private set; } = null!;
     [PluginService] internal static IDataManager GameData { get; private set; } = null!;
     [PluginService] internal static IDtrBar DtrBar { get; private set; } = null!;
+    [PluginService] internal static IPlayerState PlayerState { get; private set; } = null!;
 
     internal static Configuration Config { get; private set; } = null!;
     internal static DataStore Data { get; private set; } = null!;
@@ -55,6 +56,9 @@ public sealed class Plugin : IDalamudPlugin
     /// <summary>Opens the RP popup window (called when a popup arrives).</summary>
     internal static void ShowPopups() { if (popupWindow != null) popupWindow.IsOpen = true; }
 
+    /// <summary>The logged in character's permanent ID (0 when nobody is logged in).</summary>
+    internal static ulong ContentId() { try { return PlayerState.ContentId; } catch (Exception) { return 0; } }
+
     private ulong seenCharacter = ulong.MaxValue;
     internal static string CharacterName()
     {
@@ -66,7 +70,7 @@ public sealed class Plugin : IDalamudPlugin
     /// <summary>Runs every frame. When you log in as a different character, switches to that character's own saved sign-in and starts their data fresh.</summary>
     private void CheckCharacter()
     {
-        var id = ClientState.LocalContentId;
+        var id = ContentId();
         var name = id == 0 ? "" : CharacterName();
         if (id != 0 && name.Length == 0) return;            // still loading in
         if (id == seenCharacter) return;
@@ -97,7 +101,7 @@ public sealed class Plugin : IDalamudPlugin
         Status = new StatusState();
         Quests = new QuestState();
         SectData.SessionUnlocked.Clear();
-        CharacterId = ClientState.LocalContentId;
+        CharacterId = ContentId();
     }
     /// <summary>Changes when the logged in character changes, so screens can clear what was typed for the last one.</summary>
     internal static ulong CharacterId { get; private set; }
