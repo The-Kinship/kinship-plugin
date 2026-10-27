@@ -34,15 +34,33 @@ public sealed class QuestsTab
         var s = Plugin.Quests.Snapshot();
 
         ImGui.TextColored(Gold, "Quests");
-        ImGui.TextWrapped("Target a character in the game, then press Talk. If they have something to say about one of your quests, you'll hear it.");
+        ImGui.TextWrapped("Use the quest action buttons to complete your quests! You must target NPCs to interact with them.");
         string target = "";
         try { target = Plugin.TargetManager.Target?.Name.TextValue ?? ""; } catch (Exception) { target = ""; }
         if (target.Length == 0) ImGui.TextColored(Dim, "Nothing targeted.");
         else ImGui.TextColored(Gold, "Target: " + target);
         var can = target.Length > 0 && !s.Busy;
         if (!can) ImGui.BeginDisabled();
-        if (ImGui.Button("Talk##quest")) _ = Plugin.Quests.TalkAsync(target);
+        if (ImGui.Button("Speak##quest")) _ = Plugin.Quests.TalkAsync(target);
         if (!can) ImGui.EndDisabled();
+        foreach (var (type, label) in new[] { ("look", "Look"), ("listen", "Listen"), ("search", "Search") })
+        {
+            ImGui.SameLine();
+            var start = type == "look" ? Plugin.Quests.StartNear() : null;
+            var stepReady = Plugin.Quests.Ready(type);
+            var ready = !s.Busy && (stepReady || start != null);
+            if (!ready) ImGui.BeginDisabled();
+            if (ImGui.Button(label + "##quest" + type)) { if (stepReady) _ = Plugin.Quests.ActAsync(type); else if (start != null) _ = Plugin.Quests.OfferAsync(start.QuestId); }
+            if (!ready) ImGui.EndDisabled();
+        }
+        if (Plugin.Quests.FightStep() != null)
+        {
+            ImGui.SameLine();
+            var go = !s.Busy && Plugin.Quests.FightReady(target);
+            if (!go) ImGui.BeginDisabled();
+            if (ImGui.Button("Fight##questfight")) _ = Plugin.Quests.FightAsync(target, false);
+            if (!go) ImGui.EndDisabled();
+        }
         ImGui.SameLine(); if (ImGui.SmallButton("Refresh##quests")) _ = Plugin.Quests.RefreshAsync();
         var win = Plugin.Config.QuestWindow;
         if (ImGui.Checkbox("Show the quest window on screen while I have a quest", ref win)) { Plugin.Config.QuestWindow = win; Plugin.Config.Save(); }
