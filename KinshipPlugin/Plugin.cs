@@ -59,6 +59,7 @@ public sealed class Plugin : IDalamudPlugin
     private readonly QuestOverlay questOverlay;
     private readonly QuestReplyWindow questReply;
     private readonly QuestOfferWindow questOffer;
+    private readonly QuestFightWindow questFight;
 
     public Plugin()
     {
@@ -100,6 +101,8 @@ public sealed class Plugin : IDalamudPlugin
         windows.AddWindow(questReply);
         questOffer = new QuestOfferWindow();
         windows.AddWindow(questOffer);
+        questFight = new QuestFightWindow();
+        windows.AddWindow(questFight);
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
@@ -151,6 +154,7 @@ public sealed class Plugin : IDalamudPlugin
         questOverlay.Dispose();
         questReply.Dispose();
         questOffer.Dispose();
+        questFight.Dispose();
         Scene.Dispose();
         PopupFont.Dispose();
         Images.Dispose();

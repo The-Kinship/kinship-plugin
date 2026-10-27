@@ -19,6 +19,13 @@ public sealed class QuestPlace
     }
 }
 public sealed class QuestGrant { public string Name { get; set; } = ""; public string Icon { get; set; } = ""; public string Description { get; set; } = ""; public int Minutes { get; set; } public bool IsDebuff { get; set; } }
+public sealed class QuestFightSpec { public int NpcHp { get; set; } = 30; public int NpcDie { get; set; } = 8; public int NpcBonus { get; set; } public int PlayerHp { get; set; } = 30; public int PlayerDie { get; set; } = 8; public int PlayerBonus { get; set; } }
+public sealed class QuestFight
+{
+    public string QuestId { get; set; } = ""; public string Npc { get; set; } = ""; public string PlayerName { get; set; } = "";
+    public int PlayerHp { get; set; } public int PlayerMax { get; set; } public int NpcHp { get; set; } public int NpcMax { get; set; }
+    public List<string> Log { get; set; } = new(); public string Status { get; set; } = "active"; public TalkLine? Result { get; set; }
+}
 public sealed class QuestOffer { public string QuestId { get; set; } = ""; public string Title { get; set; } = ""; public string Intro { get; set; } = ""; public string Text { get; set; } = ""; public string ItemId { get; set; } = ""; }
 public sealed class QuestStart { public string QuestId { get; set; } = ""; public QuestPlace Place { get; set; } = new(); }
 public sealed class QuestNow { public string Type { get; set; } = ""; public string Npc { get; set; } = ""; public string Item { get; set; } = ""; public string Hint { get; set; } = ""; public QuestPlace? Place { get; set; } }
@@ -26,7 +33,7 @@ public sealed class QuestGift { public string Name { get; set; } = ""; public st
 public sealed class QuestStepView
 {
     public string Type { get; set; } = "talk"; public string Npc { get; set; } = ""; public string Text { get; set; } = ""; public string Hint { get; set; } = "";
-    public string Item { get; set; } = ""; public QuestGift? Gift { get; set; } public QuestPlace? Place { get; set; } public bool Once { get; set; }
+    public string Item { get; set; } = ""; public QuestGift? Gift { get; set; } public QuestPlace? Place { get; set; } public bool Once { get; set; } public QuestFightSpec? Fight { get; set; }
     public string Needs { get; set; } = ""; public string NeedText { get; set; } = ""; public bool TakesNeeded { get; set; } public QuestGrant? Grants { get; set; }
 }
 public sealed class QuestPlayer { public string Name { get; set; } = ""; public int Step { get; set; } public bool Done { get; set; } }
@@ -47,6 +54,7 @@ public sealed class StepForm
 {
     public string Type = "talk", Npc = "", Text = "", Hint = "", Item = "", GiftName = "", GiftIcon = "game:20001", GiftDesc = "";
     public Spot? Place; public bool Once;
+    public int NpcHp = 30, NpcDie = 8, NpcBonus, PlayerHp = 30, PlayerDie = 8, PlayerBonus;
     public string Needs = "", NeedText = "", GrantName = "", GrantDesc = "", GrantIcon = "game:10205";
     public int GrantMinutes; public bool TakesNeeded, GrantDebuff;
     public bool AtSpot => Type == "look" || Type == "listen" || Type == "search";
@@ -65,7 +73,7 @@ public sealed class QuestState
     public const int MaxSteps = 12;
     public const float ActionRange = 8f;   // how close you must be for the words to show and the buttons to work
 
-    public static string Phrase(string type) => type == "listen" ? "You hear something..." : type == "search" ? "Something may be hidden here..." : "You notice something...";
+    public static string Phrase(string type) => type == "fight" ? "Danger lurks here..." : type == "listen" ? "You hear something..." : type == "search" ? "Something may be hidden here..." : "You notice something...";
     /// <summary>True when one of your quests is waiting on this action and you are standing near its spot.</summary>
     public bool Ready(string type) => Active().Any(q => q.Current is { Place: not null } c && c.Type == type && c.Place.Distance() is { } d && d <= ActionRange);
     private readonly object gate = new();
@@ -76,6 +84,40 @@ public sealed class QuestState
     private TalkResult? talk;
     private List<QuestStart> starts = new();
     private QuestOffer? offer;
+    private QuestFight? fight;
+
+    public QuestFight? LastFight() { lock (gate) { return fight; } }
+    public void DismissFight() { lock (gate) { fight = null; } }
+    /// <summary>The fight step you are on, if it can start right now (standing at its spot, or targeting its enemy).</summary>
+    public QuestNow? FightStep() => Active().Select(q => q.Current).FirstOrDefault(c => c is { Type: "fight" });
+    public bool FightReady(string target)
+    {
+        var c = FightStep();
+        if (c == null) return false;
+        if (c.Place != null) return c.Place.Distance() is { } d && d <= ActionRange;
+        return target.Length > 0 && string.Equals(c.Npc.Trim(), target.Trim(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    public async Task FightAsync(string target, bool attack, string questId = "")
+    {
+        lock (gate) { if (busy) return; busy = true; error = ""; notice = ""; }
+        try
+        {
+            var r = attack
+                ? await ItemsState.SendAsync(HttpMethod.Post, "/quests/fight/attack", new { questId }).ConfigureAwait(false)
+                : await ItemsState.SendAsync(HttpMethod.Post, "/quests/fight/start", new { npc = target, territory = (int)Plugin.ClientState.TerritoryType }).ConfigureAwait(false);
+            lock (gate)
+            {
+                if (r.Fight != null) fight = r.Fight;
+                else if (!string.IsNullOrEmpty(r.Text)) talk = new TalkResult(target, new(), r.Text);
+                else { fight = null; talk = new TalkResult(target, new(), ""); }
+            }
+            if (r.Fight is { Status: "won" }) { await RefreshAsync().ConfigureAwait(false); _ = Plugin.Items.RefreshAsync(true); _ = Plugin.Status.RefreshAsync(); }
+        }
+        catch (CombatException ex) { lock (gate) { error = ex.Message; } }
+        catch (Exception ex) { Plugin.Log.Warning(ex, "Quest fight failed"); lock (gate) { error = "Couldn't reach the server. Check your connection and try again."; } }
+        finally { lock (gate) { busy = false; } }
+    }
 
     public QuestOffer? LastOffer() { lock (gate) { return offer; } }
     public void SetOffer(QuestOffer o) { lock (gate) { offer = o; } }
@@ -182,9 +224,11 @@ public sealed class QuestState
             if (s.Type == "give") d["item"] = s.Item.Trim();
             if (s.Needs.Trim().Length > 0) { d["needs"] = s.Needs.Trim(); d["needText"] = s.NeedText.Trim(); d["takesNeeded"] = s.TakesNeeded; }
             if (s.GrantName.Trim().Length > 0) d["grants"] = new Dictionary<string, object?> { ["name"] = s.GrantName.Trim(), ["icon"] = s.GrantIcon, ["description"] = s.GrantDesc.Trim(), ["minutes"] = s.GrantMinutes, ["isDebuff"] = s.GrantDebuff };
-            if (s.AtSpot && s.Place != null)
+            if (s.Type == "fight")
+                d["fight"] = new Dictionary<string, object?> { ["npcHp"] = s.NpcHp, ["npcDie"] = s.NpcDie, ["npcBonus"] = s.NpcBonus, ["playerHp"] = s.PlayerHp, ["playerDie"] = s.PlayerDie, ["playerBonus"] = s.PlayerBonus };
+            if ((s.AtSpot || s.Type == "fight") && s.Place != null)
                 d["place"] = new Dictionary<string, object?> { ["zone"] = s.Place.Zone, ["territory"] = (int)s.Place.Territory, ["map"] = (int)s.Place.Map, ["x"] = s.Place.Pos.X, ["y"] = s.Place.Pos.Y, ["z"] = s.Place.Pos.Z, ["mapX"] = s.Place.MapX, ["mapY"] = s.Place.MapY };
-            if ((s.Type == "receive" || s.Type == "search") && s.GiftName.Trim().Length > 0)
+            if ((s.Type == "receive" || s.Type == "search" || s.Type == "fight") && s.GiftName.Trim().Length > 0)
             {
                 d["gift"] = new Dictionary<string, object?> { ["name"] = s.GiftName.Trim(), ["icon"] = s.GiftIcon, ["description"] = s.GiftDesc.Trim() };
                 d["once"] = s.Once;

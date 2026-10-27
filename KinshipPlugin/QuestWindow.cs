@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
@@ -102,6 +103,14 @@ public sealed class QuestWindow : Window, IDisposable
             if (ImGui.Button(label + "##qw" + type)) { if (stepReady) _ = Plugin.Quests.ActAsync(type); else if (start != null) _ = Plugin.Quests.OfferAsync(start.QuestId); }
             if (!ready) ImGui.EndDisabled();
         }
+        if (Plugin.Quests.FightStep() != null)
+        {
+            ImGui.SameLine();
+            var go = !s.Busy && Plugin.Quests.FightReady(target);
+            if (!go) ImGui.BeginDisabled();
+            if (ImGui.Button("Fight##qwf")) _ = Plugin.Quests.FightAsync(target, false);
+            if (!go) ImGui.EndDisabled();
+        }
         ImGui.TextColored(target.Length > 0 ? Gold : Dim, target.Length > 0 ? target : "Target someone to speak");
         if (s.Error.Length > 0) ImGui.TextColored(Red, s.Error);
     }
@@ -194,5 +203,75 @@ public sealed class QuestOfferWindow : Window, IDisposable
         if (ImGui.Button("Accept##qo")) _ = Plugin.Quests.AcceptAsync(o);
         ImGui.SameLine();
         if (ImGui.Button("Decline##qo")) Plugin.Quests.DismissOffer();
+    }
+}
+
+/// <summary>A tiny turn-by-turn fight for quests: your name and HP, the enemy's, and an Attack button. The server plays the enemy.</summary>
+public sealed class QuestFightWindow : Window, IDisposable
+{
+    private static readonly Vector4 Gold = new(0.92f, 0.78f, 0.35f, 1f);
+    private static readonly Vector4 Dim = new(0.65f, 0.65f, 0.7f, 1f);
+    private static readonly Vector4 Green = new(0.4f, 0.8f, 0.5f, 1f);
+    private static readonly Vector4 Red = new(0.95f, 0.4f, 0.35f, 1f);
+
+    public QuestFightWindow() : base("Encounter##KinshipQuestFight", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse)
+    {
+        RespectCloseHotkey = false;
+        IsOpen = true;
+        BgAlpha = 0.92f;
+    }
+
+    public void Dispose() { }
+
+    public override void PreDraw()
+    {
+        var vp = ImGuiHelpers.MainViewport;
+        Position = new Vector2(vp.Pos.X + vp.Size.X / 2f - 190f, vp.Pos.Y + vp.Size.Y / 2f - 170f);
+        PositionCondition = ImGuiCond.Appearing;
+    }
+
+    public override bool DrawConditions() => Plugin.Quests.LastFight() != null;
+    public override void OnClose() { Plugin.Quests.DismissFight(); IsOpen = true; }
+
+    private static void Bar(string name, int hp, int max, Vector4 colour)
+    {
+        ImGui.TextColored(colour, name);
+        var frac = max > 0 ? Math.Clamp(hp / (float)max, 0f, 1f) : 0f;
+        ImGui.ProgressBar(frac, new Vector2(340f, 18f), $"{hp} / {max}");
+    }
+
+    public override void Draw()
+    {
+        var f = Plugin.Quests.LastFight();
+        if (f == null) return;
+        var busy = Plugin.Quests.Snapshot().Busy;
+        Bar(f.PlayerName, f.PlayerHp, f.PlayerMax, Green);
+        ImGui.Spacing();
+        Bar(f.Npc, f.NpcHp, f.NpcMax, Red);
+        ImGui.Spacing();
+        ImGui.PushTextWrapPos(ImGui.GetFontSize() * 28f);
+        foreach (var line in f.Log.TakeLast(6)) ImGui.TextColored(Dim, line);
+        ImGui.Spacing();
+        if (f.Status == "won" && f.Result != null)
+        {
+            ImGui.TextColored(Green, "Victory!");
+            ImGui.TextUnformatted(f.Result.Text);
+            if (f.Result.Gained != null) foreach (var g in f.Result.Gained) ImGui.TextColored(Green, "You received: " + g);
+            if (!string.IsNullOrEmpty(f.Result.StatusGained)) ImGui.TextColored(Green, "You gain: " + f.Result.StatusGained);
+            if (f.Result.Finished) ImGui.TextColored(Green, "Quest complete!");
+        }
+        else if (f.Status == "lost") ImGui.TextColored(Red, "You have fallen. You can try again.");
+        else if (f.Status == "blocked" && f.Result != null) ImGui.TextColored(Red, f.Result.Text);
+        ImGui.PopTextWrapPos();
+        ImGui.Spacing();
+        if (f.Status == "active" || f.Status == "blocked")
+        {
+            if (busy) ImGui.BeginDisabled();
+            if (ImGui.Button(f.Status == "active" ? "Attack##qfa" : "Try again##qfa")) _ = Plugin.Quests.FightAsync(f.Npc, true, f.QuestId);
+            if (busy) ImGui.EndDisabled();
+            ImGui.SameLine();
+            if (ImGui.Button(f.Status == "active" ? "Step back##qfc" : "Close##qfc")) Plugin.Quests.DismissFight();
+        }
+        else if (ImGui.Button("Close##qfc")) Plugin.Quests.DismissFight();
     }
 }

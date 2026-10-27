@@ -46,7 +46,7 @@ public sealed class QuestOverlay : Window, IDisposable
         foreach (var q in Plugin.Quests.Active())
         {
             var c = q.Current;
-            if (c?.Place == null || c.Type is not ("look" or "listen" or "search")) continue;
+            if (c?.Place == null || c.Type is not ("look" or "listen" or "search" or "fight")) continue;
             var d = c.Place.Distance();
             if (d == null || d > QuestState.ActionRange) continue;
             var pos = new Vector3(c.Place.X, c.Place.Y, c.Place.Z);
