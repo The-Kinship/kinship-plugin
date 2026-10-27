@@ -31,6 +31,7 @@ public sealed class ItemReply
     public string? Text { get; set; } public bool Consumed { get; set; } public string? Error { get; set; }
     public List<StashView>? Stashes { get; set; } public StashView? Stash { get; set; } public List<ItemView>? StashItems { get; set; }
     public List<SignView>? Signs { get; set; } public SignView? Sign { get; set; }
+    public List<ZoneCount>? Zones { get; set; } public int Elsewhere { get; set; }
     public List<string>? Gained { get; set; } public string? KeyUsed { get; set; }
     public int? Gold { get; set; } public string? To { get; set; } public long? Total { get; set; }
     public string? StatusGained { get; set; } public string? StatusCured { get; set; } public List<StatusView>? Statuses { get; set; }
@@ -75,6 +76,7 @@ public sealed class ItemsState
     private List<ItemView> adminItems = new();
     private List<string> adminMembers = new();
     private List<StashView> adminStashes = new();
+    private List<SignView> adminSigns = new();
     private string adminError = "", adminNotice = "";
     private bool adminBusy, adminLoaded;
     public (List<ItemView> Items, List<string> Members, string Error, string Notice, bool Busy, bool Loaded) AdminSnapshot()
@@ -82,6 +84,7 @@ public sealed class ItemsState
         lock (gate) { return (adminItems.ToList(), adminMembers.ToList(), adminError, adminNotice, adminBusy, adminLoaded); }
     }
     public List<StashView> AdminStashes() { lock (gate) { return adminStashes.ToList(); } }
+    public List<SignView> AdminSigns() { lock (gate) { return adminSigns.ToList(); } }
 
     public ItemsSnap Snapshot()
     {
@@ -92,9 +95,17 @@ public sealed class ItemsState
 
     internal static async Task<ItemReply> SendAsync(HttpMethod method, string path, object? body)
     {
+        // Stashes and signs are shown by distance, so the server is told where you stand (same position the game shows you).
+        var places = path.StartsWith("/stashes") || path.StartsWith("/signs");
+        if (places && method == HttpMethod.Get && WorldInfo.AtQuery() is { Length: > 0 } q) path += (path.Contains('?') ? "&" : "?") + q;
         using var req = new HttpRequestMessage(method, CombatState.BaseUrl + "/api" + path);
         if (Plugin.Config.Me().ItemsToken.Length > 0) req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Plugin.Config.Me().ItemsToken);
-        if (body != null) req.Content = new StringContent(JsonSerializer.Serialize(body, Json), Encoding.UTF8, "application/json");
+        if (body != null)
+        {
+            var node = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(body, Json));
+            if (places && node is System.Text.Json.Nodes.JsonObject o && WorldInfo.At() is { } at) o["at"] = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(at, Json));
+            req.Content = new StringContent(node?.ToJsonString() ?? "{}", Encoding.UTF8, "application/json");
+        }
         using var res = await Http.SendAsync(req).ConfigureAwait(false);
         var text = await res.Content.ReadAsStringAsync().ConfigureAwait(false);
         ItemReply? reply = null;
@@ -209,7 +220,7 @@ public sealed class ItemsState
     public async Task AdminLoadAsync()
     {
         var r = await RunAdmin(pw => SendAsync(HttpMethod.Post, "/items/admin/list", new { adminPassword = pw })).ConfigureAwait(false);
-        if (r != null) lock (gate) { adminItems = r.Items ?? new(); adminMembers = r.Members ?? new(); adminStashes = r.Stashes ?? new(); adminLoaded = true; }
+        if (r != null) lock (gate) { adminItems = r.Items ?? new(); adminMembers = r.Members ?? new(); adminStashes = r.Stashes ?? new(); adminSigns = r.Signs ?? new(); adminLoaded = true; }
     }
     public async Task AdminDeleteItemAsync(string id)
     {
@@ -220,6 +231,11 @@ public sealed class ItemsState
     {
         var r = await RunAdmin(pw => SendAsync(HttpMethod.Post, "/items/admin/delete-stash", new { adminPassword = pw, stashId = id }), "Stash deleted.").ConfigureAwait(false);
         if (r != null) { await AdminLoadAsync().ConfigureAwait(false); await Plugin.Stashes.RefreshAsync().ConfigureAwait(false); }
+    }
+    public async Task AdminDeleteSignAsync(string id)
+    {
+        var r = await RunAdmin(pw => SendAsync(HttpMethod.Post, "/signs/admin/delete", new { adminPassword = pw, signId = id }), "Sign deleted.").ConfigureAwait(false);
+        if (r != null) { await AdminLoadAsync().ConfigureAwait(false); await Plugin.Signs.RefreshAsync().ConfigureAwait(false); }
     }
     public async Task AdminRemoveMemberAsync(string name)
     {

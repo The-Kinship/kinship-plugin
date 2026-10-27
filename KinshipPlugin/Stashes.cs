@@ -22,7 +22,8 @@ public sealed class StashView
 }
 
 public sealed record Spot(uint Territory, uint Map, Vector3 Pos, string Zone, float MapX, float MapY);
-public sealed record StashSnap(List<StashView> Stashes, StashView? Open, List<ItemView> OpenItems, string Error, string Notice, bool Busy);
+public sealed record ZoneCount(string Zone, int Count);
+public sealed record StashSnap(List<StashView> Stashes, List<ZoneCount> Zones, StashView? Open, List<ItemView> OpenItems, string Error, string Notice, bool Busy);
 
 /// <summary>Reads where you are standing. Read-only: nothing here changes anything in the game.</summary>
 public static class WorldInfo
@@ -32,6 +33,21 @@ public static class WorldInfo
 
     public static bool InInstance =>
         Plugin.Condition[ConditionFlag.BoundByDuty] || Plugin.Condition[ConditionFlag.BoundByDuty56] || Plugin.Condition[ConditionFlag.BoundByDuty95];
+
+    // Where you stood on the last frame. Read by the network code, which may not touch the game's objects from another thread.
+    private static volatile Tuple<int, Vector3>? last;
+    public static void Track()
+    {
+        try
+        {
+            var p = Plugin.ObjectTable.LocalPlayer?.Position;
+            last = p == null ? null : Tuple.Create((int)Plugin.ClientState.TerritoryType, p.Value);
+        }
+        catch (Exception) { last = null; }
+    }
+    /// <summary>Your last known position in the form the server expects, or null if unknown.</summary>
+    public static object? At() { var l = last; return l == null ? null : new { territory = l.Item1, x = l.Item2.X, y = l.Item2.Y, z = l.Item2.Z }; }
+    public static string AtQuery() { var l = last; return l == null ? "" : FormattableString.Invariant($"t={l.Item1}&x={l.Item2.X:0.##}&y={l.Item2.Y:0.##}&z={l.Item2.Z:0.##}"); }
 
     public static Vector3? PlayerPos() { try { return Plugin.ObjectTable.LocalPlayer?.Position; } catch (Exception) { return null; } }
 
@@ -90,6 +106,7 @@ public sealed class StashState
 {
     private readonly object gate = new();
     private List<StashView> stashes = new();
+    private List<ZoneCount> zones = new();
     private StashView? open;
     private List<ItemView> openItems = new();
     private string error = "", notice = "";
@@ -97,7 +114,7 @@ public sealed class StashState
     private DateTime lastList = DateTime.MinValue;
 
     public List<StashView> All { get { lock (gate) { return stashes; } } }   // never edited in place, only replaced
-    public StashSnap Snapshot() { lock (gate) { return new StashSnap(stashes, open, openItems.ToList(), error, notice, busy); } }
+    public StashSnap Snapshot() { lock (gate) { return new StashSnap(stashes, zones, open, openItems.ToList(), error, notice, busy); } }
     public void ClearMessages() { lock (gate) { error = ""; notice = ""; } }
     public void CloseOpen() { lock (gate) { open = null; openItems = new(); } }
 
@@ -133,7 +150,7 @@ public sealed class StashState
         try
         {
             var r = await ItemsState.SendAsync(HttpMethod.Get, "/stashes", null).ConfigureAwait(false);
-            lock (gate) { stashes = r.Stashes ?? new(); lastList = DateTime.UtcNow; if (open != null) open = stashes.FirstOrDefault(s => s.Id == open.Id); }
+            lock (gate) { stashes = r.Stashes ?? new(); zones = r.Zones ?? new(); lastList = DateTime.UtcNow; if (open != null) open = stashes.FirstOrDefault(s => s.Id == open.Id); }
         }
         catch (Exception) { /* keep the list we have */ }
     }

@@ -70,6 +70,7 @@ public sealed class Plugin : IDalamudPlugin
     /// <summary>Runs every frame. When you log in as a different character, switches to that character's own saved sign-in and starts their data fresh.</summary>
     private void CheckCharacter()
     {
+        WorldInfo.Track();   // remember where you stand; the server uses it to show only nearby stashes and signs
         var id = ContentId();
         var name = id == 0 ? "" : CharacterName();
         if (id != 0 && name.Length == 0) return;            // still loading in

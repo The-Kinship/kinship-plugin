@@ -60,12 +60,31 @@ public sealed class StashesTab
     // ---------- the list ----------
     private void DrawList(StashSnap s)
     {
-        ImGui.TextColored(Gold, $"All stashes ({s.Stashes.Count})");
+        ImGui.TextColored(Gold, "Stashes");
         ImGui.SameLine(); if (ImGui.SmallButton("Refresh##stashes")) _ = Plugin.Stashes.RefreshAsync();
-        if (s.Stashes.Count == 0) { ImGui.TextColored(Dim, "No stashes yet."); return; }
+        var yours = s.Stashes.Where(x => x.Mine).OrderBy(x => x.Zone).ThenBy(x => x.Name).ToList();
+        var near = s.Stashes.Where(x => !x.Mine).OrderBy(x => WorldInfo.DistanceTo(x) ?? float.MaxValue).ToList();
 
-        var ordered = s.Stashes.OrderBy(x => WorldInfo.DistanceTo(x) ?? float.MaxValue).ThenBy(x => x.Zone).ThenBy(x => x.Name).ToList();
-        foreach (var st in ordered)
+        ImGui.TextColored(Gold, $"Yours ({yours.Count})");
+        if (yours.Count == 0) ImGui.TextColored(Dim, "You haven't made a stash.");
+        foreach (var st in yours) DrawRow(st, s);
+
+        ImGui.TextColored(Gold, $"Near you ({near.Count})");
+        if (near.Count == 0) ImGui.TextColored(Dim, "No one else's stashes are close by.");
+        foreach (var st in near) DrawRow(st, s);
+
+        var elsewhere = s.Zones.Sum(z => z.Count);
+        ImGui.TextColored(Gold, $"Out in the world ({elsewhere})");
+        if (elsewhere == 0) ImGui.TextColored(Dim, "No other stashes are out there.");
+        else
+        {
+            Wrapped(Dim, "Other people's stashes are found by walking up to them. Here is how many there are, by zone:");
+            foreach (var z in s.Zones) ImGui.TextColored(Dim, $"   {z.Zone}: {z.Count}");
+        }
+    }
+
+    private void DrawRow(StashView st, StashSnap s)
+    {
         {
             var dist = WorldInfo.DistanceTo(st);
             var near = dist is <= WorldInfo.UseRange;
@@ -77,7 +96,7 @@ public sealed class StashesTab
             if (ImGui.SmallButton("Open##" + st.Id)) { _ = Plugin.Stashes.OpenAsync(st.Id); }
             if (!near) { ImGui.EndDisabled(); if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) ImGui.SetTooltip("Get within 10 yalms of the stash to open it."); }
             ImGui.SameLine();
-            if (st.MapX > 0 && ImGui.SmallButton("Show on map##" + st.Id)) StashState.ShowOnMap(st);
+            if (st.Mine && st.MapX > 0 && ImGui.SmallButton("Show on map##" + st.Id)) StashState.ShowOnMap(st);
             if (st.Mine)
             {
                 ImGui.SameLine();

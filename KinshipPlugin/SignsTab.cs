@@ -16,7 +16,7 @@ public sealed class SignsTab
     private const int MaxMine = 10;
 
     private string newName = "", newText = "";
-    private string? managing, confirmDelete, confirmAdmin;
+    private string? managing, confirmDelete;
     private string editName = "", editText = "";
 
     public void Draw()
@@ -61,42 +61,50 @@ public sealed class SignsTab
 
     private void DrawList(SignSnap s)
     {
-        ImGui.TextColored(Parchment, $"All signs ({s.Signs.Count})");
+        ImGui.TextColored(Parchment, "Signs");
         ImGui.SameLine(); if (ImGui.SmallButton("Refresh##signs")) _ = Plugin.Signs.RefreshAsync();
-        if (s.Signs.Count == 0) { ImGui.TextColored(Dim, "No signs yet."); return; }
-        var advocate = Plugin.Config.CreatePassword.Length > 0;
+        var yours = s.Signs.Where(x => x.Mine).OrderBy(x => x.Zone).ThenBy(x => x.Name).ToList();
+        var near = s.Signs.Where(x => !x.Mine).OrderBy(x => x.Distance() ?? float.MaxValue).ToList();
 
-        var ordered = s.Signs.OrderBy(x => x.Distance() ?? float.MaxValue).ThenBy(x => x.Zone).ThenBy(x => x.Name).ToList();
-        foreach (var sg in ordered)
+        ImGui.TextColored(Parchment, $"Yours ({yours.Count})");
+        if (yours.Count == 0) ImGui.TextColored(Dim, "You haven't made a sign.");
+        foreach (var sg in yours) DrawRow(sg, s);
+
+        ImGui.TextColored(Parchment, $"Near you ({near.Count})");
+        if (near.Count == 0) ImGui.TextColored(Dim, "No one else's signs are close by.");
+        foreach (var sg in near) DrawRow(sg, s);
+
+        var elsewhere = s.Zones.Sum(z => z.Count);
+        ImGui.TextColored(Parchment, $"Out in the world ({elsewhere})");
+        if (elsewhere == 0) ImGui.TextColored(Dim, "No other signs are out there.");
+        else
         {
-            var dist = sg.Distance();
-            var near = dist is <= SignState.ReadRange;
-            ImGui.TextColored(Parchment, sg.Name);
-            ImGui.TextColored(Dim, $"{sg.Zone}  ·  by {sg.OwnerName}" + (dist != null ? $"  ·  {dist:0} yalms away" : ""));
+            ImGui.PushTextWrapPos(0f);
+            ImGui.TextColored(Dim, "Other people's signs are found by walking up to them. Here is how many there are, by zone:");
+            ImGui.PopTextWrapPos();
+            foreach (var z in s.Zones) ImGui.TextColored(Dim, $"   {z.Zone}: {z.Count}");
+        }
+    }
 
-            if (!near) ImGui.BeginDisabled();
-            if (ImGui.SmallButton("Look##" + sg.Id)) { _ = Plugin.Signs.ReadAsync(sg.Id); }
-            if (!near) { ImGui.EndDisabled(); if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) ImGui.SetTooltip("Get within 10 yalms to look at it."); }
+    private void DrawRow(SignView sg, SignSnap s)
+    {
+        var dist = sg.Distance();
+        var near = dist is <= SignState.ReadRange;
+        ImGui.TextColored(Parchment, sg.Name);
+        ImGui.TextColored(Dim, $"{sg.Zone}  ·  by {sg.OwnerName}" + (dist != null ? $"  ·  {dist:0} yalms away" : ""));
+
+        if (!near) ImGui.BeginDisabled();
+        if (ImGui.SmallButton("Look##" + sg.Id)) { _ = Plugin.Signs.ReadAsync(sg.Id); }
+        if (!near) { ImGui.EndDisabled(); if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) ImGui.SetTooltip("Get within 10 yalms to look at it."); }
+        if (sg.Mine)
+        {
             ImGui.SameLine();
             if (sg.MapX > 0 && ImGui.SmallButton("Show on map##" + sg.Id)) SignState.ShowOnMap(sg);
-            if (sg.Mine)
-            {
-                ImGui.SameLine();
-                if (ImGui.SmallButton((managing == sg.Id ? "Close settings##" : "Settings##") + sg.Id)) Toggle(sg);
-                if (managing == sg.Id) DrawManage(sg, s);
-            }
-            else if (advocate)
-            {
-                ImGui.SameLine();
-                if (confirmAdmin == sg.Id)
-                {
-                    if (ImGui.SmallButton("Really delete##ad" + sg.Id)) { _ = Plugin.Signs.AdminDeleteAsync(sg.Id); confirmAdmin = null; }
-                    ImGui.SameLine(); if (ImGui.SmallButton("No##an" + sg.Id)) confirmAdmin = null;
-                }
-                else if (ImGui.SmallButton("Advocate delete##ad" + sg.Id)) confirmAdmin = sg.Id;
-            }
-            ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+            ImGui.SameLine();
+            if (ImGui.SmallButton((managing == sg.Id ? "Close settings##" : "Settings##") + sg.Id)) Toggle(sg);
+            if (managing == sg.Id) DrawManage(sg, s);
         }
+        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
     }
 
     private void Toggle(SignView sg)

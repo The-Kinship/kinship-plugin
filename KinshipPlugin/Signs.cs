@@ -15,6 +15,7 @@ public sealed class SignView
     public float X { get; set; } public float Y { get; set; } public float Z { get; set; }
     public float MapX { get; set; } public float MapY { get; set; }
     public string OwnerName { get; set; } = ""; public bool Mine { get; set; }
+    public string? Owner { get; set; }          // only filled in by the Advocate list
     public string? Description { get; set; }   // only comes with a single sign, not the list
     public int Gold { get; set; }               // likewise: gold left at the sign shows only once you read it
 
@@ -27,7 +28,7 @@ public sealed class SignView
     public bool Near() => Distance() is { } d && d <= SignState.ReadRange;
 }
 
-public sealed record SignSnap(List<SignView> Signs, SignView? Reading, string Error, string Notice, bool Busy);
+public sealed record SignSnap(List<SignView> Signs, List<ZoneCount> Zones, SignView? Reading, string Error, string Notice, bool Busy);
 
 /// <summary>Signs and markers: notes left at a spot in the world. The list lives on your server.</summary>
 public sealed class SignState
@@ -39,6 +40,7 @@ public sealed class SignState
 
     private readonly object gate = new();
     private List<SignView> signs = new();
+    private List<ZoneCount> zones = new();
     private SignView? reading;
     private string error = "", notice = "";
     private bool busy;
@@ -46,7 +48,7 @@ public sealed class SignState
 
     public List<SignView> All { get { lock (gate) { return signs; } } }   // never edited in place, only replaced
     public SignView? Reading { get { lock (gate) { return reading; } } }
-    public SignSnap Snapshot() { lock (gate) { return new SignSnap(signs, reading, error, notice, busy); } }
+    public SignSnap Snapshot() { lock (gate) { return new SignSnap(signs, zones, reading, error, notice, busy); } }
     public void ClearMessages() { lock (gate) { error = ""; notice = ""; } }
     public void CloseReading() { lock (gate) { reading = null; } }
 
@@ -77,7 +79,7 @@ public sealed class SignState
         try
         {
             var r = await ItemsState.SendAsync(HttpMethod.Get, "/signs", null).ConfigureAwait(false);
-            lock (gate) { signs = r.Signs ?? new(); lastList = DateTime.UtcNow; if (reading != null && signs.All(s => s.Id != reading.Id)) reading = null; }
+            lock (gate) { signs = r.Signs ?? new(); zones = r.Zones ?? new(); lastList = DateTime.UtcNow; if (reading != null && signs.All(s => s.Id != reading.Id)) reading = null; }
         }
         catch (Exception) { /* keep the list we have */ }
     }

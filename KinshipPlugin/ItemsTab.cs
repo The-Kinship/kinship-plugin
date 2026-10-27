@@ -40,7 +40,7 @@ public sealed class ItemsTab
     private readonly BankTab bankTab = new();
     private readonly StatusTab statusTab = new();
     private readonly QuestsTab questsTab = new();
-    private string? confirmAdminDelete, confirmAdminRemove, confirmAdminStash;
+    private string? confirmAdminDelete, confirmAdminRemove, confirmAdminStash, confirmAdminSign;
     private string giftRecipient = "", giftStashId = "", giftStashName = "";
     private int giftCopies = 1;
     private int createQty = 1;
@@ -523,6 +523,22 @@ public sealed class ItemsTab
                 ImGui.SameLine(); if (ImGui.SmallButton("No##as" + st.Id)) confirmAdminStash = null;
             }
             else if (ImGui.SmallButton("Delete##as" + st.Id)) confirmAdminStash = st.Id;
+        }
+
+        var signList = Plugin.Items.AdminSigns();
+        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        ImGui.TextColored(Gold, $"Signs ({signList.Count})");
+        foreach (var sg in signList)
+        {
+            ImGui.Text(sg.Name);
+            ImGui.SameLine(); ImGui.TextColored(Dim, $"{sg.Zone}, by {sg.Owner}" + (sg.Gold > 0 ? $", {sg.Gold:N0} gold" : ""));
+            ImGui.SameLine();
+            if (confirmAdminSign == sg.Id)
+            {
+                if (ImGui.SmallButton("Really delete##ag" + sg.Id)) { _ = Plugin.Items.AdminDeleteSignAsync(sg.Id); confirmAdminSign = null; }
+                ImGui.SameLine(); if (ImGui.SmallButton("No##ag" + sg.Id)) confirmAdminSign = null;
+            }
+            else if (ImGui.SmallButton("Delete##ag" + sg.Id)) confirmAdminSign = sg.Id;
         }
 
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
