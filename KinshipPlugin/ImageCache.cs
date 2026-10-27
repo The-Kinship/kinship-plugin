@@ -37,7 +37,12 @@ public sealed class ImageCache : IDisposable
         {
             try
             {
-                var bytes = await Http.GetByteArrayAsync(url).ConfigureAwait(false);
+                // Players can paste their own portrait links, so refuse anything unreasonably large.
+                using var resp = await Http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                resp.EnsureSuccessStatusCode();
+                if (resp.Content.Headers.ContentLength is > 6_000_000) throw new InvalidOperationException("Image is too large.");
+                var bytes = await resp.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+                if (bytes.Length > 6_000_000) throw new InvalidOperationException("Image is too large.");
                 var wrap = await Plugin.TextureProvider.CreateFromImageAsync(bytes).ConfigureAwait(false);
                 lock (e) { e.Wrap = wrap; }
             }

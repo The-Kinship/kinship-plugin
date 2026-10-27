@@ -41,6 +41,7 @@ public sealed class Plugin : IDalamudPlugin
     internal static MailState Mail { get; private set; } = null!;
     internal static ArmoryState Armory { get; private set; } = null!;
     internal static DuelState Duels { get; private set; } = null!;
+    internal static ProfileState Profiles { get; private set; } = null!;
     private static DuelWindow? duelWindow;
     internal static void ShowDuel(bool force = false) { if (duelWindow != null) { if (force) Duels.ClearDismissed(); duelWindow.IsOpen = true; } }
     internal static StatusState Status { get; private set; } = null!;
@@ -113,6 +114,7 @@ public sealed class Plugin : IDalamudPlugin
         Mail = new MailState();
         Armory = new ArmoryState();
         Duels = new DuelState();
+        Profiles = new ProfileState();
         Status = new StatusState();
         Quests = new QuestState();
         SectData.ClearSession();
@@ -129,6 +131,7 @@ public sealed class Plugin : IDalamudPlugin
     private readonly SignOverlay signOverlay;
     private readonly SignReaderWindow signReader;
     private readonly StatusBar statusBar;
+    private readonly ProfileTooltip profileTip;
     private readonly QuestWindow questWindow;
     private readonly QuestOverlay questOverlay;
     private readonly QuestReplyWindow questReply;
@@ -152,6 +155,7 @@ public sealed class Plugin : IDalamudPlugin
         Mail = new MailState();
         Armory = new ArmoryState();
         Duels = new DuelState();
+        Profiles = new ProfileState();
         Status = new StatusState();
         Quests = new QuestState();
         PopupFont = PluginInterface.UiBuilder.FontAtlas.NewDelegateFontHandle(e => e.OnPreBuild(tk => tk.AddDalamudDefaultFont(28f)));
@@ -178,6 +182,8 @@ public sealed class Plugin : IDalamudPlugin
         windows.AddWindow(signReader);
         statusBar = new StatusBar();
         windows.AddWindow(statusBar);
+        profileTip = new ProfileTooltip();
+        windows.AddWindow(profileTip);
         questOverlay = new QuestOverlay();
         windows.AddWindow(questOverlay);
         questWindow = new QuestWindow();
@@ -247,6 +253,7 @@ public sealed class Plugin : IDalamudPlugin
         signOverlay.Dispose();
         signReader.Dispose();
         statusBar.Dispose();
+        profileTip.Dispose();
         questWindow.Dispose();
         questOverlay.Dispose();
         questReply.Dispose();

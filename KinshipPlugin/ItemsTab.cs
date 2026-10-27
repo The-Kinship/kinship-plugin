@@ -40,6 +40,7 @@ public sealed class ItemsTab
     private readonly BankTab bankTab = new();
     private readonly MailTab mailTab = new();
     private readonly ArmoryTab armoryTab = new();
+    private readonly ProfileTab profileTab = new();
     private readonly DuelTab duelTab = new();
     private readonly StatusTab statusTab = new();
     private readonly QuestsTab questsTab = new();
@@ -74,6 +75,7 @@ public sealed class ItemsTab
         {
             if (ImGui.BeginTabItem("Inventory")) { DrawInventory(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Armory")) { armoryTab.Draw(s); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Profile")) { profileTab.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Stashes")) { stashTab.Draw(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Signs")) { signTab.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Status")) { statusTab.Draw(s); ImGui.EndTabItem(); }

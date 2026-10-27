@@ -65,6 +65,9 @@ public class Configuration : IPluginConfiguration
     public bool StashLabels { get; set; } = true;
     public bool SignLabels { get; set; } = true;
     public bool StatusBar { get; set; } = true;
+    /// <summary>Show a character's RP profile when you mouse over them (and optionally when you target them).</summary>
+    public bool ProfileTips { get; set; } = true;
+    public bool ProfileTipsTarget { get; set; } = false;
     /// <summary>A small window to open a stash when you stand on it.</summary>
     public bool StashPopup { get; set; } = true;
     /// <summary>The little Kinship button in the server info bar at the top of the screen.</summary>
