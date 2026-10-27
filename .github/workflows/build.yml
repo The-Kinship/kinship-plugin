@@ -27,6 +27,8 @@ jobs:
           ZIP=$(find KinshipPlugin/bin -name latest.zip | head -1)
           echo "Found package: $ZIP"
           cp "$ZIP" latest.zip
+          # Dalamud shows the icon of an installed plugin from images/icon.png inside the package, so put it there.
+          zip -q latest.zip images/icon.png
           mkdir -p out/KinshipPlugin
           unzip -q "$ZIP" -d out/KinshipPlugin
           ls -la out/KinshipPlugin
