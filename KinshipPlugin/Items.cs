@@ -33,6 +33,7 @@ public sealed class ItemReply
     public List<StashView>? Stashes { get; set; } public StashView? Stash { get; set; } public List<ItemView>? StashItems { get; set; }
     public List<SignView>? Signs { get; set; } public SignView? Sign { get; set; }
     public List<ZoneCount>? Zones { get; set; } public int Elsewhere { get; set; }
+    public DuelView? Duel { get; set; }
     public List<ArmorySlot>? Slots { get; set; } public ArmoryBonus? Bonus { get; set; } public List<string>? Broke { get; set; }
     public List<MailView>? Inbox { get; set; } public List<MailView>? Outbox { get; set; } public MailView? Mail { get; set; } public int Unread { get; set; }
     public List<MailState.AdminMail>? Mails { get; set; }

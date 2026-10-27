@@ -40,6 +40,7 @@ public sealed class ItemsTab
     private readonly BankTab bankTab = new();
     private readonly MailTab mailTab = new();
     private readonly ArmoryTab armoryTab = new();
+    private readonly DuelTab duelTab = new();
     private readonly StatusTab statusTab = new();
     private readonly QuestsTab questsTab = new();
     private string? confirmAdminDelete, confirmAdminRemove, confirmAdminStash, confirmAdminSign, confirmAdminMail;
@@ -80,6 +81,7 @@ public sealed class ItemsTab
             var unread = Plugin.Mail.Unread;
             if (ImGui.BeginTabItem((unread > 0 ? $"Mail ({unread})" : "Mail") + "###mailtab")) { mailTab.Draw(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Quests")) { questsTab.Draw(s); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Fight")) { duelTab.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Combat")) { combat.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Scenes")) { rp.Draw(); ImGui.EndTabItem(); }
             ImGui.EndTabBar();

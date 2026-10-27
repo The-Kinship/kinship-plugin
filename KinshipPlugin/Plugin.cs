@@ -40,6 +40,9 @@ public sealed class Plugin : IDalamudPlugin
     internal static BankState Bank { get; private set; } = null!;
     internal static MailState Mail { get; private set; } = null!;
     internal static ArmoryState Armory { get; private set; } = null!;
+    internal static DuelState Duels { get; private set; } = null!;
+    private static DuelWindow? duelWindow;
+    internal static void ShowDuel(bool force = false) { if (duelWindow != null) { if (force) Duels.ClearDismissed(); duelWindow.IsOpen = true; } }
     internal static StatusState Status { get; private set; } = null!;
     internal static QuestState Quests { get; private set; } = null!;
     internal static IFontHandle PopupFont { get; private set; } = null!;
@@ -78,6 +81,7 @@ public sealed class Plugin : IDalamudPlugin
         WorldInfo.Track();   // remember where you stand; the server uses it to show only nearby stashes and signs
         Mail?.Poll();        // checks for new mail about once a minute
         Armory?.Poll();      // and whether any worn gear broke
+        Duels?.Poll();       // and whether anyone challenged you
         var id = ContentId();
         var name = id == 0 ? "" : CharacterName();
         if (id != 0 && name.Length == 0) return;            // still loading in
@@ -108,6 +112,7 @@ public sealed class Plugin : IDalamudPlugin
         Bank = new BankState();
         Mail = new MailState();
         Armory = new ArmoryState();
+        Duels = new DuelState();
         Status = new StatusState();
         Quests = new QuestState();
         SectData.ClearSession();
@@ -146,6 +151,7 @@ public sealed class Plugin : IDalamudPlugin
         Bank = new BankState();
         Mail = new MailState();
         Armory = new ArmoryState();
+        Duels = new DuelState();
         Status = new StatusState();
         Quests = new QuestState();
         PopupFont = PluginInterface.UiBuilder.FontAtlas.NewDelegateFontHandle(e => e.OnPreBuild(tk => tk.AddDalamudDefaultFont(28f)));
@@ -162,6 +168,8 @@ public sealed class Plugin : IDalamudPlugin
         windows.AddWindow(viewer);
         armoryView = new ArmoryViewWindow();
         windows.AddWindow(armoryView);
+        duelWindow = new DuelWindow();
+        windows.AddWindow(duelWindow);
         overlay = new StashOverlay();
         windows.AddWindow(overlay);
         signOverlay = new SignOverlay();
@@ -233,6 +241,7 @@ public sealed class Plugin : IDalamudPlugin
         popupWindow = null;
         viewer = null;
         armoryView = null;
+        duelWindow = null;
         popup.Dispose();
         overlay.Dispose();
         signOverlay.Dispose();
