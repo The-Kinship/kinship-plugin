@@ -19,6 +19,7 @@ public sealed class RpTab
     private string newTitle = "";
     private string text = "", ooc = "";
     private bool sendAll = true;
+    private bool attachCombat;
     private readonly HashSet<string> picked = new();
 
     public void Draw()
@@ -125,6 +126,14 @@ public sealed class RpTab
         ImGui.TextColored(Dim, "Optional OOC note, shown in bold inside (( )).");
         if (ImGui.SmallButton("Fill in: encounter started note"))
             ooc = "Encounter started! Stay put and wait for the DM to give you the combat code";
+        if (Plugin.Combat.Connected)
+        {
+            ImGui.SameLine();
+            if (ImGui.SmallButton("Fill in: encounter started + join button")) { ooc = "Encounter started! Press Join combat below."; attachCombat = true; }
+            ImGui.Checkbox("Add a Join combat button for my combat room##rpjoin", ref attachCombat);
+            ImGui.TextColored(Dim, "Players who get this popup can join your encounter with one click. Only the people you send it to get the code.");
+        }
+        else attachCombat = false;
 
         ImGui.Spacing();
         if (ImGui.RadioButton("Everyone in the scene", sendAll)) sendAll = true;
@@ -135,8 +144,8 @@ public sealed class RpTab
         if (!canSend) ImGui.BeginDisabled();
         if (!s.Busy && ImGui.Button("Send popup"))
         {
-            var message = text; var note = ooc; var to = sendAll ? null : picked.ToList();
-            _ = Send(message, note, to);
+            var message = text; var note = ooc; var to = sendAll ? null : picked.ToList(); var room = attachCombat && Plugin.Combat.Connected ? Plugin.Combat.Code : "";
+            _ = Send(message, note, to, room);
         }
         if (!canSend) ImGui.EndDisabled();
         if (s.Status.Length > 0) { ImGui.SameLine(); ImGui.TextColored(Green, s.Status); }
@@ -146,8 +155,8 @@ public sealed class RpTab
         ImGui.SameLine(); ImGui.TextColored(Dim, "Ends the scene for everyone.");
     }
 
-    private async System.Threading.Tasks.Task Send(string message, string note, List<string>? to)
+    private async System.Threading.Tasks.Task Send(string message, string note, List<string>? to, string room)
     {
-        if (await Plugin.Scene.SendPopupAsync(message.Trim(), note.Trim(), to)) { text = ""; ooc = ""; }
+        if (await Plugin.Scene.SendPopupAsync(message.Trim(), note.Trim(), to, room)) { text = ""; ooc = ""; attachCombat = false; }
     }
 }

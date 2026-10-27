@@ -34,6 +34,34 @@ public sealed class PopupWindow : Window, IDisposable
         PositionCondition = ImGuiCond.Always;
     }
 
+    private string joinName = "";
+
+    private void DrawJoin(Popup p)
+    {
+        ImGui.Spacing();
+        if (Plugin.Combat.Connected && string.Equals(Plugin.Combat.Code, p.Combat, StringComparison.OrdinalIgnoreCase))
+        {
+            ImGui.TextColored(new Vector4(0.4f, 0.8f, 0.5f, 1f), "You are in this encounter. It is in the Combat tab.");
+            return;
+        }
+        var saved = Plugin.Config.CombatName.Length > 0 ? Plugin.Config.CombatName : Plugin.Config.SceneName.Length > 0 ? Plugin.Config.SceneName : Plugin.Config.ItemsName;
+        var nameToUse = saved.Length > 0 ? saved : joinName.Trim();
+        if (saved.Length == 0) { ImGui.SetNextItemWidth(220f); ImGui.InputText("Your name##pjn" + p.Id, ref joinName, 60); }
+        var busy = Plugin.Combat.Snapshot().Busy;
+        var ok = nameToUse.Length > 0 && !busy;
+        if (!ok) ImGui.BeginDisabled();
+        if (ImGui.Button("Join combat##pj" + p.Id)) _ = JoinAsync(p, nameToUse);
+        if (!ok) ImGui.EndDisabled();
+        var err = Plugin.Combat.Snapshot().Error;
+        if (err.Length > 0) ImGui.TextColored(new Vector4(0.95f, 0.4f, 0.35f, 1f), err);
+    }
+
+    private static async System.Threading.Tasks.Task JoinAsync(Popup p, string name)
+    {
+        await Plugin.Combat.JoinAsync(p.Combat, name).ConfigureAwait(false);
+        if (Plugin.Combat.Connected && string.Equals(Plugin.Combat.Code, p.Combat, StringComparison.OrdinalIgnoreCase)) { Plugin.Scene.Dismiss(p.Id); Plugin.ShowMain(); }
+    }
+
     public override void Draw()
     {
         var list = Plugin.Scene.ActivePopups();
@@ -66,6 +94,8 @@ public sealed class PopupWindow : Window, IDisposable
                 ImGui.Spacing();
                 UiUtil.BoldWrapped(UiUtil.Ooc(p.Ooc), Gold, Width - 40f);
             }
+
+            if (p.Combat.Length > 0) DrawJoin(p);
 
             ImGui.Spacing();
             if (ImGui.Button("Dismiss##p" + p.Id)) Plugin.Scene.Dismiss(p.Id);

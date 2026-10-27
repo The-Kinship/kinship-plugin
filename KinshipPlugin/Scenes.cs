@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace KinshipPlugin;
 
-public sealed class SEvent { public int Id { get; set; } public string At { get; set; } = ""; public string Text { get; set; } = ""; public string Ooc { get; set; } = ""; }
+public sealed class SEvent { public int Id { get; set; } public string At { get; set; } = ""; public string Text { get; set; } = ""; public string Ooc { get; set; } = ""; public string? Combat { get; set; } }
 public sealed class SMember { public string Id { get; set; } = ""; public string Name { get; set; } = ""; public string Role { get; set; } = ""; }
 public sealed class SReply
 {
@@ -19,7 +19,7 @@ public sealed class SReply
     public string? Title { get; set; } public int LastId { get; set; } public List<SEvent> Events { get; set; } = new();
     public List<SMember>? Members { get; set; } public int Delivered { get; set; } public string? Error { get; set; }
 }
-public sealed class Popup { public int Id { get; init; } public string Text { get; init; } = ""; public string Ooc { get; init; } = ""; }
+public sealed class Popup { public int Id { get; init; } public string Text { get; init; } = ""; public string Ooc { get; init; } = ""; public string Combat { get; init; } = ""; }
 public sealed record SceneSnap(bool Connected, string Code, string Title, string Role, bool Listening, List<SMember> Members, string Error, string Status, bool Busy);
 
 /// <summary>RP scenes: a DM sends popups, players who joined the scene (and turned popups on) receive them.</summary>
@@ -203,7 +203,7 @@ public sealed class SceneState : IDisposable
 
     private void Enqueue(SEvent ev)
     {
-        var popup = new Popup { Id = ev.Id, Text = ev.Text, Ooc = ev.Ooc };
+        var popup = new Popup { Id = ev.Id, Text = ev.Text, Ooc = ev.Ooc, Combat = ev.Combat ?? "" };
         lock (gate)
         {
             if (popups.Any(p => p.Id == ev.Id)) return;
@@ -253,13 +253,13 @@ public sealed class SceneState : IDisposable
         catch (Exception) { SetError("Couldn't reach the server. Try again."); }
     }
 
-    public async Task<bool> SendPopupAsync(string text, string ooc, List<string>? to)
+    public async Task<bool> SendPopupAsync(string text, string ooc, List<string>? to, string combat = "")
     {
         string tk, cd;
         lock (gate) { if (busy || token.Length == 0) return false; busy = true; error = ""; status = ""; tk = token; cd = code; }
         try
         {
-            var r = await SendAsync(HttpMethod.Post, $"/scenes/{cd}/send", new { text, ooc, to }, tk).ConfigureAwait(false);
+            var r = await SendAsync(HttpMethod.Post, $"/scenes/{cd}/send", new { text, ooc, to, combat }, tk).ConfigureAwait(false);
             lock (gate) { status = r.Delivered == 1 ? "Sent to 1 person." : $"Sent to {r.Delivered} people."; }
             return true;
         }

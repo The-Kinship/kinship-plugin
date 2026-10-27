@@ -43,6 +43,10 @@ public sealed class Plugin : IDalamudPlugin
     /// <summary>Opens a website image in the large viewer window.</summary>
     internal static void ShowImage(string file) { viewer?.Show(file); }
 
+    private static MainWindow? mainRef;
+    /// <summary>Opens the main window (used after joining a combat from an RP popup).</summary>
+    internal static void ShowMain() { if (mainRef != null) mainRef.IsOpen = true; }
+
     private static PopupWindow? popupWindow;
     /// <summary>Opens the RP popup window (called when a popup arrives).</summary>
     internal static void ShowPopups() { if (popupWindow != null) popupWindow.IsOpen = true; }
@@ -79,6 +83,7 @@ public sealed class Plugin : IDalamudPlugin
         main = new MainWindow();
         notice = new NoticeWindow(OpenMain);
         windows.AddWindow(main);
+        mainRef = main;
         popup = new PopupWindow();
         popupWindow = popup;
         windows.AddWindow(notice);
