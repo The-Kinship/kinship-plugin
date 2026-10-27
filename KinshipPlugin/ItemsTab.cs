@@ -76,7 +76,7 @@ public sealed class ItemsTab
     // ---------- signing in ----------
     private void DrawSignIn(ItemsSnap s)
     {
-        ImGui.TextColored(Gold, "RP items");
+        ImGui.TextColored(Gold, "RP system");
         var who = Plugin.CharacterName();
         if (who.Length > 0) ImGui.TextColored(Dim, "Signing in as your character: " + who);
         if (Plugin.Config.HasLegacy())
@@ -89,7 +89,7 @@ public sealed class ItemsTab
         }
         ImGui.TextWrapped("Make items for your character, keep them in your inventory, give them to others, and use them in RP. Items only exist in this plugin. They never touch the game.");
         ImGui.Spacing();
-        ImGui.TextColored(Gold, "Join the item system");
+        ImGui.TextColored(Gold, "Join the RP system");
         ImGui.SetNextItemWidth(240f); ImGui.InputText("Your name##it", ref name, 40);
         ImGui.SetNextItemWidth(240f); ImGui.InputText("Member password##it", ref memberPassword, 100, ImGuiInputTextFlags.Password);
         ImGui.TextColored(Dim, "Ask your FC leader for the member password.");
@@ -195,7 +195,7 @@ public sealed class ItemsTab
     {
         if (giving == null) return;
         ImGui.Spacing(); ImGui.TextColored(Gold, $"Give {giving.Name} to:");
-        if (s.Members.Count == 0) ImGui.TextColored(Dim, "Nobody else has joined the item system yet.");
+        if (s.Members.Count == 0) ImGui.TextColored(Dim, "Nobody else has joined the RP system yet.");
         else
         {
             ImGui.SetNextItemWidth(220f);

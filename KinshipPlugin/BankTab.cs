@@ -42,7 +42,7 @@ public sealed class BankTab
     private void DrawPay(ItemsSnap inv, BankSnap s)
     {
         if (!ImGui.CollapsingHeader("Pay someone")) return;
-        if (inv.Members.Count == 0) { ImGui.TextColored(Dim, "Nobody else has joined the item system yet."); return; }
+        if (inv.Members.Count == 0) { ImGui.TextColored(Dim, "Nobody else has joined the RP system yet."); return; }
         ImGui.SetNextItemWidth(200f);
         if (ImGui.BeginCombo("To##bankpay", payTo.Length > 0 ? payTo : "Choose a member"))
         {

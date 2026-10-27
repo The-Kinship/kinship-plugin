@@ -54,7 +54,7 @@ public class Configuration : IPluginConfiguration
     /// <summary>The creation password (only DMs need it). Stored on this computer only.</summary>
     public string CreatePassword { get; set; } = "";
     public string BankPassword { get; set; } = "";
-    /// <summary>RP items: who you are in the item system, and how to get back in.</summary>
+    /// <summary>RP items: who you are in the RP system, and how to get back in.</summary>
     public string ItemsName { get; set; } = "";
     public string ItemsToken { get; set; } = "";
     public string ItemsRecovery { get; set; } = "";
