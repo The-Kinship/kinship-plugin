@@ -8,13 +8,13 @@ namespace KinshipPlugin;
 
 public sealed class QuestPlace
 {
-    public string Zone { get; set; } = ""; public int Territory { get; set; } public uint Map { get; set; }
+    public string Zone { get; set; } = ""; public int Territory { get; set; } public uint Map { get; set; } public string Room { get; set; } = "";
     public float X { get; set; } public float Y { get; set; } public float Z { get; set; }
     public float MapX { get; set; } public float MapY { get; set; }
     public float? Distance()
     {
         var p = WorldInfo.PlayerPos();
-        if (p == null || Plugin.ClientState.TerritoryType != Territory) return null;
+        if (p == null || Plugin.ClientState.TerritoryType != Territory || WorldInfo.CurrentRoom != Room) return null;
         return System.Numerics.Vector3.Distance(p.Value, new System.Numerics.Vector3(X, Y, Z));
     }
 }
@@ -258,7 +258,7 @@ public sealed class QuestState
             if (s.Type == "fight")
                 d["fight"] = new Dictionary<string, object?> { ["npcHp"] = s.NpcHp, ["npcDie"] = s.NpcDie, ["npcBonus"] = s.NpcBonus, ["playerHp"] = s.PlayerHp, ["playerDie"] = s.PlayerDie, ["playerBonus"] = s.PlayerBonus };
             if ((s.AtSpot || s.Type == "fight") && s.Place != null)
-                d["place"] = new Dictionary<string, object?> { ["zone"] = s.Place.Zone, ["territory"] = (int)s.Place.Territory, ["map"] = (int)s.Place.Map, ["x"] = s.Place.Pos.X, ["y"] = s.Place.Pos.Y, ["z"] = s.Place.Pos.Z, ["mapX"] = s.Place.MapX, ["mapY"] = s.Place.MapY };
+                d["place"] = new Dictionary<string, object?> { ["zone"] = s.Place.Zone, ["territory"] = (int)s.Place.Territory, ["map"] = (int)s.Place.Map, ["room"] = s.Place.Room, ["x"] = s.Place.Pos.X, ["y"] = s.Place.Pos.Y, ["z"] = s.Place.Pos.Z, ["mapX"] = s.Place.MapX, ["mapY"] = s.Place.MapY };
             if ((s.Type == "receive" || s.Type == "search" || s.Type == "fight") && s.GiftName.Trim().Length > 0)
             {
                 d["gift"] = new Dictionary<string, object?> { ["name"] = s.GiftName.Trim(), ["icon"] = s.GiftIcon, ["description"] = s.GiftDesc.Trim() };
@@ -270,7 +270,7 @@ public sealed class QuestState
         if (f.HasStart && f.StartPlace != null)
         {
             var p = f.StartPlace;
-            body["startPlace"] = new Dictionary<string, object?> { ["zone"] = p.Zone, ["territory"] = (int)p.Territory, ["map"] = (int)p.Map, ["x"] = p.Pos.X, ["y"] = p.Pos.Y, ["z"] = p.Pos.Z, ["mapX"] = p.MapX, ["mapY"] = p.MapY };
+            body["startPlace"] = new Dictionary<string, object?> { ["zone"] = p.Zone, ["territory"] = (int)p.Territory, ["map"] = (int)p.Map, ["room"] = p.Room, ["x"] = p.Pos.X, ["y"] = p.Pos.Y, ["z"] = p.Pos.Z, ["mapX"] = p.MapX, ["mapY"] = p.MapY };
             body["startText"] = f.StartText.Trim();
         }
         if (f.Id.Length > 0) body["questId"] = f.Id;

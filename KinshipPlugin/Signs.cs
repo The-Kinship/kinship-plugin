@@ -11,7 +11,7 @@ namespace KinshipPlugin;
 public sealed class SignView
 {
     public string Id { get; set; } = ""; public string Name { get; set; } = ""; public string Zone { get; set; } = "";
-    public int Territory { get; set; } public uint Map { get; set; }
+    public int Territory { get; set; } public uint Map { get; set; } public string Room { get; set; } = "";
     public float X { get; set; } public float Y { get; set; } public float Z { get; set; }
     public float MapX { get; set; } public float MapY { get; set; }
     public string OwnerName { get; set; } = ""; public bool Mine { get; set; }
@@ -22,7 +22,7 @@ public sealed class SignView
     public float? Distance()
     {
         var p = WorldInfo.PlayerPos();
-        if (p == null || Plugin.ClientState.TerritoryType != Territory) return null;
+        if (p == null || Plugin.ClientState.TerritoryType != Territory || WorldInfo.CurrentRoom != Room) return null;
         return Vector3.Distance(p.Value, new Vector3(X, Y, Z));
     }
     public bool Near() => Distance() is { } d && d <= SignState.ReadRange;
@@ -97,7 +97,7 @@ public sealed class SignState
     {
         var r = await Exec(() => ItemsState.SendAsync(HttpMethod.Post, "/signs", new
         {
-            name = name.Trim(), description = text.Trim(), territory = (int)s.Territory, map = (int)s.Map, x = s.Pos.X, y = s.Pos.Y, z = s.Pos.Z, zone = s.Zone, mapX = s.MapX, mapY = s.MapY, gold
+            name = name.Trim(), description = text.Trim(), territory = (int)s.Territory, map = (int)s.Map, room = s.Room, x = s.Pos.X, y = s.Pos.Y, z = s.Pos.Z, zone = s.Zone, mapX = s.MapX, mapY = s.MapY, gold
         }), gold > 0 ? $"Sign made, with {gold:N0} gold left under it." : "Sign made. It stays right here.").ConfigureAwait(false);
         if (r != null) { await RefreshAsync().ConfigureAwait(false); if (gold > 0) _ = Plugin.Bank.RefreshAsync(); }
     }
@@ -119,7 +119,7 @@ public sealed class SignState
     {
         var r = await Exec(() => ItemsState.SendAsync(HttpMethod.Post, $"/signs/{s.Id}/update", new
         {
-            territory = (int)where.Territory, map = (int)where.Map, x = where.Pos.X, y = where.Pos.Y, z = where.Pos.Z, zone = where.Zone, mapX = where.MapX, mapY = where.MapY
+            territory = (int)where.Territory, map = (int)where.Map, room = where.Room, x = where.Pos.X, y = where.Pos.Y, z = where.Pos.Z, zone = where.Zone, mapX = where.MapX, mapY = where.MapY
         }), "Moved here.").ConfigureAwait(false);
         if (r != null) { CloseReading(); await RefreshAsync().ConfigureAwait(false); }
     }

@@ -13,7 +13,7 @@ namespace KinshipPlugin;
 public sealed class StashView
 {
     public string Id { get; set; } = ""; public string Name { get; set; } = ""; public string Zone { get; set; } = "";
-    public int Territory { get; set; } public uint Map { get; set; }
+    public int Territory { get; set; } public uint Map { get; set; } public string Room { get; set; } = "";
     public float X { get; set; } public float Y { get; set; } public float Z { get; set; }
     public float MapX { get; set; } public float MapY { get; set; }
     public string OwnerName { get; set; } = ""; public bool Mine { get; set; } public bool IsPrivate { get; set; }
@@ -21,7 +21,7 @@ public sealed class StashView
     public string? Owner { get; set; }   // only filled in by the Advocate list
 }
 
-public sealed record Spot(uint Territory, uint Map, Vector3 Pos, string Zone, float MapX, float MapY);
+public sealed record Spot(uint Territory, uint Map, Vector3 Pos, string Zone, float MapX, float MapY, string Room = "");
 public sealed record ZoneCount(string Zone, int Count);
 public sealed record StashSnap(List<StashView> Stashes, List<ZoneCount> Zones, StashView? Open, List<ItemView> OpenItems, string Error, string Notice, bool Busy);
 
@@ -35,26 +35,48 @@ public static class WorldInfo
         Plugin.Condition[ConditionFlag.BoundByDuty] || Plugin.Condition[ConditionFlag.BoundByDuty56] || Plugin.Condition[ConditionFlag.BoundByDuty95];
 
     // Where you stood on the last frame. Read by the network code, which may not touch the game's objects from another thread.
-    private static volatile Tuple<int, Vector3>? last;
+    private static volatile Tuple<int, Vector3, string>? last;
+    /// <summary>Which house you are in (world, district, ward, plot, room), or empty. Houses share one map per type, so position alone can't tell them apart.</summary>
+    public static string CurrentRoom => last?.Item3 ?? "";
     public static void Track()
     {
         try
         {
             var p = Plugin.ObjectTable.LocalPlayer?.Position;
-            last = p == null ? null : Tuple.Create((int)Plugin.ClientState.TerritoryType, p.Value);
+            last = p == null ? null : Tuple.Create((int)Plugin.ClientState.TerritoryType, p.Value, ReadRoom());
         }
         catch (Exception) { last = null; }
     }
     /// <summary>Your last known position in the form the server expects, or null if unknown.</summary>
-    public static object? At() { var l = last; return l == null ? null : new { territory = l.Item1, x = l.Item2.X, y = l.Item2.Y, z = l.Item2.Z }; }
-    public static string AtQuery() { var l = last; return l == null ? "" : FormattableString.Invariant($"t={l.Item1}&x={l.Item2.X:0.##}&y={l.Item2.Y:0.##}&z={l.Item2.Z:0.##}"); }
+    public static object? At() { var l = last; return l == null ? null : new { territory = l.Item1, room = l.Item3, x = l.Item2.X, y = l.Item2.Y, z = l.Item2.Z }; }
+    public static string AtQuery() { var l = last; return l == null ? "" : FormattableString.Invariant($"t={l.Item1}&r={l.Item3}&x={l.Item2.X:0.##}&y={l.Item2.Y:0.##}&z={l.Item2.Z:0.##}"); }
+
+    // Read-only: asks the game's housing data which ward/plot/room you are in. Only does so in housing areas.
+    private static unsafe string ReadRoom()
+    {
+        try
+        {
+            if (!Plugin.GameData.GetExcelSheet<TerritoryType>().TryGetRow(Plugin.ClientState.TerritoryType, out var row)) return "";
+            var use = row.TerritoryIntendedUse.RowId;
+            if (use != 13 && use != 14) return "";   // 13 = housing district, 14 = inside a house, apartment or room
+            var hm = FFXIVClientStructs.FFXIV.Client.Game.HousingManager.Instance();
+            if (hm == null) return "";
+            int ward = hm->GetCurrentWard();
+            if (ward < 0) return "";
+            int division = hm->GetCurrentDivision();
+            var world = Plugin.ObjectTable.LocalPlayer?.CurrentWorld.RowId ?? 0;
+            if (!hm->IsInside()) return $"h{world}-{division}-{ward}";   // out in the ward: the same ward on your world
+            return $"h{world}-{division}-{ward}-{(int)hm->GetCurrentPlot()}-{(int)hm->GetCurrentRoom()}";
+        }
+        catch (Exception) { return ""; }
+    }
 
     public static Vector3? PlayerPos() { try { return Plugin.ObjectTable.LocalPlayer?.Position; } catch (Exception) { return null; } }
 
     public static float? DistanceTo(StashView s)
     {
         var p = PlayerPos();
-        if (p == null || Plugin.ClientState.TerritoryType != s.Territory) return null;
+        if (p == null || Plugin.ClientState.TerritoryType != s.Territory || CurrentRoom != s.Room) return null;
         return Vector3.Distance(p.Value, new Vector3(s.X, s.Y, s.Z));
     }
     public static bool Near(StashView s) => DistanceTo(s) is { } d && d <= UseRange;
@@ -91,13 +113,12 @@ public static class WorldInfo
         problem = "";
         var pos = PlayerPos();
         if (pos == null) { problem = "Log in to a character first."; return null; }
-        if (InInstance) { problem = "Stashes can't be made inside instances."; return null; }
         if (Plugin.Condition[ConditionFlag.BetweenAreas]) { problem = "Wait until the zone has finished loading."; return null; }
         var territory = Plugin.ClientState.TerritoryType;
         var map = Plugin.ClientState.MapId;
         var zone = ZoneName(territory);
         var (mx, my) = ToMapCoords(pos.Value, map);
-        return new Spot(territory, map, pos.Value, zone.Length > 0 ? zone : $"Zone {territory}", mx, my);
+        return new Spot(territory, map, pos.Value, zone.Length > 0 ? zone : $"Zone {territory}", mx, my, CurrentRoom);
     }
 }
 
@@ -155,13 +176,13 @@ public sealed class StashState
         catch (Exception) { /* keep the list we have */ }
     }
 
-    private static object Place(Spot s) => new { territory = (int)s.Territory, map = (int)s.Map, x = s.Pos.X, y = s.Pos.Y, z = s.Pos.Z, zone = s.Zone, mapX = s.MapX, mapY = s.MapY };
+    private static object Place(Spot s) => new { territory = (int)s.Territory, map = (int)s.Map, room = s.Room, x = s.Pos.X, y = s.Pos.Y, z = s.Pos.Z, zone = s.Zone, mapX = s.MapX, mapY = s.MapY };
 
     public async Task CreateAsync(string name, bool isPrivate, Spot s)
     {
         var r = await Exec(() => ItemsState.SendAsync(HttpMethod.Post, "/stashes", new
         {
-            name = name.Trim(), isPrivate, territory = (int)s.Territory, map = (int)s.Map, x = s.Pos.X, y = s.Pos.Y, z = s.Pos.Z, zone = s.Zone, mapX = s.MapX, mapY = s.MapY
+            name = name.Trim(), isPrivate, territory = (int)s.Territory, map = (int)s.Map, room = s.Room, x = s.Pos.X, y = s.Pos.Y, z = s.Pos.Z, zone = s.Zone, mapX = s.MapX, mapY = s.MapY
         }), "Stash made. It stays right here.").ConfigureAwait(false);
         if (r != null) { CloseOpen(); await RefreshAsync().ConfigureAwait(false); }
     }
@@ -182,7 +203,7 @@ public sealed class StashState
     {
         var r = await Exec(() => ItemsState.SendAsync(HttpMethod.Post, $"/stashes/{s.Id}/update", new
         {
-            name = s.Name, isPrivate = s.IsPrivate, territory = (int)where.Territory, map = (int)where.Map, x = where.Pos.X, y = where.Pos.Y, z = where.Pos.Z, zone = where.Zone, mapX = where.MapX, mapY = where.MapY
+            name = s.Name, isPrivate = s.IsPrivate, territory = (int)where.Territory, map = (int)where.Map, room = where.Room, x = where.Pos.X, y = where.Pos.Y, z = where.Pos.Z, zone = where.Zone, mapX = where.MapX, mapY = where.MapY
         }), "Moved here.").ConfigureAwait(false);
         if (r != null) { CloseOpen(); await RefreshAsync().ConfigureAwait(false); }
     }
