@@ -37,6 +37,15 @@ public sealed class ProfileTab
         if (ImGui.Checkbox("Show profiles when I mouse over a character", ref tips)) { Plugin.Config.ProfileTips = tips; Plugin.Config.Save(); }
         var tgt = Plugin.Config.ProfileTipsTarget;
         if (ImGui.Checkbox("Also show the profile of my current target", ref tgt)) { Plugin.Config.ProfileTipsTarget = tgt; Plugin.Config.Save(); }
+        var anch = Plugin.Config.ProfileTipAnchored;
+        if (ImGui.Checkbox("Keep the card in one place instead of following the mouse", ref anch)) { Plugin.Config.ProfileTipAnchored = anch; Plugin.Config.Save(); if (!anch) ProfileTooltip.Unlocked = false; }
+        if (anch)
+        {
+            ImGui.Indent();
+            if (!ProfileTooltip.Unlocked) { if (ImGui.Button("Move the card##pmove")) ProfileTooltip.Unlocked = true; }
+            else { if (ImGui.Button("Lock it here##plock")) { ProfileTooltip.Unlocked = false; Plugin.Config.Save(); } ImGui.SameLine(); ImGui.TextColored(Dim, "Drag the card on your screen, then lock it."); }
+            ImGui.Unindent();
+        }
         ImGui.Spacing(); ImGui.Separator();
 
         var w = ImGui.GetContentRegionAvail().X - 8f;

@@ -68,6 +68,10 @@ public class Configuration : IPluginConfiguration
     /// <summary>Show a character's RP profile when you mouse over them (and optionally when you target them).</summary>
     public bool ProfileTips { get; set; } = true;
     public bool ProfileTipsTarget { get; set; } = false;
+    /// <summary>Keep the profile card in one place (set by dragging) instead of following the mouse.</summary>
+    public bool ProfileTipAnchored { get; set; } = false;
+    public float ProfileTipX { get; set; }
+    public float ProfileTipY { get; set; }
     /// <summary>A small window to open a stash when you stand on it.</summary>
     public bool StashPopup { get; set; } = true;
     /// <summary>The little Kinship button in the server info bar at the top of the screen.</summary>
