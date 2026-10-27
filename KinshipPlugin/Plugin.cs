@@ -100,7 +100,7 @@ public sealed class Plugin : IDalamudPlugin
         Bank = new BankState();
         Status = new StatusState();
         Quests = new QuestState();
-        SectData.SessionUnlocked.Clear();
+        SectData.ClearSession();
         CharacterId = ContentId();
     }
     /// <summary>Changes when the logged in character changes, so screens can clear what was typed for the last one.</summary>

@@ -27,7 +27,7 @@ public sealed class SectsTab
 
     private void TryOpen(string key, string? returnTo)
     {
-        if (SectData.IsOpenNow(key)) openSect = key;
+        if (SectData.IsOpenNow(key)) { openSect = key; SectData.LoadIfDue(key, 0); }
         else Gate(key, returnTo);
     }
 
@@ -104,15 +104,17 @@ public sealed class SectsTab
         ImGui.Checkbox("Remember me on this computer", ref remember);
         if (error.Length > 0) ImGui.TextColored(Red, error);
 
-        if (ImGui.Button("Enter") || entered)
+        var checking = SectData.IsBusy();
+        var res = SectData.TakeResult();
+        if (res != null)
         {
-            if (SectData.CheckPassword(key, password))
-            {
-                SectData.SetUnlocked(key, remember);
-                openSect = key; gateSect = null; gateReturn = null; password = ""; error = "";
-            }
-            else { error = "That isn't right. Try again."; password = ""; }
+            if (res.Ok) { openSect = key; gateSect = null; gateReturn = null; password = ""; error = ""; return; }
+            error = res.Message; password = "";
         }
+        if (checking) ImGui.TextColored(Dim, "Checking...");
+        if (checking) ImGui.BeginDisabled();
+        if ((ImGui.Button("Enter") || entered) && password.Trim().Length > 0) { error = ""; _ = SectData.EnterAsync(key, password, remember); }
+        if (checking) ImGui.EndDisabled();
         ImGui.SameLine();
         if (ImGui.Button("Cancel"))
         {
@@ -125,7 +127,9 @@ public sealed class SectsTab
     {
         var s = SectData.All[key];
         var isCrypt = key == "crypt";
-        var rows = Plugin.Data.SectRows;
+        if (!SectData.IsOpenNow(key)) { openSect = null; Gate(key, null); return; }   // the saved entry stopped working (the password was changed)
+        SectData.LoadIfDue(key, 60);
+        var rows = SectData.Rows(key);
 
         if (ImGui.Button("< The Sects")) { openSect = null; return; }
         ImGui.Spacing();
@@ -140,7 +144,7 @@ public sealed class SectsTab
         }
         ImGui.TextColored(s.Color, isCrypt ? "Welcome to the Onyx Crypt" : s.Name);
 
-        if (rows == null) { ImGui.TextColored(Dim, "Loading... (press Refresh if this stays)"); return; }
+        if (rows == null) { ImGui.TextColored(Dim, "Loading the pages..."); return; }
 
         List<SheetClient.SectRow> Mine(string section) =>
             rows.Where(r => r.Sect == key && r.Section == section).OrderBy(r => r.Order).ToList();

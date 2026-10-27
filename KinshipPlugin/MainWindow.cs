@@ -125,7 +125,8 @@ public sealed class MainWindow : Window, IDisposable
         if (ImGui.Button("Forget my unlocked sects"))
         {
             Plugin.Config.Me().Unlocked.Clear();
-            SectData.SessionUnlocked.Clear();
+            Plugin.Config.Me().SectTokens.Clear();
+            SectData.ClearSession();
             Plugin.Config.Save();
         }
     }

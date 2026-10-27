@@ -22,6 +22,8 @@ public class Profile
     public string SceneRole { get; set; } = "";
     public string SceneTitle { get; set; } = "";
     public List<string> Unlocked { get; set; } = new();
+    /// <summary>Sects unlocked on this computer: the server's entry token for each (never the password).</summary>
+    public Dictionary<string, string> SectTokens { get; set; } = new();
 }
 
 [Serializable]
