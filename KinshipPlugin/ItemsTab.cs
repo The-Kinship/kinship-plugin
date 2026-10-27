@@ -32,6 +32,7 @@ public sealed class ItemsTab
     private ItemView? giving, sealing;
     private string giveTo = "";
     private string? confirmDelete;
+    private int moveQty = 1;   // how many of a stack to give or delete
 
     // icon picker
     private readonly StashesTab stashTab = new();
@@ -169,8 +170,8 @@ public sealed class ItemsTab
                     if (it.CanEdit && ImGui.MenuItem("Edit")) StartEdit(it);
                     if (it.CanEdit && it.UseLabel.Length > 0 && ImGui.MenuItem("Put an item inside...")) { sealing = it; giving = null; confirmDelete = null; }
                     if (it.CanEdit && it.Holds > 0 && ImGui.MenuItem("Take out what's inside")) _ = Plugin.Items.UnsealAsync(it.Id);
-                    if (ImGui.MenuItem("Give to...")) { giving = it; giveTo = ""; confirmDelete = null; _ = Plugin.Items.LoadMembersAsync(); }
-                    if (ImGui.MenuItem("Delete")) { confirmDelete = it.Id; giving = null; }
+                    if (ImGui.MenuItem("Give to...")) { giving = it; giveTo = ""; moveQty = it.Qty; confirmDelete = null; _ = Plugin.Items.LoadMembersAsync(); }
+                    if (ImGui.MenuItem("Delete")) { confirmDelete = it.Id; moveQty = it.Qty; giving = null; }
                     ImGui.EndPopup();
                 }
             }
@@ -190,8 +191,10 @@ public sealed class ItemsTab
             if (it == null) confirmDelete = null;
             else
             {
-                ImGui.Spacing(); ImGui.TextColored(Red, $"Delete {it.Name} for good?");
-                if (ImGui.Button("Yes, delete")) { _ = Plugin.Items.DeleteAsync(it.Id); confirmDelete = null; }
+                ImGui.Spacing(); ImGui.TextColored(Red, it.Qty > 1 ? $"Delete how many {it.Name}? (you have {it.Qty})" : $"Delete {it.Name} for good?");
+                if (it.Qty > 1) { ImGui.SetNextItemWidth(100f); ImGui.InputInt("##delqty", ref moveQty, 1); moveQty = Math.Clamp(moveQty, 1, it.Qty); }
+                else moveQty = 1;
+                if (ImGui.Button(moveQty > 1 ? $"Yes, delete {moveQty}" : "Yes, delete")) { _ = Plugin.Items.DeleteAsync(it.Id, moveQty); confirmDelete = null; }
                 ImGui.SameLine(); if (ImGui.Button("No##del")) confirmDelete = null;
             }
         }
@@ -220,6 +223,7 @@ public sealed class ItemsTab
     {
         if (giving == null) return;
         ImGui.Spacing(); ImGui.TextColored(Gold, $"Give {giving.Name} to:");
+        if (giving.Qty > 1) { ImGui.SetNextItemWidth(100f); ImGui.InputInt($"How many (you have {giving.Qty})##giveqty", ref moveQty, 1); moveQty = Math.Clamp(moveQty, 1, giving.Qty); } else moveQty = 1;
         if (s.Members.Count == 0) ImGui.TextColored(Dim, "Nobody else has joined the RP system yet.");
         else
         {
@@ -231,7 +235,7 @@ public sealed class ItemsTab
             }
         }
         if (giveTo.Length == 0) ImGui.BeginDisabled();
-        if (ImGui.Button("Give")) { _ = Plugin.Items.GiveAsync(giving.Id, giveTo); giving = null; }
+        if (ImGui.Button(moveQty > 1 ? $"Give {moveQty}" : "Give")) { _ = Plugin.Items.GiveAsync(giving.Id, giveTo, moveQty); giving = null; }
         if (giveTo.Length == 0) ImGui.EndDisabled();
         ImGui.SameLine(); if (ImGui.Button("Cancel##give")) giving = null;
     }

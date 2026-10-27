@@ -268,8 +268,8 @@ public sealed class ItemsState
         if (r != null) lock (gate) { notice = "Item saved."; }
         return r != null;
     }
-    public async Task DeleteAsync(string id) { var r = await Run(() => SendAsync(HttpMethod.Post, $"/items/{id}/delete", new { })).ConfigureAwait(false); if (r != null) lock (gate) { notice = "Item deleted."; } }
-    public async Task GiveAsync(string id, string to) { var r = await Run(() => SendAsync(HttpMethod.Post, $"/items/{id}/give", new { to })).ConfigureAwait(false); if (r != null) lock (gate) { notice = $"Given to {to}."; } }
+    public async Task DeleteAsync(string id, int count = 1) { var r = await Run(() => SendAsync(HttpMethod.Post, $"/items/{id}/delete", new { count })).ConfigureAwait(false); if (r != null) lock (gate) { notice = count > 1 ? $"{count} items deleted." : "Item deleted."; } }
+    public async Task GiveAsync(string id, string to, int count = 1) { var r = await Run(() => SendAsync(HttpMethod.Post, $"/items/{id}/give", new { to, count })).ConfigureAwait(false); if (r != null) lock (gate) { notice = count > 1 ? $"Gave {count} to {to}." : $"Given to {to}."; } }
     public async Task UseAsync(string id)
     {
         var r = await Run(() => SendAsync(HttpMethod.Post, $"/items/{id}/use", new { })).ConfigureAwait(false);
