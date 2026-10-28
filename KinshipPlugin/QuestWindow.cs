@@ -39,7 +39,7 @@ public sealed class QuestWindow : Window, IDisposable
     public override bool DrawConditions()
     {
         if (Plugin.Config.Me().ItemsToken.Length == 0) return false;
-        Plugin.Quests.RefreshIfDue(30);
+        Plugin.Quests.RefreshIfDue(Plugin.Config.Me().SceneCode.Length > 0 ? 10 : 30);   // in a party, check more often so a mate's step shows up quickly
         var near = Plugin.Quests.StartNear() != null;
         if (!near) dismissedStart = false;
         if (near && !dismissedStart) return true;     // shows even with the window turned off, so a quest can be picked up

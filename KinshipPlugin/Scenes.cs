@@ -87,6 +87,7 @@ public sealed class SceneState : IDisposable
         Plugin.Config.Me().SceneToken = token; Plugin.Config.Me().SceneMemberId = memberId; Plugin.Config.Me().SceneCode = code;
         Plugin.Config.Me().SceneRole = role; Plugin.Config.Me().SceneTitle = title; Plugin.Config.Me().SceneName = name;
         Plugin.Config.Save();
+        Plugin.Quests.LinkSoon();   // quest steps are shared with the others in this party
     }
 
     // ---------- start / join / leave ----------
@@ -127,6 +128,7 @@ public sealed class SceneState : IDisposable
         lock (gate) { token = ""; memberId = ""; code = ""; role = ""; title = ""; members = new(); listening = false; lastId = -1; popups.Clear(); }
         Plugin.Config.Me().SceneToken = ""; Plugin.Config.Me().SceneMemberId = ""; Plugin.Config.Me().SceneCode = ""; Plugin.Config.Me().SceneRole = ""; Plugin.Config.Me().SceneTitle = "";
         Plugin.Config.Save();
+        Plugin.Quests.Unlink();
     }
 
     public void Leave()

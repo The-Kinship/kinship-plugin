@@ -51,6 +51,8 @@ public sealed class QuestView
     public QuestPlace? StartPlace { get; set; } public string StartText { get; set; } = ""; public List<QuestNoticeView>? Notices { get; set; }
 }
 public sealed class TalkLine { public string Quest { get; set; } = ""; public bool Ok { get; set; } public bool Failed { get; set; } public string Text { get; set; } = ""; public bool Finished { get; set; } public List<string>? Gained { get; set; } public string? StatusGained { get; set; } }
+/// <summary>A step a party mate completed for you.</summary>
+public sealed class SharedLine { public string Quest { get; set; } = ""; public string By { get; set; } = ""; public string Text { get; set; } = ""; public List<string>? Gained { get; set; } public string? StatusGained { get; set; } public bool Finished { get; set; } }
 public sealed record TalkResult(string Npc, List<TalkLine> Lines, string Error);
 
 /// <summary>What the Advocate is typing for one step.</summary>
@@ -185,12 +187,35 @@ public sealed class QuestState
         lock (gate) { due = !busy && Plugin.Config.Me().ItemsToken.Length > 0 && (DateTime.UtcNow - lastList).TotalSeconds > seconds; if (due) lastList = DateTime.UtcNow; }
         if (due) _ = RefreshAsync();
     }
+    // ---------- parties: steps your party mates complete move your quest too ----------
+    private string linkedKey = "";   // the party and sign-in we last told the server about
+    /// <summary>Tells the server which party you are in, so quest steps are shared with the others in it.</summary>
+    public void LinkSoon() { lock (gate) { linkedKey = ""; } _ = EnsureLinkAsync(); }
+    public void Unlink() { lock (gate) { linkedKey = ""; } _ = Task.Run(async () => { try { await ItemsState.SendAsync(HttpMethod.Post, "/quests/party/unlink", new { }).ConfigureAwait(false); } catch (Exception) { /* best effort */ } }); }
+    private async Task EnsureLinkAsync()
+    {
+        var me = Plugin.Config.Me();
+        var key = me.SceneCode + "|" + me.SceneToken;
+        if (me.SceneCode.Length == 0 || me.SceneToken.Length == 0 || me.ItemsToken.Length == 0) return;
+        lock (gate) { if (linkedKey == key) return; linkedKey = key; }
+        try { await ItemsState.SendAsync(HttpMethod.Post, "/quests/party/link", new { code = me.SceneCode, sceneToken = me.SceneToken }).ConfigureAwait(false); }
+        catch (CombatException) { /* the party is gone or the sign-in is old: do not keep asking */ }
+        catch (Exception) { lock (gate) { linkedKey = ""; } }   // network trouble: try again next time
+    }
+
     public async Task RefreshAsync()
     {
         try
         {
+            await EnsureLinkAsync().ConfigureAwait(false);
             var r = await ItemsState.SendAsync(HttpMethod.Get, "/quests/mine", null).ConfigureAwait(false);
             lock (gate) { mine = r.Quests ?? new(); lastList = DateTime.UtcNow; }
+            if (r.Shared is { Count: > 0 })
+            {
+                var lines = r.Shared.Select(s => new TalkLine { Quest = s.Quest, Ok = true, Finished = s.Finished, Gained = s.Gained, StatusGained = s.StatusGained, Text = $"{s.By} and your party moved this on.\n\n{s.Text}" }).ToList();
+                lock (gate) { talk = new TalkResult("Your party", lines, ""); }
+                if (r.Shared.Any(s => s.Gained is { Count: > 0 })) _ = Plugin.Items.RefreshAsync(true);
+            }
             var st = await ItemsState.SendAsync(HttpMethod.Get, "/quests/starts", null).ConfigureAwait(false);
             lock (gate) { starts = st.Starts ?? new(); }
         }
