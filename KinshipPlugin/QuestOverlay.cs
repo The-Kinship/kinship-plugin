@@ -30,7 +30,12 @@ public sealed class QuestOverlay : Window, IDisposable
         Size = vp.Size; SizeCondition = ImGuiCond.Always;
     }
 
-    public override bool DrawConditions() => Plugin.Config.Me().ItemsToken.Length > 0 && (Plugin.Quests.Active().Count > 0 || Plugin.Quests.Starts().Count > 0);
+    public override bool DrawConditions()
+    {
+        if (Plugin.Config.Me().ItemsToken.Length == 0) return false;
+        if (Plugin.Quests.Active().Count > 0) Plugin.Quests.WatchPlaces();   // walking into an Arrive step or an area notice
+        return Plugin.Quests.Active().Count > 0 || Plugin.Quests.Starts().Count > 0;
+    }
 
     public override void Draw()
     {

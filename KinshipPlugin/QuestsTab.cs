@@ -19,12 +19,12 @@ public sealed class QuestsTab
     private bool editing;
     private string assignTo = "", assignQuest = "";
 
-    private static string NameOf(string t) => t == "give" ? "Hand over an item" : t == "receive" ? "They give an item" : t == "look" ? "Look at a spot" : t == "listen" ? "Listen at a spot" : t == "search" ? "Search a spot" : t == "fight" ? "A fight" : "They talk";
+    private static string NameOf(string t) => t == "give" ? "Hand over an item" : t == "receive" ? "They give an item" : t == "look" ? "Look at a spot" : t == "listen" ? "Listen at a spot" : t == "search" ? "Search a spot" : t == "arrive" ? "Walk into an area" : t == "fight" ? "A fight" : "They talk";
 
     internal static string Objective(QuestNow c) =>
         c.Type == "give" ? $"Bring {c.Item} to {c.Npc}."
         : c.Type == "fight" ? (c.Place != null ? $"Confront {c.Npc}" + Where(c) : $"Confront {c.Npc}.")
-        : c.Type == "look" ? "Look around" + Where(c) : c.Type == "listen" ? "Listen" + Where(c) : c.Type == "search" ? "Search" + Where(c)
+        : c.Type == "look" ? "Look around" + Where(c) : c.Type == "listen" ? "Listen" + Where(c) : c.Type == "search" ? "Search" + Where(c) : c.Type == "arrive" ? "Go to" + (c.Place != null && c.Place.Zone.Length > 0 ? " " + c.Place.Zone : " the place you were told of") + "."
         : $"Speak to {c.Npc}.";
     private static string Where(QuestNow c) => c.Place != null && c.Place.Zone.Length > 0 ? " in " + c.Place.Zone + "." : ".";
 
@@ -179,11 +179,39 @@ public sealed class QuestsTab
         }
         for (var i = 0; i < form.Steps.Count; i++) DrawStep(form.Steps[i], i);
         if (form.Steps.Count < QuestState.MaxSteps && ImGui.Button("Add a step##qas")) form.Steps.Add(new StepForm());
-        var valid = form.Title.Trim().Length > 0 && form.Steps.All(StepOk) && !s.Busy && (!form.HasStart || (form.StartPlace != null && form.StartText.Trim().Length > 0));
+        DrawNotices();
+        var valid = form.Title.Trim().Length > 0 && form.Steps.All(StepOk) && form.Notices.All(n => n.Place != null && n.Text.Trim().Length > 0) && !s.Busy && (!form.HasStart || (form.StartPlace != null && form.StartText.Trim().Length > 0));
         if (!valid) ImGui.BeginDisabled();
         if (ImGui.Button((form.Id.Length > 0 ? "Save changes" : "Create quest") + "##qsave")) { _ = Plugin.Quests.AdminSaveAsync(form); form = new QuestForm(); editing = false; }
         if (!valid) ImGui.EndDisabled();
         if (editing) { ImGui.SameLine(); if (ImGui.Button("Cancel edit##qce")) { form = new QuestForm(); editing = false; } }
+    }
+
+    private void DrawNotices()
+    {
+        ImGui.Spacing();
+        if (!ImGui.CollapsingHeader($"Area notices ({form.Notices.Count}) (optional)##qnh")) return;
+        ImGui.PushTextWrapPos(0f);
+        ImGui.TextColored(Dim, "Words that pop up by themselves when a player on this quest walks into a spot, on any step. They never move the quest along. Good for \"you smell something\" or \"bones litter the ground\".");
+        ImGui.PopTextWrapPos();
+        for (var i = 0; i < form.Notices.Count; i++)
+        {
+            var n = form.Notices[i];
+            ImGui.PushID("qnotice" + i);
+            ImGui.TextColored(Gold, $"Notice {i + 1}"); ImGui.SameLine();
+            if (ImGui.SmallButton("Remove")) { form.Notices.RemoveAt(i); ImGui.PopID(); return; }
+            var spot = WorldInfo.Current(out var problem);
+            if (n.Place != null) ImGui.TextColored(Green, $"Location set: {n.Place.Zone} ({n.Place.MapX:0.0}, {n.Place.MapY:0.0})"); else ImGui.TextColored(Red, "No location yet.");
+            if (spot == null) ImGui.TextColored(Dim, problem);
+            else { if (ImGui.Button("Use this location")) n.Place = spot; ImGui.SameLine(); ImGui.TextColored(Dim, "Stand in the middle of it, then press this."); }
+            ImGui.SetNextItemWidth(110f); ImGui.InputInt("Radius (yalms)", ref n.Radius, 1); n.Radius = Math.Clamp(n.Radius, 1, 100);
+            ImGui.TextColored(Dim, $"Shows when the player gets within {n.Radius} yalms of the spot, in every direction.");
+            ImGui.Text("What the player sees"); ImGui.InputTextMultiline("##ntext", ref n.Text, 600, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 52f));
+            ImGui.Checkbox("Show it again each time they walk back in (otherwise once per login)", ref n.Repeat);
+            ImGui.PopID();
+            ImGui.Separator();
+        }
+        if (form.Notices.Count < 8 && ImGui.Button("Add an area notice##qan")) form.Notices.Add(new NoticeForm());
     }
 
     private static bool StepOk(StepForm s) =>
@@ -198,7 +226,7 @@ public sealed class QuestsTab
         ImGui.SetNextItemWidth(220f);
         if (ImGui.BeginCombo($"Kind##qk{i}", NameOf(st.Type)))
         {
-            foreach (var t in new[] { "talk", "receive", "give", "look", "listen", "search", "fight" }) if (ImGui.Selectable(NameOf(t), st.Type == t)) st.Type = t;
+            foreach (var t in new[] { "talk", "receive", "give", "look", "listen", "search", "arrive", "fight" }) if (ImGui.Selectable(NameOf(t), st.Type == t)) st.Type = t;
             ImGui.EndCombo();
         }
         if (st.AtSpot)
@@ -210,6 +238,11 @@ public sealed class QuestsTab
             {
                 if (ImGui.Button($"Use this location##qul{i}")) st.Place = spot;
                 ImGui.SameLine(); ImGui.TextColored(Dim, "Stand where it happens, then press this.");
+            }
+            if (st.Type == "arrive")
+            {
+                ImGui.SetNextItemWidth(110f); ImGui.InputInt($"Radius (yalms)##qar{i}", ref st.Radius, 1); st.Radius = Math.Clamp(st.Radius, 1, 100);
+                ImGui.TextColored(Dim, $"The step completes by itself when the player is within {st.Radius} yalms of the spot, in every direction. Nobody presses a button.");
             }
         }
         else
@@ -300,7 +333,9 @@ public sealed class QuestsTab
         foreach (var s in q.Steps ?? new())
             f.Steps.Add(new StepForm { Type = s.Type, Npc = s.Npc, Text = s.Text, Hint = s.Hint, Item = s.Item, GiftName = s.Gift?.Name ?? "", GiftIcon = s.Gift?.Icon is { Length: > 0 } ic ? ic : "game:20001", GiftDesc = s.Gift?.Description ?? "", Once = s.Once, NpcHp = s.Fight?.NpcHp ?? 30, NpcDie = s.Fight?.NpcDie ?? 8, NpcBonus = s.Fight?.NpcBonus ?? 0, PlayerHp = s.Fight?.PlayerHp ?? 30, PlayerDie = s.Fight?.PlayerDie ?? 8, PlayerBonus = s.Fight?.PlayerBonus ?? 0, Needs = s.Needs, NeedText = s.NeedText, TakesNeeded = s.TakesNeeded, Variants = (s.Variants ?? new()).Select(v => new VariantForm { Gender = v.Gender, Status = v.Status, Text = v.Text }).ToList(),
                 GrantName = s.Grants?.Name ?? "", GrantDesc = s.Grants?.Description ?? "", GrantIcon = s.Grants?.Icon is { Length: > 0 } gi ? gi : "game:10205", GrantMinutes = s.Grants?.Minutes ?? 0, GrantDebuff = s.Grants?.IsDebuff ?? false, GrantAtk = s.Grants?.Atk ?? 0, GrantHeal = s.Grants?.Heal ?? 0,
-                Place = s.Place == null ? null : new Spot((uint)s.Place.Territory, s.Place.Map, new Vector3(s.Place.X, s.Place.Y, s.Place.Z), s.Place.Zone, s.Place.MapX, s.Place.MapY, s.Place.Room) });
+                Radius = s.Place is { Radius: > 0 } ? s.Place.Radius : 5, Place = s.Place == null ? null : new Spot((uint)s.Place.Territory, s.Place.Map, new Vector3(s.Place.X, s.Place.Y, s.Place.Z), s.Place.Zone, s.Place.MapX, s.Place.MapY, s.Place.Room) });
+        foreach (var n in q.Notices ?? new())
+            f.Notices.Add(new NoticeForm { Text = n.Text, Repeat = n.Repeat, Radius = n.Place.Radius > 0 ? n.Place.Radius : 10, Place = new Spot((uint)n.Place.Territory, n.Place.Map, new Vector3(n.Place.X, n.Place.Y, n.Place.Z), n.Place.Zone, n.Place.MapX, n.Place.MapY, n.Place.Room) });
         if (f.Steps.Count == 0) f.Steps.Add(new StepForm());
         return f;
     }

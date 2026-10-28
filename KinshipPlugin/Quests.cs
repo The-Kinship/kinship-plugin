@@ -10,7 +10,7 @@ public sealed class QuestPlace
 {
     public string Zone { get; set; } = ""; public int Territory { get; set; } public uint Map { get; set; } public string Room { get; set; } = "";
     public float X { get; set; } public float Y { get; set; } public float Z { get; set; }
-    public float MapX { get; set; } public float MapY { get; set; }
+    public float MapX { get; set; } public float MapY { get; set; } public int Radius { get; set; }
     public float? Distance()
     {
         var p = WorldInfo.PlayerPos();
@@ -31,6 +31,8 @@ public sealed class QuestStart { public string QuestId { get; set; } = ""; publi
 public sealed class QuestNow { public string Type { get; set; } = ""; public string Npc { get; set; } = ""; public string Item { get; set; } = ""; public string Hint { get; set; } = ""; public QuestPlace? Place { get; set; } }
 public sealed class QuestGift { public string Name { get; set; } = ""; public string Icon { get; set; } = ""; public string Description { get; set; } = ""; public string Flavor { get; set; } = ""; }
 public sealed class QuestVariant { public string Gender { get; set; } = ""; public string Status { get; set; } = ""; public string Text { get; set; } = ""; }
+/// <summary>An area notice: words that pop up when you walk into a spot, whatever step you are on. Players get Index/Place/Repeat; Advocates also get Text.</summary>
+public sealed class QuestNoticeView { public int Index { get; set; } public QuestPlace Place { get; set; } = new(); public bool Repeat { get; set; } public string Text { get; set; } = ""; }
 public sealed class QuestStepView
 {
     public List<QuestVariant>? Variants { get; set; }
@@ -46,7 +48,7 @@ public sealed class QuestView
     public string QuestId { get; set; } = ""; public string Id { get; set; } = ""; public string Title { get; set; } = ""; public string Intro { get; set; } = "";
     public int Step { get; set; } public int Total { get; set; } public bool Done { get; set; } public bool Failed { get; set; } public QuestNow? Current { get; set; }
     public List<QuestStepView>? Steps { get; set; } public List<QuestPlayer>? Players { get; set; } public List<QuestClaim>? Claims { get; set; }
-    public QuestPlace? StartPlace { get; set; } public string StartText { get; set; } = "";
+    public QuestPlace? StartPlace { get; set; } public string StartText { get; set; } = ""; public List<QuestNoticeView>? Notices { get; set; }
 }
 public sealed class TalkLine { public string Quest { get; set; } = ""; public bool Ok { get; set; } public bool Failed { get; set; } public string Text { get; set; } = ""; public bool Finished { get; set; } public List<string>? Gained { get; set; } public string? StatusGained { get; set; } }
 public sealed record TalkResult(string Npc, List<TalkLine> Lines, string Error);
@@ -57,14 +59,16 @@ public sealed class StepForm
 {
     public List<VariantForm> Variants = new();
     public string Type = "talk", Npc = "", Text = "", Hint = "", Item = "", GiftName = "", GiftIcon = "game:20001", GiftDesc = "";
-    public Spot? Place; public bool Once;
+    public Spot? Place; public bool Once; public int Radius = 5;   // Radius: yalms around the spot, for Arrive steps
     public int NpcHp = 30, NpcDie = 8, NpcBonus, PlayerHp = 30, PlayerDie = 8, PlayerBonus;
     public string Needs = "", NeedText = "", GrantName = "", GrantDesc = "", GrantIcon = "game:10205";
     public int GrantMinutes, GrantAtk, GrantHeal; public bool TakesNeeded, GrantDebuff;
-    public bool AtSpot => Type == "look" || Type == "listen" || Type == "search";
+    public bool AtSpot => Type == "look" || Type == "listen" || Type == "search" || Type == "arrive";
 }
+public sealed class NoticeForm { public Spot? Place; public int Radius = 10; public string Text = ""; public bool Repeat; }
 public sealed class QuestForm
 {
+    public List<NoticeForm> Notices = new();
     public string Id = "", Title = "", Intro = "", StartText = "";
     public bool HasStart; public Spot? StartPlace;
     public List<StepForm> Steps = new() { new StepForm() };
@@ -209,6 +213,52 @@ public sealed class QuestState
 
     public Task ActAsync(string type) => TalkAsync("", type);
 
+    // ---------- walking into places ----------
+    // Arrive steps and area notices fire by themselves when you walk into their radius. Nothing here needs a button.
+    private readonly Dictionary<string, bool> insideNow = new();   // was I inside this spot at the last check?
+    private readonly HashSet<string> shownOnce = new();            // area notices that don't repeat, already shown this session
+    private DateTime lastWatch = DateTime.MinValue;
+    private bool noticeBusy;
+
+    /// <summary>Called every frame while quests are active; looks at where you stand a couple of times a second.</summary>
+    public void WatchPlaces()
+    {
+        if ((DateTime.UtcNow - lastWatch).TotalMilliseconds < 500) return;
+        lastWatch = DateTime.UtcNow;
+        foreach (var q in Active())
+        {
+            var key = q.QuestId + ":step" + q.Step;
+            if (q.Current is { Type: "arrive", Place.Radius: > 0 } c)
+            {
+                var inside = c.Place!.Distance() is { } d && d <= c.Place.Radius;
+                insideNow.TryGetValue(key, out var was); insideNow[key] = inside;
+                if (inside && !was) _ = ActAsync("arrive");    // the server moves the quest on and sends the words
+            }
+            foreach (var n in q.Notices ?? new())
+            {
+                if (n.Place.Radius <= 0) continue;
+                var nk = q.QuestId + ":notice" + n.Index;
+                var inside = n.Place.Distance() is { } d && d <= n.Place.Radius;
+                insideNow.TryGetValue(nk, out var was); insideNow[nk] = inside;
+                if (!inside || was) continue;
+                if (!n.Repeat && !shownOnce.Add(nk)) continue;
+                _ = NoticeAsync(q, n);
+            }
+        }
+    }
+
+    private async Task NoticeAsync(QuestView q, QuestNoticeView n)
+    {
+        lock (gate) { if (noticeBusy) return; noticeBusy = true; }
+        try
+        {
+            var r = await ItemsState.SendAsync(HttpMethod.Post, "/quests/notice", new { questId = q.QuestId, index = n.Index, territory = n.Place.Territory }).ConfigureAwait(false);
+            if (!string.IsNullOrEmpty(r.Text)) lock (gate) { talk = new TalkResult("", new() { new TalkLine { Quest = q.Title, Ok = true, Text = r.Text } }, ""); }
+        }
+        catch (Exception ex) { Plugin.Log.Warning(ex, "Area notice failed"); }
+        finally { lock (gate) { noticeBusy = false; } }
+    }
+
     public async Task TalkAsync(string npc, string? type = null)
     {
         lock (gate) { if (busy) return; busy = true; error = ""; notice = ""; }
@@ -259,6 +309,7 @@ public sealed class QuestState
                 d["fight"] = new Dictionary<string, object?> { ["npcHp"] = s.NpcHp, ["npcDie"] = s.NpcDie, ["npcBonus"] = s.NpcBonus, ["playerHp"] = s.PlayerHp, ["playerDie"] = s.PlayerDie, ["playerBonus"] = s.PlayerBonus };
             if ((s.AtSpot || s.Type == "fight") && s.Place != null)
                 d["place"] = new Dictionary<string, object?> { ["zone"] = s.Place.Zone, ["territory"] = (int)s.Place.Territory, ["map"] = (int)s.Place.Map, ["room"] = s.Place.Room, ["x"] = s.Place.Pos.X, ["y"] = s.Place.Pos.Y, ["z"] = s.Place.Pos.Z, ["mapX"] = s.Place.MapX, ["mapY"] = s.Place.MapY };
+            if (s.Type == "arrive" && d.TryGetValue("place", out var ap) && ap is Dictionary<string, object?> apd) apd["radius"] = Math.Clamp(s.Radius, 1, 100);
             if ((s.Type == "receive" || s.Type == "search" || s.Type == "fight") && s.GiftName.Trim().Length > 0)
             {
                 d["gift"] = new Dictionary<string, object?> { ["name"] = s.GiftName.Trim(), ["icon"] = s.GiftIcon, ["description"] = s.GiftDesc.Trim() };
@@ -273,6 +324,11 @@ public sealed class QuestState
             body["startPlace"] = new Dictionary<string, object?> { ["zone"] = p.Zone, ["territory"] = (int)p.Territory, ["map"] = (int)p.Map, ["room"] = p.Room, ["x"] = p.Pos.X, ["y"] = p.Pos.Y, ["z"] = p.Pos.Z, ["mapX"] = p.MapX, ["mapY"] = p.MapY };
             body["startText"] = f.StartText.Trim();
         }
+        body["notices"] = f.Notices.Where(n => n.Place != null && n.Text.Trim().Length > 0).Select(n => new Dictionary<string, object?>
+        {
+            ["text"] = n.Text.Trim(), ["repeat"] = n.Repeat,
+            ["place"] = new Dictionary<string, object?> { ["zone"] = n.Place!.Zone, ["territory"] = (int)n.Place.Territory, ["map"] = (int)n.Place.Map, ["room"] = n.Place.Room, ["x"] = n.Place.Pos.X, ["y"] = n.Place.Pos.Y, ["z"] = n.Place.Pos.Z, ["mapX"] = n.Place.MapX, ["mapY"] = n.Place.MapY, ["radius"] = Math.Clamp(n.Radius, 1, 100) }
+        }).ToList();
         if (f.Id.Length > 0) body["questId"] = f.Id;
         return Admin("save", Auth(body), "Quest saved.");
     }

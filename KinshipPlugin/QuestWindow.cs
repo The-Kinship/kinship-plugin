@@ -73,7 +73,7 @@ public sealed class QuestWindow : Window, IDisposable
                 {
                     ImGui.PushTextWrapPos(0f);
                     ImGui.TextUnformatted(QuestsTab.Objective(q.Current));
-                    if (q.Current.Place != null)
+                    if (q.Current.Place != null && q.Current.Type != "arrive")
                     {
                         var d = q.Current.Place.Distance();
                         if (d == null) ImGui.TextColored(Dim, "Not in this zone.");
