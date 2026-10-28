@@ -130,7 +130,7 @@ public static class AlphaGearAdmin
             if (ImGui.Checkbox("Alpha mode on##alphagear", ref v)) _ = Call("alpha", v);
             ImGui.Spacing();
             ImGui.TextUnformatted($"Characters registered: {registered}" + (cap > 0 ? $" of {cap} allowed" : " (no limit)"));
-            ImGui.SetNextItemWidth(80f); ImGui.InputText("Most characters allowed##alphacap", ref capText, 5, ImGuiInputTextFlags.CharsDecimal);
+            ImGui.SetNextItemWidth(80f); ImGui.InputText("Most characters allowed##alphacap", ref capText, 5);
             ImGui.SameLine();
             if (ImGui.Button("Save limit##alphacapsave") && int.TryParse(capText, out var n)) _ = Call("alpha", null, n);
             ImGui.PushTextWrapPos(0f);
