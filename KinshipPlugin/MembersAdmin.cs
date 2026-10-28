@@ -22,6 +22,8 @@ public static class TagBadges
         "Life Watch" => new(0.42f, 0.78f, 0.50f, 1f),
         "Ember" => new(0.95f, 0.45f, 0.35f, 1f),
         "Banker" => new(0.95f, 0.85f, 0.45f, 1f),
+        "Kin" => new(0.85f, 0.88f, 0.95f, 1f),
+        "Alt" => new(0.60f, 0.65f, 0.72f, 1f),
         _ => Gold,
     };
     public static void Draw(IReadOnlyList<string> tags)
