@@ -232,7 +232,7 @@ public sealed class CombatTab
         ImGui.SetNextItemWidth(260f); ImGui.InputText("Encounter name##s", ref sName, 90);
         ImGui.SetNextItemWidth(260f); ImGui.InputText("Location##s", ref sLocation, 90);
         ImGui.InputTextMultiline("##snotes", ref sNotes, 1000, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 56f));
-        ImGui.TextColored(Dim, "Scene notes (everyone sees these)");
+        ImGui.TextColored(Dim, "Party notes (everyone sees these)");
         ImGui.SetNextItemWidth(260f);
         if (ImGui.BeginCombo("Encounter type##s", KindLabels[sKind]))
         {

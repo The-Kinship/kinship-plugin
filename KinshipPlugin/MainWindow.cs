@@ -117,12 +117,12 @@ public sealed class MainWindow : Window, IDisposable
     private void DrawGuest()
     {
         ImGui.TextColored(Gold, "Just visiting?");
-        ImGui.TextWrapped("You don't need to register to join an encounter or a scene. Paste the invite link or code you were given, type a name, and join.");
+        ImGui.TextWrapped("You don't need to register to join an encounter or a party. Paste the invite link or code you were given, type a name, and join.");
         ImGui.Spacing();
         if (ImGui.BeginTabBar("guestsub"))
         {
             if (ImGui.BeginTabItem("Combat")) { combat.Draw(); ImGui.EndTabItem(); }
-            if (ImGui.BeginTabItem("Scenes")) { rp.Draw(); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Party")) { rp.Draw(); ImGui.EndTabItem(); }
             ImGui.EndTabBar();
         }
     }

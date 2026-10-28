@@ -87,7 +87,7 @@ public sealed class ItemsTab
             if (ImGui.BeginTabItem("Quests")) { questsTab.Draw(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Fight")) { duelTab.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Combat")) { combat.Draw(); ImGui.EndTabItem(); }
-            if (ImGui.BeginTabItem("Scenes")) { rp.Draw(); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Party")) { rp.Draw(); ImGui.EndTabItem(); }
             ImGui.EndTabBar();
         }
     }
@@ -107,14 +107,14 @@ public sealed class ItemsTab
             ImGui.Spacing(); ImGui.Separator();
         }
         ImGui.Spacing();
-        ImGui.TextWrapped("This is where everything personal to your character lives: your inventory, stashes, signs, statuses, bank, quests, and the combat and scene tools. It only exists inside this plugin and never touches the game.");
+        ImGui.TextWrapped("This is where everything personal to your character lives: your inventory, stashes, signs, statuses, bank, quests, and the combat and party tools. It only exists inside this plugin and never touches the game.");
         ImGui.Spacing();
         ImGui.TextColored(Gold, "How it works");
         ImGui.TextWrapped("1. Register once below with your character's name and the member password. Ask your FC leader for the password.");
         ImGui.TextWrapped("2. You'll get one recovery code that covers all of your characters. Write it down somewhere safe. It's the only way back in if you move to a new computer or reinstall.");
         ImGui.TextWrapped("3. After that you stay signed in on this computer. Each of your characters has their own sign-in, so alts never share items, gold or quests. Register each alt the same way and it joins your recovery code.");
         ImGui.TextWrapped("4. Every time you open this tab you'll go straight to your own tabs.");
-        ImGui.TextColored(Dim, "Only visiting? Use the Guest tab to join an encounter or a scene with just an invite link.");
+        ImGui.TextColored(Dim, "Only visiting? Use the Guest tab to join an encounter or a party with just an invite link.");
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         ImGui.TextColored(Gold, "Register");
         ImGui.SetNextItemWidth(240f); ImGui.InputText("Your name##it", ref name, 40);

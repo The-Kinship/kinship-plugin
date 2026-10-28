@@ -107,7 +107,7 @@ public sealed class SceneState : IDisposable
     public async Task JoinAsync(string rawCode, string name)
     {
         var sceneCode = CombatState.ExtractCode(rawCode);
-        if (sceneCode == null) { SetError("That doesn't look like a scene code. It is 18 letters and numbers."); return; }
+        if (sceneCode == null) { SetError("That doesn't look like a party code. It is 18 letters and numbers."); return; }
         if (name.Trim().Length == 0) { SetError("Enter the name you want to appear under."); return; }
         lock (gate) { if (busy) return; busy = true; error = ""; }
         try
@@ -194,8 +194,8 @@ public sealed class SceneState : IDisposable
             lock (gate) { lastId = r.LastId; if (error.StartsWith("Can't reach")) error = ""; }
             if (after >= 0) foreach (var ev in r.Events) Enqueue(ev);
         }
-        catch (CombatException ex) when (ex.Status == 404) { ForgetLocal(); SetError("This scene was closed by the SM."); }
-        catch (CombatException ex) when (ex.Status == 401) { SetListening(false); SetError("You are no longer in this scene. Join again with the code."); }
+        catch (CombatException ex) when (ex.Status == 404) { ForgetLocal(); SetError("This party was closed by the SM."); }
+        catch (CombatException ex) when (ex.Status == 401) { SetListening(false); SetError("You are no longer in this party. Join again with the code."); }
         catch (CombatException ex) { SetError(ex.Message); }
         catch (OperationCanceledException) { throw; }
         catch (Exception) { SetError("Can't reach the server right now. Retrying..."); }
@@ -234,7 +234,7 @@ public sealed class SceneState : IDisposable
                 var r = await SendAsync(HttpMethod.Get, $"/scenes/{cd}?after=-1", null, tk).ConfigureAwait(false);
                 lock (gate) { members = r.Members ?? members; }
             }
-            catch (CombatException ex) when (ex.Status == 404) { ForgetLocal(); SetError("This scene no longer exists."); }
+            catch (CombatException ex) when (ex.Status == 404) { ForgetLocal(); SetError("This party no longer exists."); }
             catch (Exception) { /* try again next time */ }
             finally { lock (gate) { memberPollInFlight = false; } }
         });
