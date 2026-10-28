@@ -28,7 +28,7 @@ public sealed class ItemView
 public sealed class ItemReply
 {
     public string? Token { get; set; } public string? Name { get; set; } public string? RecoveryCode { get; set; } public List<string>? Characters { get; set; } public bool Linked { get; set; }
-    public int Capacity { get; set; } public bool? AlphaGear { get; set; } public int? MaxCharacters { get; set; } public int? CharacterCount { get; set; } public List<ItemView>? Items { get; set; } public List<string>? Members { get; set; }
+    public int Capacity { get; set; } public List<FindView>? Finds { get; set; } public string? Picked { get; set; } public bool? AlphaGear { get; set; } public int? MaxCharacters { get; set; } public int? CharacterCount { get; set; } public List<ItemView>? Items { get; set; } public List<string>? Members { get; set; }
     public string? Text { get; set; } public bool Consumed { get; set; } public string? Error { get; set; }
     public List<StashView>? Stashes { get; set; } public StashView? Stash { get; set; } public List<ItemView>? StashItems { get; set; }
     public List<SignView>? Signs { get; set; } public SignView? Sign { get; set; }
@@ -106,7 +106,7 @@ public sealed class ItemsState
     internal static async Task<ItemReply> SendAsync(HttpMethod method, string path, object? body)
     {
         // Stashes and signs are shown by distance, so the server is told where you stand (same position the game shows you).
-        var places = path.StartsWith("/stashes") || path.StartsWith("/signs");
+        var places = path.StartsWith("/stashes") || path.StartsWith("/signs") || path.StartsWith("/finds");
         if (places && method == HttpMethod.Get && WorldInfo.AtQuery() is { Length: > 0 } q) path += (path.Contains('?') ? "&" : "?") + q;
         using var req = new HttpRequestMessage(method, CombatState.BaseUrl + "/api" + path);
         if (Plugin.Config.Me().ItemsToken.Length > 0) req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Plugin.Config.Me().ItemsToken);

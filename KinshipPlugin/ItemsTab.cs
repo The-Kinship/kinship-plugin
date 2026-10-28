@@ -37,6 +37,7 @@ public sealed class ItemsTab
     // icon picker
     private readonly StashesTab stashTab = new();
     private readonly SignsTab signTab = new();
+    private readonly FindsTab findsTab = new();
     private readonly BankTab bankTab = new();
     private readonly MailTab mailTab = new();
     private readonly ArmoryTab armoryTab = new();
@@ -78,6 +79,7 @@ public sealed class ItemsTab
             if (ImGui.BeginTabItem("Profile")) { profileTab.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Stashes")) { stashTab.Draw(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Signs")) { signTab.Draw(); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("World")) { findsTab.Draw(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Status")) { statusTab.Draw(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Bank")) { bankTab.Draw(s); ImGui.EndTabItem(); }
             var unread = Plugin.Mail.Unread;

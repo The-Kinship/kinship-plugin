@@ -37,6 +37,7 @@ public sealed class Plugin : IDalamudPlugin
     internal static ItemsState Items { get; private set; } = null!;
     internal static StashState Stashes { get; private set; } = null!;
     internal static SignState Signs { get; private set; } = null!;
+    internal static FindState Finds { get; private set; } = null!;
     internal static BankState Bank { get; private set; } = null!;
     internal static MailState Mail { get; private set; } = null!;
     internal static ArmoryState Armory { get; private set; } = null!;
@@ -113,6 +114,7 @@ public sealed class Plugin : IDalamudPlugin
         Items = new ItemsState();
         Stashes = new StashState();
         Signs = new SignState();
+        Finds = new FindState();
         Bank = new BankState();
         Mail = new MailState();
         Armory = new ArmoryState();
@@ -133,6 +135,7 @@ public sealed class Plugin : IDalamudPlugin
     private readonly StashOverlay overlay;
     private readonly SignOverlay signOverlay;
     private readonly SignReaderWindow signReader;
+    private readonly FindWindow findWindow;
     private readonly StatusBar statusBar;
     private readonly DisclaimerWindow disclaimer;
     private readonly AlphaWindow alphaWin;
@@ -160,6 +163,7 @@ public sealed class Plugin : IDalamudPlugin
         Items = new ItemsState();
         Stashes = new StashState();
         Signs = new SignState();
+        Finds = new FindState();
         Bank = new BankState();
         Mail = new MailState();
         Armory = new ArmoryState();
@@ -191,6 +195,8 @@ public sealed class Plugin : IDalamudPlugin
         windows.AddWindow(signOverlay);
         signReader = new SignReaderWindow();
         windows.AddWindow(signReader);
+        findWindow = new FindWindow();
+        windows.AddWindow(findWindow);
         statusBar = new StatusBar();
         windows.AddWindow(statusBar);
         disclaimer = new DisclaimerWindow();
@@ -278,6 +284,7 @@ public sealed class Plugin : IDalamudPlugin
         overlay.Dispose();
         signOverlay.Dispose();
         signReader.Dispose();
+        findWindow.Dispose();
         statusBar.Dispose();
         disclaimer.Dispose();
         alphaWin.Dispose();
