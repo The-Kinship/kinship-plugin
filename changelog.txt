@@ -1,3 +1,4 @@
+0.53.2: New Pause button at the top of the Kinship window (also in the top bar right-click menu). While paused the plugin makes no server requests at all. Press it again to turn the plugin back on.
 0.53.1: The plugin now pauses its background server checks while you are standing still and not using the mouse for 3 minutes, and picks up again the moment you move. Fewer requests while AFK.
 0.53.0: New "World items": leave a copy of an item out in the world (a herb by a tree, a cookie on a table) for anyone to pick up. Choose once, back after a wait, or always. Find them on the new World tab.
 0.52.5: Alpha only: sickness diagnosing and curse reading are now also on the Status tab, so testers can use them without the sect pages.
