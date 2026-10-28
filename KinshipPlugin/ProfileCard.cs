@@ -32,7 +32,7 @@ public static class ProfileCard
         else if (p.Portrait.Length > 0 && !Plugin.Images.HasFailed(p.Portrait)) { ImGui.TextColored(Dim, "Loading portrait..."); }
 
         ImGui.BeginGroup();
-        ImGui.PushTextWrapPos(startX + Width - (hasPortrait ? 126f : 0f));
+        ImGui.PushTextWrapPos(startX + Width);   // absolute position: the text column already starts after the portrait, so wrap at the card edge (names wrap at spaces, never mid-word)
         ImGui.TextColored(Gold, p.DisplayName.Length > 0 ? p.DisplayName : p.Name);
         if (age.Length > 0) ImGui.TextUnformatted("Age: " + age);
         if (race.Length > 0) ImGui.TextUnformatted("Race: " + race);
