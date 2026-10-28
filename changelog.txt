@@ -1,3 +1,4 @@
+0.55.1: Two more tags for SMs to use: Kin and Alt.
 0.55.0: New "Registered characters and tags" section in SM Tools: see everyone registered, remove them, and give them tags (SM, Banker, Onyx, Vanguard...). Tags show at the bottom of their roster entry and profile card.
 0.54.0: Group quests. When you are in a party, a quest step completed by one person moves the quest on for everyone in the party who has the same quest on the same step, with the rewards, and a pop-up tells them.
 0.53.4: Anyone can now start a party (no password). Combat encounters still need the SM password.
