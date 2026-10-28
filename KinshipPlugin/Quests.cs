@@ -180,6 +180,7 @@ public sealed class QuestState
 
     public void RefreshIfDue(int seconds)
     {
+        if (Idle.Asleep) return;
         bool due;
         lock (gate) { due = !busy && Plugin.Config.Me().ItemsToken.Length > 0 && (DateTime.UtcNow - lastList).TotalSeconds > seconds; if (due) lastList = DateTime.UtcNow; }
         if (due) _ = RefreshAsync();
@@ -225,6 +226,7 @@ public sealed class QuestState
     /// <summary>Called every frame while quests are active; looks at where you stand a couple of times a second.</summary>
     public void WatchPlaces()
     {
+        if (Idle.Asleep) return;
         if ((DateTime.UtcNow - lastWatch).TotalMilliseconds < 150) return;
         lastWatch = DateTime.UtcNow;
         foreach (var q in Active())

@@ -35,6 +35,7 @@ public sealed class MailState
     /// <summary>Checks for new mail about once a minute, even when the tab is closed, so the tab can show a badge.</summary>
     public void Poll()
     {
+        if (Idle.Asleep) return;
         bool due;
         lock (gate) { due = Plugin.Config.Me().ItemsToken.Length > 0 && (DateTime.UtcNow - lastPoll).TotalSeconds > 60; if (due) lastPoll = DateTime.UtcNow; }
         if (due) _ = PollAsync();
@@ -53,6 +54,7 @@ public sealed class MailState
 
     public void RefreshIfDue(int seconds)
     {
+        if (Idle.Asleep) return;
         bool due;
         lock (gate) { due = !busy && Plugin.Config.Me().ItemsToken.Length > 0 && (DateTime.UtcNow - lastList).TotalSeconds > seconds; if (due) lastList = DateTime.UtcNow; }
         if (due) _ = RefreshAsync();

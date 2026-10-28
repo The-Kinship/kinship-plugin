@@ -199,6 +199,7 @@ public sealed class ItemsState
     /// <summary>Called while the tab is on screen: loads on first view, then every 15 seconds.</summary>
     public void RefreshIfDue()
     {
+        if (Idle.Asleep) return;
         bool due;
         lock (gate) { due = !busy && Plugin.Config.Me().ItemsToken.Length > 0 && (!loadedOnce || (DateTime.UtcNow - lastRefresh).TotalSeconds > 15); if (due) lastRefresh = DateTime.UtcNow; }
         if (due) _ = RefreshAsync(true);

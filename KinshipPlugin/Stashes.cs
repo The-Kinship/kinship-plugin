@@ -161,6 +161,7 @@ public sealed class StashState
 
     public void RefreshIfDue(int seconds)
     {
+        if (Idle.Asleep) return;
         bool due;
         lock (gate) { due = !busy && Plugin.Config.Me().ItemsToken.Length > 0 && (DateTime.UtcNow - lastList).TotalSeconds > seconds; if (due) lastList = DateTime.UtcNow; }
         if (due) _ = RefreshAsync();

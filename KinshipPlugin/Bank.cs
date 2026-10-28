@@ -34,6 +34,7 @@ public sealed class BankState
 
     public void RefreshIfDue(int seconds)
     {
+        if (Idle.Asleep) return;
         bool due;
         lock (gate) { due = !busy && Plugin.Config.Me().ItemsToken.Length > 0 && (DateTime.UtcNow - lastRefresh).TotalSeconds > seconds; if (due) lastRefresh = DateTime.UtcNow; }
         if (due) _ = RefreshAsync();

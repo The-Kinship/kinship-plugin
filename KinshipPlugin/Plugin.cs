@@ -83,6 +83,7 @@ public sealed class Plugin : IDalamudPlugin
     /// <summary>Runs every frame. When you log in as a different character, switches to that character's own saved sign-in and starts their data fresh.</summary>
     private void CheckCharacter()
     {
+        Idle.Update();
         WorldInfo.Track();   // remember where you stand; the server uses it to show only nearby stashes and signs
         Mail?.Poll();        // checks for new mail about once a minute
         Armory?.Poll();      // and whether any worn gear broke

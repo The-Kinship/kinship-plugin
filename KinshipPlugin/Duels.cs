@@ -34,6 +34,7 @@ public sealed class DuelState
     /// <summary>Checks for a challenge or the other player's move: every few seconds, faster during a fight.</summary>
     public void Poll()
     {
+        if (Idle.Asleep) return;
         bool due;
         lock (gate)
         {

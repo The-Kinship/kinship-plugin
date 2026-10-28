@@ -210,6 +210,7 @@ public sealed class CombatState
     // ---------- live updates (about every 2 seconds, only while the window is drawing) ----------
     public void PollIfDue()
     {
+        if (Idle.Asleep) return;
         string tk, cd;
         lock (gate)
         {

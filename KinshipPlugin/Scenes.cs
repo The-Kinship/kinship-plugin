@@ -174,7 +174,7 @@ public sealed class SceneState : IDisposable
     {
         while (!ct.IsCancellationRequested)
         {
-            try { await PollOnceAsync(ct).ConfigureAwait(false); }
+            try { if (!Idle.Asleep) await PollOnceAsync(ct).ConfigureAwait(false); }
             catch (OperationCanceledException) { break; }
             catch (Exception ex) { Plugin.Log.Warning(ex, "Scene poll failed"); }
             try { await Task.Delay(4000, ct).ConfigureAwait(false); }
