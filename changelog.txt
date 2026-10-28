@@ -1,0 +1,2 @@
+0.52.1: The plugin page now shows a fuller description and this changelog.
+0.52.0: Quests can now react to where you walk. New "Walk into an area" steps advance the quest when you enter a spot, and area notices pop up when you enter a spot on any step.
