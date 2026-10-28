@@ -1,3 +1,4 @@
+0.53.4: Anyone can now start a party (no password). Combat encounters still need the SM password.
 0.53.3: The Scenes tab is now called Party (same thing: join with a code, popups, group RP). Groundwork for doing quests together.
 0.53.2: New Pause button at the top of the Kinship window (also in the top bar right-click menu). While paused the plugin makes no server requests at all. Press it again to turn the plugin back on.
 0.53.1: The plugin now pauses its background server checks while you are standing still and not using the mouse for 3 minutes, and picks up again the moment you move. Fewer requests while AFK.
