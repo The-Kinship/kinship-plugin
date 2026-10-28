@@ -67,5 +67,6 @@ public static class ProfileCard
             ImGui.TextColored(Dim, UiUtil.Ooc(p.Ooc));
         }
         ImGui.PopTextWrapPos();
+        if (p.Tags.Count > 0) { ImGui.Separator(); TagBadges.Draw(p.Tags); }
     }
 }

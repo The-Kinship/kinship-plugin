@@ -533,6 +533,7 @@ public sealed class ItemsTab
         bankTab.DrawTools();
         ReportsAdmin.Draw();
         ProfileAdmin.Draw();
+        MembersAdmin.Draw();
         MarksAdmin.Draw();
         AlphaGearAdmin.Draw();
         WipeAdmin.Draw();

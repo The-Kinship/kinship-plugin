@@ -13,6 +13,7 @@ public sealed class ProfileView
     public string Age { get; set; } = ""; public string Race { get; set; } = ""; public string Gender { get; set; } = "";
     public string Glance { get; set; } = ""; public string Ooc { get; set; } = "";
     public List<ProfileField> Fields { get; set; } = new();
+    public List<string> Tags { get; set; } = new();   // SM, Banker, a sect... set by the SMs
 }
 public sealed record ProfileSnap(ProfileView? Mine, string Error, string Notice, bool Busy);
 

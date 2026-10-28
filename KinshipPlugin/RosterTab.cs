@@ -58,6 +58,7 @@ public sealed class RosterTab
     {
         var people = Plugin.Data.Roster;
         if (people == null) { ImGui.TextColored(Dim, "The roster opens soon."); return; }
+        Plugin.Profiles.RefreshIfDue(120);   // brings in each character's tags (SM, Banker, a sect)
         if (open != null) { DrawProfile(open); return; }
 
         ImGui.TextColored(Gold, "The Kin");
@@ -91,6 +92,7 @@ public sealed class RosterTab
             if (ImGui.Selectable(p.Name + "##r" + p.Name, false, ImGuiSelectableFlags.None, new Vector2(0, 0))) open = p;
             ImGui.TextColored(SectColor(p), SectLabel(p));
             if (p.Rank.Length > 0) ImGui.TextColored(Dim, p.Rank);
+            if (Plugin.Profiles.Find(p.Name) is { Tags.Count: > 0 } reg) TagBadges.Draw(reg.Tags);
             ImGui.EndGroup();
             ImGui.Spacing();
         }
@@ -133,6 +135,7 @@ public sealed class RosterTab
         if (p.Race.Length > 0) ImGui.Text("Race: " + p.Race);
         if (p.Age.Length > 0) ImGui.Text("Age: " + p.Age);
         if (p.Bio.Length > 0) { ImGui.Spacing(); ImGui.TextWrapped(p.Bio); }
+        if (Plugin.Profiles.Find(p.Name) is { Tags.Count: > 0 } regTags) { ImGui.Spacing(); ImGui.Separator(); TagBadges.Draw(regTags.Tags); }
         ImGui.Spacing();
         if (ImGui.Button("Armory##rosterarmory")) Plugin.ShowArmory(p.Name);
         if (p.Carrd.StartsWith("http"))
