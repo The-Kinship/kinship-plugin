@@ -79,6 +79,14 @@ jobs:
               "DownloadLinkTesting": download,
               "DownloadLinkUpdate": download,
           }
+          # What the Plugin Installer shows under "changelog": the text of changelog.txt at the top of the repo (the same blurb you post in Discord).
+          try:
+              with open("changelog.txt", encoding="utf-8") as c:
+                  text = c.read().strip()
+              if text:
+                  entry["Changelog"] = text
+          except FileNotFoundError:
+              pass
           with open(out_path, "w", encoding="utf-8") as f:
               json.dump([entry], f, indent=2)
           print(json.dumps(entry, indent=2))
