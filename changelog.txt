@@ -1,3 +1,4 @@
+0.52.5: Alpha only: sickness diagnosing and curse reading are now also on the Status tab, so testers can use them without the sect pages.
 0.52.4: Failed sickness diagnoses and curse readings now give a random message each time instead of the same one.
 0.52.3: Fixed a quest area step that could be missed if another request was running when you walked in, and area notices no longer ask the server repeatedly after an error.
 0.52.2: Quest area notices and "Walk into an area" steps now react faster. Notice text is loaded as you approach, so it shows the moment you walk in.
