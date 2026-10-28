@@ -135,6 +135,11 @@ public sealed class Plugin : IDalamudPlugin
     private readonly SignReaderWindow signReader;
     private readonly StatusBar statusBar;
     private readonly DisclaimerWindow disclaimer;
+    private readonly AlphaWindow alphaWin;
+    private static DisclaimerWindow? disclaimerStatic;
+    private static AlphaWindow? alphaStatic;
+    /// <summary>Opens the third-party plugin disclaimer (unless it was switched off).</summary>
+    internal static void ShowDisclaimerNow() { if (!Config.HideDisclaimer && disclaimerStatic != null) disclaimerStatic.IsOpen = true; }
     private readonly ProfileTooltip profileTip;
     private readonly QuestWindow questWindow;
     private readonly QuestOverlay questOverlay;
@@ -190,6 +195,10 @@ public sealed class Plugin : IDalamudPlugin
         windows.AddWindow(statusBar);
         disclaimer = new DisclaimerWindow();
         windows.AddWindow(disclaimer);
+        disclaimerStatic = disclaimer;
+        alphaWin = new AlphaWindow();
+        windows.AddWindow(alphaWin);
+        alphaStatic = alphaWin;
         profileTip = new ProfileTooltip();
         windows.AddWindow(profileTip);
         questOverlay = new QuestOverlay();
@@ -221,12 +230,18 @@ public sealed class Plugin : IDalamudPlugin
 
         // Show the plot notice at login (or right now, if you are already logged in).
         ClientState.Login += OnLogin;
-        if (ClientState.IsLoggedIn) { ShowDisclaimer(); _ = ShowNoticeAsync(); }
+        if (ClientState.IsLoggedIn) { _ = StartupPopupsAsync(); _ = ShowNoticeAsync(); }
     }
 
-    private void OnLogin() { ShowDisclaimer(); _ = ShowNoticeAsync(); }
+    private void OnLogin() { _ = StartupPopupsAsync(); _ = ShowNoticeAsync(); }
 
-    private void ShowDisclaimer() { if (!Config.HideDisclaimer) disclaimer.IsOpen = true; }
+    /// <summary>At login: the alpha notice first (while the alpha test is on), then the third-party plugin disclaimer.</summary>
+    private async Task StartupPopupsAsync()
+    {
+        try { await Data.Refresh().ConfigureAwait(false); } catch (Exception) { /* offline: the alpha notice shows by default */ }
+        if (Alpha.On && alphaStatic != null) alphaStatic.IsOpen = true;
+        else ShowDisclaimerNow();
+    }
 
     private async Task ShowNoticeAsync()
     {
@@ -265,6 +280,9 @@ public sealed class Plugin : IDalamudPlugin
         signReader.Dispose();
         statusBar.Dispose();
         disclaimer.Dispose();
+        alphaWin.Dispose();
+        disclaimerStatic = null;
+        alphaStatic = null;
         profileTip.Dispose();
         questWindow.Dispose();
         questOverlay.Dispose();

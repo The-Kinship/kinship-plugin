@@ -29,6 +29,7 @@ public sealed class DisclaimerWindow : Window, IDisposable
 
     public override void Draw()
     {
+        Alpha.Mark();
         ImGui.TextColored(Gold, "Please read");
         ImGui.Spacing();
         ImGui.TextWrapped("The Kinship plugin is a third-party add-on. It is not made or supported by Square Enix. Use it at your own risk.");

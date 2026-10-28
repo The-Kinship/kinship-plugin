@@ -61,6 +61,7 @@ public sealed class StashReaderWindow : Window, IDisposable
 
     public override void Draw()
     {
+        Alpha.Mark();
         var s = Plugin.Stashes.Snapshot();
         if (mine && s.Open != null)
         {

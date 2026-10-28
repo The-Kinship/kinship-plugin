@@ -55,6 +55,7 @@ public sealed class QuestWindow : Window, IDisposable
 
     public override void Draw()
     {
+        Alpha.Mark();
         var s = Plugin.Quests.Snapshot();
         var active = Plugin.Quests.Active();
 

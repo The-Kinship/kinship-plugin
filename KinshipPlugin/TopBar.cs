@@ -36,8 +36,11 @@ public sealed class TopBar : IDisposable
     }
 
     /// <summary>Called every frame: opens the menu (at the mouse) after a right click, and shows or hides the button.</summary>
+    private string lastText = "Kinship";
     public void Update()
     {
+        var want = Alpha.On ? "Kinship (Alpha)" : "Kinship";
+        if (entry != null && want != lastText) { lastText = want; SetText("Text", want); }
         if (entry != null && entry.Shown != Plugin.Config.TopBarButton) entry.Shown = Plugin.Config.TopBarButton;
         if (menuRequested) { menuRequested = false; menu.OpenAtMouse(); }
     }

@@ -74,8 +74,11 @@ public sealed class MainWindow : Window, IDisposable
         return Plugin.Images.HasFailed(CrestPng) ? CrestJpg : CrestPng;
     }
 
+    public override void PreDraw() { WindowName = (Alpha.On ? "The Kinship (Alpha test)" : "The Kinship") + "##KinshipMain"; }
+
     public override void Draw()
     {
+        Alpha.Mark();
         var (f, p, s) = Plugin.Data.Snapshot();
 
         if (ImGui.BeginTabBar("kinship_tabs", ImGuiTabBarFlags.FittingPolicyScroll))

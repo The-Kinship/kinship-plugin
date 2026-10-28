@@ -25,6 +25,7 @@ public sealed class DuelWindow : Window, IDisposable
 
     public override void Draw()
     {
+        Alpha.Mark();
         var (d, error, busy) = Plugin.Duels.Snapshot();
         if (d == null) { ImGui.Text("No fight right now."); return; }
         if (error.Length > 0) ImGui.TextColored(Red, error);

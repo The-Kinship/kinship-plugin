@@ -25,6 +25,7 @@ public sealed class ArmoryViewWindow : Window, IDisposable
 
     public override void Draw()
     {
+        Alpha.Mark();
         var l = Plugin.Armory.Look();
         ImGui.TextColored(Gold, l.Name.Length > 0 ? l.Name : "Armory");
         if (l.Loading) { ImGui.TextColored(Dim, "Loading..."); return; }

@@ -20,5 +20,5 @@ public sealed class AboutPluginWindow : Window, IDisposable
 
     public void Show(bool report) { IsOpen = true; if (report) tab.JumpToReport(); }
 
-    public override void Draw() => tab.Draw();
+    public override void Draw() { Alpha.Mark(); tab.Draw(); }
 }

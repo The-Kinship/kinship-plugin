@@ -49,6 +49,7 @@ public sealed class SignReaderWindow : Window, IDisposable
 
     public override void Draw()
     {
+        Alpha.Mark();
         var reading = Plugin.Signs.Reading;
         if (reading != null) { DrawReading(reading); return; }
 
