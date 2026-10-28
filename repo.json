@@ -3,7 +3,7 @@
     "Author": "The Kinship",
     "Name": "The Kinship",
     "InternalName": "KinshipPlugin",
-    "AssemblyVersion": "0.52.3.0",
+    "AssemblyVersion": "0.52.4.0",
     "Punchline": "Companion for The Kinship free company.",
     "Description": "Companion for The Kinship, a role-play free company. Type /kinship to open.\n\nIt adds:\n- Faction info, roster, announcements, plots and sect pages\n- RP-only items, inventory, stashes and signs\n- Wearable gear (Armory) and status effects\n- Profile cards when you mouse over someone\n- Mail, quests, scenes and small fights\n\nIt only reads game information (like where you stand). It does not automate anything.",
     "ApplicableVersion": "any",
@@ -17,10 +17,10 @@
     "DalamudApiLevel": 15,
     "IsHide": false,
     "IsTestingExclusive": false,
-    "LastUpdate": 1793212762,
+    "LastUpdate": 1793212831,
     "DownloadLinkInstall": "https://github.com/The-Kinship/kinship-plugin/releases/download/latest/latest.zip",
     "DownloadLinkTesting": "https://github.com/The-Kinship/kinship-plugin/releases/download/latest/latest.zip",
     "DownloadLinkUpdate": "https://github.com/The-Kinship/kinship-plugin/releases/download/latest/latest.zip",
-    "Changelog": "0.52.3: Fixed a quest area step that could be missed if another request was running when you walked in, and area notices no longer ask the server repeatedly after an error.\n0.52.2: Quest area notices and \"Walk into an area\" steps now react faster. Notice text is loaded as you approach, so it shows the moment you walk in.\n0.52.1: The plugin page now shows a fuller description and this changelog.\n0.52.0: Quests can now react to where you walk. New \"Walk into an area\" steps advance the quest when you enter a spot, and area notices pop up when you enter a spot on any step."
+    "Changelog": "0.52.4: Failed sickness diagnoses and curse readings now give a random message each time instead of the same one.\n0.52.3: Fixed a quest area step that could be missed if another request was running when you walked in, and area notices no longer ask the server repeatedly after an error.\n0.52.2: Quest area notices and \"Walk into an area\" steps now react faster. Notice text is loaded as you approach, so it shows the moment you walk in.\n0.52.1: The plugin page now shows a fuller description and this changelog.\n0.52.0: Quests can now react to where you walk. New \"Walk into an area\" steps advance the quest when you enter a spot, and area notices pop up when you enter a spot on any step."
   }
 ]
