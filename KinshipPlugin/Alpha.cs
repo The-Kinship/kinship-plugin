@@ -105,7 +105,7 @@ public static class AlphaGearAdmin
         {
             object body = set == null ? new { adminPassword = Plugin.Config.CreatePassword } : new { adminPassword = Plugin.Config.CreatePassword, on = set.Value };
             var r = await ItemsState.SendAsync(System.Net.Http.HttpMethod.Post, "/system/admin/" + path, body).ConfigureAwait(false);
-            if (r.AlphaGear != null) { on = r.AlphaGear.Value; known = true; ItemsState.AlphaGear = on; notice = on ? "Alpha mode is ON: testers can add bonuses to gear." : "Alpha mode is OFF: only Advocate gifts can add bonuses."; }
+            if (r.AlphaGear != null) { on = r.AlphaGear.Value; known = true; ItemsState.AlphaGear = on; notice = on ? "Alpha mode is ON: testers can add bonuses to gear and each character gets 50 starting gold, once." : "Alpha mode is OFF: only Advocate gifts can add bonuses."; }
         }
         catch (CombatException ex) { error = ex.Message; }
         catch (Exception ex) { Plugin.Log.Warning(ex, "Alpha switch failed"); error = "Couldn't reach the server. Check your connection and try again."; }
@@ -114,9 +114,9 @@ public static class AlphaGearAdmin
 
     public static void Draw()
     {
-        if (!ImGui.CollapsingHeader("Alpha mode (testers can add gear bonuses)")) return;
+        if (!ImGui.CollapsingHeader("Alpha mode (gear bonuses + starting gold)")) return;
         ImGui.PushTextWrapPos(0f);
-        ImGui.TextColored(Dim, "While this is on, anyone can give the wearable gear they make a roll bonus (-5 to +5), so testers can try the Armory and Combat. Turn it off after the wipe and only Advocate gifts can do that again. It is off until you turn it on, and the wipe does not change it.");
+        ImGui.TextColored(Dim, "While this is on, anyone can give the wearable gear they make a roll bonus (-5 to +5), so testers can try the Armory and Combat. Turning it on also gives every character 50 gold, once (new characters get it when they register while it is on, and it is never given again). Turn it off after the wipe and only Advocate gifts can do that again. It is off until you turn it on, and the wipe does not change it.");
         ImGui.PopTextWrapPos();
         UiUtil.CreatePasswordInput();
         if (ImGui.Button("Check current setting##alphagetbtn")) _ = Call("alpha-get", null);
