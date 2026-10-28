@@ -108,7 +108,7 @@ public static class AlphaGearAdmin
             if (limit != null) body["maxCharacters"] = limit.Value;
             var r = await ItemsState.SendAsync(System.Net.Http.HttpMethod.Post, "/system/admin/" + path, body).ConfigureAwait(false);
             if (r.MaxCharacters != null) { cap = r.MaxCharacters.Value; capText = cap.ToString(); }
-            if (r.Characters != null) registered = r.Characters.Value;
+            if (r.CharacterCount != null) registered = r.CharacterCount.Value;
             if (r.AlphaGear != null) { on = r.AlphaGear.Value; known = true; ItemsState.AlphaGear = on; notice = on ? "Alpha mode is ON: testers can add bonuses to gear and each character gets 50 starting gold, once." : "Alpha mode is OFF: only Advocate gifts can add bonuses."; }
         }
         catch (CombatException ex) { error = ex.Message; }
