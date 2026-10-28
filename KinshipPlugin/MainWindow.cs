@@ -81,6 +81,7 @@ public sealed class MainWindow : Window, IDisposable
         Alpha.Mark();
         var (f, p, s) = Plugin.Data.Snapshot();
 
+        DrawPauseButton();
         if (ImGui.BeginTabBar("kinship_tabs", ImGuiTabBarFlags.FittingPolicyScroll))
         {
             if (ImGui.BeginTabItem("Home")) { DrawHome(f); ImGui.EndTabItem(); }
@@ -97,6 +98,19 @@ public sealed class MainWindow : Window, IDisposable
         }
 
         if (s.Length > 0) { ImGui.Separator(); ImGui.TextColored(Dim, s); }
+    }
+
+    private static void DrawPauseButton()
+    {
+        var paused = Idle.Paused;
+        var label = paused ? "Paused: press to turn on##kpause" : "Active: press to pause##kpause";
+        var width = ImGui.CalcTextSize(label.Substring(0, label.IndexOf('#'))).X + 16f;
+        ImGui.SetCursorPosX(Math.Max(0f, ImGui.GetWindowWidth() - width - 14f));
+        ImGui.PushStyleColor(ImGuiCol.Text, paused ? new Vector4(0.95f, 0.6f, 0.3f, 1f) : new Vector4(0.45f, 0.85f, 0.55f, 1f));
+        if (ImGui.SmallButton(label)) Idle.Paused = !paused;
+        ImGui.PopStyleColor();
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip(paused ? "The plugin is not talking to the server. Press to turn it back on." : "Press to pause the plugin while you are not using it, for example while doing duties. It stops asking the server for anything until you turn it back on.");
+        if (paused) ImGui.TextColored(new Vector4(0.95f, 0.6f, 0.3f, 1f), "Paused: nothing updates until you press the button above.");
     }
 
     // ---------- guests: join an encounter or a scene with just an invite link or code and a name ----------

@@ -16,7 +16,10 @@ public static class Idle
     private static volatile bool asleep;
 
     /// <summary>True while you have been idle long enough that background requests are paused.</summary>
-    public static bool Asleep => asleep;
+    public static bool Asleep => asleep || Paused;
+
+    /// <summary>Set by the Pause / Play button. While true the plugin makes no background requests at all. Starts as active each time the game starts.</summary>
+    public static volatile bool Paused;
 
     /// <summary>Called every frame. Cheap: only reads local game and input state, never the network.</summary>
     public static void Update()

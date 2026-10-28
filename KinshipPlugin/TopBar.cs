@@ -39,7 +39,7 @@ public sealed class TopBar : IDisposable
     private string lastText = "Kinship";
     public void Update()
     {
-        var want = Alpha.On ? "Kinship (Alpha)" : "Kinship";
+        var want = (Alpha.On ? "Kinship (Alpha)" : "Kinship") + (Idle.Paused ? " (Paused)" : "");
         if (entry != null && want != lastText) { lastText = want; SetText("Text", want); }
         if (entry != null && entry.Shown != Plugin.Config.TopBarButton) entry.Shown = Plugin.Config.TopBarButton;
         if (menuRequested) { menuRequested = false; menu.OpenAtMouse(); }
@@ -138,6 +138,7 @@ public sealed class TopBarMenu : Window, IDisposable
         ImGui.TextColored(Gold, "The Kinship");
         ImGui.Separator();
         if (ImGui.Selectable("Open the Kinship window")) { Plugin.ShowMain(); IsOpen = false; return; }
+        if (ImGui.Selectable(Idle.Paused ? "Turn the plugin back on (paused)" : "Pause the plugin")) { Idle.Paused = !Idle.Paused; IsOpen = false; return; }
         if (ImGui.Selectable("About this plugin")) { Plugin.ShowAbout(false); IsOpen = false; return; }
         if (ImGui.Selectable("Report a bug or abuse")) { Plugin.ShowAbout(true); IsOpen = false; return; }
         ImGui.Spacing();
