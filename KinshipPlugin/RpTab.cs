@@ -36,7 +36,7 @@ public sealed class RpTab
     private void DrawConnect(SceneSnap s)
     {
         ImGui.TextColored(Gold, "Join a party");
-        ImGui.TextWrapped("Your SM gives you a party code. Join it to receive the SM's RP popups. Popups stay off until you join.");
+        ImGui.TextWrapped("Whoever starts a party gives you its code. Join it to receive their RP popups. Popups stay off until you join.");
         ImGui.Spacing();
         ImGui.SetNextItemWidth(240f); ImGui.InputText("Your name##rp", ref name, 60);
         ImGui.SetNextItemWidth(240f); var enter = ImGui.InputText("Party code##rp", ref codeInput, 300, ImGuiInputTextFlags.EnterReturnsTrue);
@@ -45,10 +45,9 @@ public sealed class RpTab
         else if (ImGui.Button("Join party") || enter) _ = Plugin.Scene.JoinAsync(codeInput, name);
 
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
-        ImGui.TextColored(Gold, "Run a party (SM)");
-        ImGui.TextWrapped("Start a party for your RP group. Share the code, then send popups to everyone or to chosen people. Different groups can run different parties at the same time.");
+        ImGui.TextColored(Gold, "Start a party");
+        ImGui.TextWrapped("Anyone can start a party for their RP group. You run it: share the code, then send popups to everyone or to chosen people. Different groups can run different parties at the same time.");
         ImGui.SetNextItemWidth(240f); ImGui.InputText("Party name##rp", ref newTitle, 80);
-        UiUtil.CreatePasswordInput();
         if (!s.Busy && ImGui.Button("Create party")) _ = Plugin.Scene.CreateAsync(name, newTitle);
     }
 

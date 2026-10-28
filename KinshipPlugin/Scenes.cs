@@ -96,7 +96,7 @@ public sealed class SceneState : IDisposable
         lock (gate) { if (busy) return; busy = true; error = ""; }
         try
         {
-            var r = await SendAsync(HttpMethod.Post, "/scenes", new { name = name.Trim(), title = sceneTitle.Trim(), createPassword = Plugin.Config.CreatePassword }, null).ConfigureAwait(false);
+            var r = await SendAsync(HttpMethod.Post, "/scenes", new { name = name.Trim(), title = sceneTitle.Trim() }, null).ConfigureAwait(false);
             Adopt(r, name.Trim());
         }
         catch (CombatException ex) { SetError(ex.Message); }
