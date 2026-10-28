@@ -533,6 +533,7 @@ public sealed class ItemsTab
         ReportsAdmin.Draw();
         ProfileAdmin.Draw();
         MarksAdmin.Draw();
+        WipeAdmin.Draw();
     }
 
     private void DrawDmTools()
