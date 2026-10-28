@@ -317,12 +317,12 @@ public sealed class ItemsTab
         ImGui.SetNextItemWidth(100f); ImGui.InputInt("Breaks after (days)##gearlife", ref form.LifespanDays, 1);
         form.LifespanDays = Math.Clamp(form.LifespanDays, 0, 365);
         ImGui.TextColored(Dim, "0 means it never breaks. The countdown starts the first time it is worn. Broken gear turns into a useless \"Broken\" item.");
-        if (gift)
+        if (gift || ItemsState.AlphaGear)
         {
             ImGui.SetNextItemWidth(100f); ImGui.InputInt("Attack roll bonus##gearatk", ref form.GearAtk, 1);
             ImGui.SetNextItemWidth(100f); ImGui.InputInt("Heal roll bonus##gearheal", ref form.GearHeal, 1);
             form.GearAtk = Math.Clamp(form.GearAtk, -5, 5); form.GearHeal = Math.Clamp(form.GearHeal, -5, 5);
-            ImGui.TextColored(Dim, "-5 to +5 added to rolls while worn. All worn gear together is capped at +5. Only Advocate gifts can do this.");
+            ImGui.TextColored(Dim, "-5 to +5 added to rolls while worn. All worn gear together is capped at +5." + (gift ? " Only Advocate gifts can do this." : " Alpha testing only: normally just Advocate gifts can do this."));
         }
         else ImGui.TextColored(Dim, "Roll bonuses can only be added by Advocate gifts.");
     }
@@ -532,6 +532,7 @@ public sealed class ItemsTab
         ReportsAdmin.Draw();
         ProfileAdmin.Draw();
         MarksAdmin.Draw();
+        AlphaGearAdmin.Draw();
         WipeAdmin.Draw();
     }
 

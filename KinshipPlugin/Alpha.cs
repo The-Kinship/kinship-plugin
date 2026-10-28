@@ -87,3 +87,45 @@ public sealed class AlphaWindow : Window, IDisposable
         Alpha.Mark();
     }
 }
+
+/// <summary>SM Tools switch: while on, any member can put roll bonuses on wearable gear they make (for testing). Creation password only.</summary>
+public static class AlphaGearAdmin
+{
+    private static readonly Vector4 Dim = new(0.65f, 0.65f, 0.7f, 1f);
+    private static readonly Vector4 Red = new(0.95f, 0.4f, 0.35f, 1f);
+    private static readonly Vector4 Green = new(0.4f, 0.8f, 0.5f, 1f);
+    private static string error = "", notice = ""; private static bool busy, known, on;
+
+    private static async System.Threading.Tasks.Task Call(string path, bool? set)
+    {
+        if (Plugin.Config.CreatePassword.Length == 0) { error = "Enter the creation password first."; return; }
+        if (busy) return;
+        busy = true; error = ""; notice = "";
+        try
+        {
+            object body = set == null ? new { adminPassword = Plugin.Config.CreatePassword } : new { adminPassword = Plugin.Config.CreatePassword, on = set.Value };
+            var r = await ItemsState.SendAsync(System.Net.Http.HttpMethod.Post, "/system/admin/" + path, body).ConfigureAwait(false);
+            if (r.AlphaGear != null) { on = r.AlphaGear.Value; known = true; ItemsState.AlphaGear = on; notice = on ? "Alpha mode is ON: testers can add bonuses to gear." : "Alpha mode is OFF: only Advocate gifts can add bonuses."; }
+        }
+        catch (CombatException ex) { error = ex.Message; }
+        catch (Exception ex) { Plugin.Log.Warning(ex, "Alpha switch failed"); error = "Couldn't reach the server. Check your connection and try again."; }
+        finally { busy = false; }
+    }
+
+    public static void Draw()
+    {
+        if (!ImGui.CollapsingHeader("Alpha mode (testers can add gear bonuses)")) return;
+        ImGui.PushTextWrapPos(0f);
+        ImGui.TextColored(Dim, "While this is on, anyone can give the wearable gear they make a roll bonus (-5 to +5), so testers can try the Armory and Combat. Turn it off after the wipe and only Advocate gifts can do that again. It is off until you turn it on, and the wipe does not change it.");
+        ImGui.PopTextWrapPos();
+        UiUtil.CreatePasswordInput();
+        if (ImGui.Button("Check current setting##alphagetbtn")) _ = Call("alpha-get", null);
+        if (known)
+        {
+            var v = on;
+            if (ImGui.Checkbox("Alpha mode on##alphagear", ref v)) _ = Call("alpha", v);
+        }
+        if (error.Length > 0) ImGui.TextColored(Red, error);
+        if (notice.Length > 0) ImGui.TextColored(Green, notice);
+    }
+}
