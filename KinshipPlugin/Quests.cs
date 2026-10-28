@@ -218,12 +218,14 @@ public sealed class QuestState
     private readonly Dictionary<string, bool> insideNow = new();   // was I inside this spot at the last check?
     private readonly HashSet<string> shownOnce = new();            // area notices that don't repeat, already shown this session
     private DateTime lastWatch = DateTime.MinValue;
-    private bool noticeBusy;
+    private readonly Dictionary<string, string> noticeText = new();   // words fetched ahead of time as you approach, so they show the instant you walk in
+    private readonly HashSet<string> noticeFetching = new();
+    private readonly Dictionary<string, DateTime> noticeRetry = new();       // after a failed or empty answer, wait before asking again
 
     /// <summary>Called every frame while quests are active; looks at where you stand a couple of times a second.</summary>
     public void WatchPlaces()
     {
-        if ((DateTime.UtcNow - lastWatch).TotalMilliseconds < 500) return;
+        if ((DateTime.UtcNow - lastWatch).TotalMilliseconds < 150) return;
         lastWatch = DateTime.UtcNow;
         foreach (var q in Active())
         {
@@ -231,32 +233,47 @@ public sealed class QuestState
             if (q.Current is { Type: "arrive", Place.Radius: > 0 } c)
             {
                 var inside = c.Place!.Distance() is { } d && d <= c.Place.Radius;
-                insideNow.TryGetValue(key, out var was); insideNow[key] = inside;
-                if (inside && !was) _ = ActAsync("arrive");    // the server moves the quest on and sends the words
+                insideNow.TryGetValue(key, out var was);
+                if (inside && !was)
+                {
+                    bool busyNow; lock (gate) { busyNow = busy; }
+                    if (busyNow) continue;                      // another request is running: try again on the next check instead of missing it
+                    insideNow[key] = true;
+                    _ = ActAsync("arrive");                      // the server moves the quest on and sends the words
+                }
+                else insideNow[key] = inside;
             }
             foreach (var n in q.Notices ?? new())
             {
                 if (n.Place.Radius <= 0) continue;
                 var nk = q.QuestId + ":notice" + n.Index;
-                var inside = n.Place.Distance() is { } d && d <= n.Place.Radius;
+                var dist = n.Place.Distance();
+                var inside = dist is { } d && d <= n.Place.Radius;
+                if (dist is { } near && near <= n.Place.Radius + 30f) _ = FetchNoticeAsync(q, n, nk);   // close enough to get ready
                 insideNow.TryGetValue(nk, out var was); insideNow[nk] = inside;
                 if (!inside || was) continue;
                 if (!n.Repeat && !shownOnce.Add(nk)) continue;
-                _ = NoticeAsync(q, n);
+                string? ready; lock (gate) { noticeText.TryGetValue(nk, out ready); }
+                if (!string.IsNullOrEmpty(ready)) lock (gate) { talk = new TalkResult("", new() { new TalkLine { Quest = q.Title, Ok = true, Text = ready } }, ""); }
+                else _ = FetchNoticeAsync(q, n, nk, show: true);   // not loaded yet: fetch it and show it as soon as it arrives
             }
         }
     }
 
-    private async Task NoticeAsync(QuestView q, QuestNoticeView n)
+    private async Task FetchNoticeAsync(QuestView q, QuestNoticeView n, string key, bool show = false)
     {
-        lock (gate) { if (noticeBusy) return; noticeBusy = true; }
+        lock (gate) { if (noticeText.ContainsKey(key) && !show) return; if (!show && noticeRetry.TryGetValue(key, out var until) && DateTime.UtcNow < until) return; if (!noticeFetching.Add(key)) return; }
         try
         {
             var r = await ItemsState.SendAsync(HttpMethod.Post, "/quests/notice", new { questId = q.QuestId, index = n.Index, territory = n.Place.Territory }).ConfigureAwait(false);
-            if (!string.IsNullOrEmpty(r.Text)) lock (gate) { talk = new TalkResult("", new() { new TalkLine { Quest = q.Title, Ok = true, Text = r.Text } }, ""); }
+            lock (gate)
+            {
+                if (!string.IsNullOrEmpty(r.Text)) noticeText[key] = r.Text; else noticeRetry[key] = DateTime.UtcNow.AddSeconds(30);
+                if (show && !string.IsNullOrEmpty(r.Text)) talk = new TalkResult("", new() { new TalkLine { Quest = q.Title, Ok = true, Text = r.Text } }, "");
+            }
         }
-        catch (Exception ex) { Plugin.Log.Warning(ex, "Area notice failed"); }
-        finally { lock (gate) { noticeBusy = false; } }
+        catch (Exception ex) { Plugin.Log.Warning(ex, "Area notice failed"); lock (gate) { noticeRetry[key] = DateTime.UtcNow.AddSeconds(30); } }
+        finally { lock (gate) { noticeFetching.Remove(key); } }
     }
 
     public async Task TalkAsync(string npc, string? type = null)
