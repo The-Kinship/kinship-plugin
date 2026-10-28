@@ -188,79 +188,10 @@ public sealed class SectsTab
         }
     }
 
-    private string dxPatient = "";
-    private DiagnoseResult? dxShown;
-    private DateTime dxMembersLoad = DateTime.MinValue;
-
-    // What a failed reading says. One is picked at random each time, so repeat tries don't read the same. They never say whether anything is really there.
-    private static readonly string[] DxMissCommon =
-    {
-        "Honestly, you don't know.",
-        "There doesn't seem to be anything wrong.",
-        "You can't seem to find anything amiss.",
-        "It's hard to tell what it is. Just use your best judgement.",
-        "The signs are too faint to read. You can't say for certain.",
-        "You look them over twice and still come up empty.",
-    };
-    private static readonly string[] DxMissLife = DxMissCommon.Concat(new[] { "Nothing you can point to. Maybe it's nothing, maybe you're missing it." }).ToArray();
-    private static readonly string[] DxMissCurse = DxMissCommon.Concat(new[] { "You can't make anything of it. If there's a curse here, it's hiding well." }).ToArray();
-    private string dxMiss = "";
-
     private void DrawDiagnose(string key, SectInfo s)
     {
-        var kind = key == "life" ? "sickness" : "curse";
         Heading(key == "life" ? "Diagnose a sickness" : "Read for a curse", s);
-        var inv = Plugin.Items.Snapshot();
-        var fresh = Plugin.Status.TakeDiagnosis();
-        if (fresh != null)
-        {
-            dxShown = fresh;
-            var pool = key == "life" ? DxMissLife : DxMissCurse;
-            dxMiss = pool[Random.Shared.Next(pool.Length)];   // a different line each time, picked once so it does not change while the window is open
-            ImGui.OpenPopup("Diagnosis##dx");
-        }
-
-        if (!inv.SignedIn) ImGui.TextColored(Dim, "Sign in on the RP tab to use this.");
-        else
-        {
-            if (inv.Members.Count == 0 && (DateTime.UtcNow - dxMembersLoad).TotalSeconds > 30) { dxMembersLoad = DateTime.UtcNow; _ = Plugin.Items.LoadMembersAsync(); }
-            ImGui.TextColored(Dim, key == "life" ? "Pick a patient and try to work out what ails them." : "Pick someone and try to work out what curse they carry.");
-            var names = inv.Members.Append(inv.Name).Where(m => m.Length > 0).Distinct().OrderBy(m => m).ToList();
-            ImGui.SetNextItemWidth(200f);
-            if (ImGui.BeginCombo("Patient##dxp", dxPatient.Length > 0 ? dxPatient : "Choose a name"))
-            {
-                foreach (var m in names) if (ImGui.Selectable(m, m == dxPatient)) dxPatient = m;
-                ImGui.EndCombo();
-            }
-            var ok = dxPatient.Length > 0 && !Plugin.Status.IsBusy();
-            if (!ok) ImGui.BeginDisabled();
-            if (ImGui.Button(key == "life" ? "Diagnose##dx" : "Read##dx")) _ = Plugin.Status.DiagnoseAsync(dxPatient, kind);
-            if (!ok) ImGui.EndDisabled();
-        }
-
-        if (ImGui.BeginPopup("Diagnosis##dx"))
-        {
-            if (dxShown != null)
-            {
-                if (dxShown.Error.Length > 0) ImGui.TextColored(Red, dxShown.Error);
-                else
-                {
-                    ImGui.TextColored(Dim, $"{dxShown.Patient}  ·  you rolled {dxShown.Roll} (d20)");
-                    ImGui.Spacing();
-                    ImGui.PushTextWrapPos(ImGui.GetFontSize() * 26f);
-                    if (dxShown.Success)
-                    {
-                        ImGui.TextColored(s.Color, "Condition: " + dxShown.Condition);
-                        ImGui.TextUnformatted(dxShown.Cure.Length > 0 ? "Cure: " + dxShown.Cure : "There is no cure you know of.");
-                    }
-                    else ImGui.TextUnformatted(dxMiss);
-                    ImGui.PopTextWrapPos();
-                }
-                ImGui.Spacing();
-                if (ImGui.Button("Close##dx")) ImGui.CloseCurrentPopup();
-            }
-            ImGui.EndPopup();
-        }
+        Readings.Draw(key, s.Color);
     }
 
     private void TryOpenCrypt()

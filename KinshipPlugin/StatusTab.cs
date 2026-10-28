@@ -45,6 +45,24 @@ public sealed class StatusTab
         DrawAddSelf(s, mineReal);
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         DrawEveryone(s);
+        DrawReadings();
+    }
+
+    /// <summary>Alpha only: the sect readings, so testers who can't open the sect pages can still try them.</summary>
+    private static void DrawReadings()
+    {
+        if (!Alpha.On) return;
+        ImGui.Spacing();
+        if (!ImGui.CollapsingHeader("Readings (alpha test)##readings")) return;
+        ImGui.PushTextWrapPos(0f);
+        ImGui.TextColored(Dim, "During the alpha, anyone can try these. Normally they belong to the Life Watch and the Onyx Blood Guard.");
+        ImGui.PopTextWrapPos();
+        ImGui.Spacing();
+        ImGui.TextColored(Gold, "Diagnose a sickness");
+        Readings.Draw("life", Gold);
+        ImGui.Spacing();
+        ImGui.TextColored(Gold, "Read for a curse");
+        Readings.Draw("onyx", Gold);
     }
 
     internal void DrawTools(ItemsSnap inv)
