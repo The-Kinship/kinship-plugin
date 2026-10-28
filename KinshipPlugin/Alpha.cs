@@ -94,17 +94,21 @@ public static class AlphaGearAdmin
     private static readonly Vector4 Dim = new(0.65f, 0.65f, 0.7f, 1f);
     private static readonly Vector4 Red = new(0.95f, 0.4f, 0.35f, 1f);
     private static readonly Vector4 Green = new(0.4f, 0.8f, 0.5f, 1f);
-    private static string error = "", notice = ""; private static bool busy, known, on;
+    private static string error = "", notice = ""; private static bool busy, known, on; private static int cap, registered; private static string capText = "0";
 
-    private static async System.Threading.Tasks.Task Call(string path, bool? set)
+    private static async System.Threading.Tasks.Task Call(string path, bool? set, int? limit = null)
     {
         if (Plugin.Config.CreatePassword.Length == 0) { error = "Enter the creation password first."; return; }
         if (busy) return;
         busy = true; error = ""; notice = "";
         try
         {
-            object body = set == null ? new { adminPassword = Plugin.Config.CreatePassword } : new { adminPassword = Plugin.Config.CreatePassword, on = set.Value };
+            var body = new System.Collections.Generic.Dictionary<string, object> { ["adminPassword"] = Plugin.Config.CreatePassword };
+            if (set != null) body["on"] = set.Value;
+            if (limit != null) body["maxCharacters"] = limit.Value;
             var r = await ItemsState.SendAsync(System.Net.Http.HttpMethod.Post, "/system/admin/" + path, body).ConfigureAwait(false);
+            if (r.MaxCharacters != null) { cap = r.MaxCharacters.Value; capText = cap.ToString(); }
+            if (r.Characters != null) registered = r.Characters.Value;
             if (r.AlphaGear != null) { on = r.AlphaGear.Value; known = true; ItemsState.AlphaGear = on; notice = on ? "Alpha mode is ON: testers can add bonuses to gear and each character gets 50 starting gold, once." : "Alpha mode is OFF: only Advocate gifts can add bonuses."; }
         }
         catch (CombatException ex) { error = ex.Message; }
@@ -124,6 +128,14 @@ public static class AlphaGearAdmin
         {
             var v = on;
             if (ImGui.Checkbox("Alpha mode on##alphagear", ref v)) _ = Call("alpha", v);
+            ImGui.Spacing();
+            ImGui.TextUnformatted($"Characters registered: {registered}" + (cap > 0 ? $" of {cap} allowed" : " (no limit)"));
+            ImGui.SetNextItemWidth(80f); ImGui.InputText("Most characters allowed##alphacap", ref capText, 5, ImGuiInputTextFlags.CharsDecimal);
+            ImGui.SameLine();
+            if (ImGui.Button("Save limit##alphacapsave") && int.TryParse(capText, out var n)) _ = Call("alpha", null, n);
+            ImGui.PushTextWrapPos(0f);
+            ImGui.TextColored(Dim, "While alpha mode is on, nobody can register once this many characters exist. Set it to your number of testers plus a spare or two. 0 means no limit. Remove a character in the Members tools to free a place.");
+            ImGui.PopTextWrapPos();
         }
         if (error.Length > 0) ImGui.TextColored(Red, error);
         if (notice.Length > 0) ImGui.TextColored(Green, notice);
