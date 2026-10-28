@@ -527,7 +527,6 @@ public sealed class ItemsTab
         ImGui.TextWrapped("For the Harbinger, Advocates and anyone holding the bank password. Each section asks for its password. Without it, nothing here works.");
         ImGui.Spacing();
         DrawDmTools();
-        questsTab.DrawTools(s);
         statusTab.DrawTools(s);
         bankTab.DrawTools();
         ReportsAdmin.Draw();

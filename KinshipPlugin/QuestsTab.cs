@@ -97,6 +97,9 @@ public sealed class QuestsTab
         if (finished.Count > 0 && ImGui.CollapsingHeader($"Finished ({finished.Count})##questsdone"))
             foreach (var q in finished) ImGui.TextColored(Green, q.Title);
 
+        // Quest creation lives here, with its own password box, the same way scenes do.
+        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        DrawTools(inv);
     }
 
     internal void DrawTools(ItemsSnap inv)
@@ -109,8 +112,8 @@ public sealed class QuestsTab
     // ---------- Advocate tools ----------
     private void DrawAdvocate(QuestSnap s, ItemsSnap inv)
     {
-        if (!ImGui.CollapsingHeader("Quests##questtools")) return;
-        ImGui.TextWrapped("Write quests and give them to members. Uses the creation password.");
+        if (!ImGui.CollapsingHeader("Create and manage quests##questtools")) return;
+        ImGui.TextWrapped("Write quests and give them to members. Needs the creation password or the scene password.");
         UiUtil.CreatePasswordInput();
         if (ImGui.Button("Load quests##qa")) _ = Plugin.Quests.AdminListAsync();
         ImGui.Spacing();
