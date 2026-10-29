@@ -31,6 +31,29 @@ public sealed class AboutPluginTab
         ImGui.TextWrapped("What it does: it only reads game information (like where you are standing) and keeps everything else in its own RP system. It never plays the game for you and never changes anything in the game.");
 
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        if (ImGui.CollapsingHeader("How this plugin was made, and is it safe?"))
+        {
+            ImGui.TextWrapped("This plugin was made with the help of AI (Claude, by Anthropic). I have no coding skills. I designed the plugin, decided what every feature does and how it works, and directed and detailed the work, and the AI wrote the code, helped find and fix bugs, and helped with everything else along the way. I want to be upfront about that, because you deserve to know.");
+            ImGui.Spacing();
+            ImGui.TextWrapped("I am not a scammer, a botter or anyone with ill intent. I made this because I wanted a fun, immersive tool to help our roleplay, and that is all it is.");
+            ImGui.Spacing();
+            ImGui.TextColored(Gold, "What I kept out on purpose");
+            ImGui.BulletText("No automation. It never plays the game for you, presses keys or moves your character.");
+            ImGui.BulletText("No injecting or changing the game. It only reads game information, like where you are standing.");
+            ImGui.BulletText("No connections to other players' computers, and no services like Mare, Universalis or the social plugins.");
+            ImGui.BulletText("Nothing is downloaded or installed on your PC, and it does not run other programs.");
+            ImGui.BulletText("No AI inside it. The plugin itself does not use any AI service.");
+            ImGui.Spacing();
+            ImGui.TextColored(Gold, "Where it connects");
+            ImGui.TextWrapped("Only to our own server (the RP system), our website and our Google Sheet (news, plots, roster and pictures), and to pictures at links that players put on their profiles.");
+            ImGui.Spacing();
+            ImGui.TextColored(Gold, "What it sends");
+            ImGui.TextWrapped("Your RP name, and whatever you put into the RP system (items, profile, mail and so on). It also sends where you are standing when you use something that needs it (stashes, signs, world items, quests), and the name of a player when you point at them to see their profile card. It does not read your chat, your game inventory, your gil or your account details.");
+            ImGui.Spacing();
+            ImGui.TextWrapped("The code is public on GitHub (The-Kinship/kinship-plugin), so anyone can read exactly what it does. If you are ever unsure, you never have to use it. If you have questions, just ask.");
+        }
+
+        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         var tutorial = AboutTab.Link("tutorial_url");
         if (tutorial.StartsWith("http")) { if (ImGui.Button("Tutorial (opens your browser)##aptut")) AboutTab.OpenLink(tutorial); }
         else { ImGui.BeginDisabled(); ImGui.Button("Tutorial (coming soon)##aptut"); ImGui.EndDisabled(); }

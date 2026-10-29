@@ -117,7 +117,9 @@ public sealed class ItemsTab
         ImGui.TextColored(Dim, "Only visiting? Use the Guest tab to join an encounter or a party with just an invite link.");
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         ImGui.TextColored(Gold, "Register");
-        ImGui.SetNextItemWidth(240f); ImGui.InputText("Your name##it", ref name, 40);
+        ImGui.TextWrapped("Please register for the RP system. The name you enter will be your display name in the system and for all of its features.");
+        ImGui.Spacing();
+        ImGui.SetNextItemWidth(240f); ImGui.InputText("Display name##it", ref name, 40);
         ImGui.SetNextItemWidth(240f); ImGui.InputText("Member password##it", ref memberPassword, 100, ImGuiInputTextFlags.Password);
         ImGui.TextColored(Dim, "Ask your FC leader for the member password.");
         if (s.Error.Length > 0) ImGui.TextColored(Red, s.Error);

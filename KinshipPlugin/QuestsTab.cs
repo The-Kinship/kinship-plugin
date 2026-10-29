@@ -249,6 +249,7 @@ public sealed class QuestsTab
         {
             ImGui.SetNextItemWidth(220f); ImGui.InputText($"{(st.Type == "fight" ? "Enemy name" : "Character name")}##qn{i}", ref st.Npc, 40);
             ImGui.TextColored(Dim, st.Type == "fight" ? "Shown in the fight. If no spot is set, the player targets someone with exactly this name and presses Fight." : "Exactly as it shows when you target them in the game.");
+            ImGui.TextColored(Dim, "Careful: a name matches every NPC or enemy with that exact name, in every place. Shared names (guards, chocobo keepers, weather NPCs, Yellow Jackets) will work on all of them. For one exact spot, use a step that is tied to a place instead.");
         }
         if (st.Type == "fight")
         {
