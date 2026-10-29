@@ -1,3 +1,7 @@
+0.56.2: Quest editor now warns that an NPC or enemy name matches every NPC with that name, in every place.
+0.56.1: The About this plugin window now has a section on how the plugin was made (with AI help), what it connects to, and what it sends.
+0.56.0: The icon picker now names game icons. Browse game icons has a Group list (armor, weapons, medicine and so on), a search by item name, and hovering any icon shows what it is.
+0.55.3: Clearer register screen: it now says the name you enter is your display name for the whole RP system.
 0.55.2: New plugin icon.
 0.55.1: Two more tags for SMs to use: Kin and Alt.
 0.55.0: New "Registered characters and tags" section in SM Tools: see everyone registered, remove them, and give them tags (SM, Banker, Onyx, Vanguard...). Tags show at the bottom of their roster entry and profile card.
