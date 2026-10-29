@@ -5,7 +5,7 @@ Reads the same Google Sheet as the website. See INSTALL.md.
 
 ## How this was made, and is it safe?
 
-This plugin was made with the help of AI (Claude, by Anthropic). The author has no coding skills: they designed the plugin, decided what every feature does, and directed the work in detail, and the AI wrote the code, helped find and fix bugs, and helped with the rest. The author is not a scammer or a botter, and made this only to make roleplay more fun and immersive.
+This plugin was made with the help of AI (Claude, by Anthropic). I have no coding skills: I designed the plugin, decided what every feature does, and directed the work in detail, and the AI wrote the code, helped find and fix bugs, and helped with the rest. I am  not a scammer or a botter, and made this only to make roleplay more fun and immersive for my FC and friends.
 
 Left out on purpose: no automation (it never plays the game, presses keys or moves your character), no injecting into or changing the game (it only reads game information such as your position), no connections to other players' computers or services like Mare, Universalis or the social plugins, nothing downloaded or run on your PC, and no AI service inside the plugin.
 
