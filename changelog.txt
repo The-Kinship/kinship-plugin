@@ -1,3 +1,4 @@
+0.57.0: The plugin is now called Rafter Cat's RP ToolBox (window title, top bar and plugin list). Two new commands, /rrp and /rptoolbox. /kinship still works.
 0.56.3: Fixed the "Choose icon" button on the Status tab (the pop-up never opened there).
 0.56.2: Quest editor now warns that an NPC or enemy name matches every NPC with that name, in every place.
 0.56.1: The About this plugin window now has a section on how the plugin was made (with AI help), what it connects to, and what it sends.
