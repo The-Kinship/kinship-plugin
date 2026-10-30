@@ -1,15 +1,16 @@
 [
   {
     "Author": "The Kinship",
-    "Name": "The Kinship",
+    "Name": "Rafter Cat's RP ToolBox",
     "InternalName": "KinshipPlugin",
-    "AssemblyVersion": "0.56.3.0",
-    "Punchline": "Companion for The Kinship free company.",
-    "Description": "Companion for The Kinship, a role-play free company. Type /kinship to open.\n\nIt adds:\n- Faction info, roster, announcements, plots and sect pages\n- RP-only items, inventory, stashes and signs\n- Wearable gear (Armory) and status effects\n- Profile cards when you mouse over someone\n- Mail, quests, scenes and small fights\n\nIt only reads game information (like where you stand). It does not automate anything.",
+    "AssemblyVersion": "0.57.0.0",
+    "Punchline": "An all-in-one RP toolkit: items, quests, statuses, profiles and combat.",
+    "Description": "An all-in-one role-play toolkit, made for The Kinship free company and open to anyone. Type /rrp, /rptoolbox or /kinship to open.\n\nIt adds:\n- Faction info, roster, announcements, plots and sect pages\n- RP-only items, inventory, stashes and signs\n- Wearable gear (Armory) and status effects\n- Profile cards when you mouse over someone\n- Mail, quests, scenes and small fights\n\nIt only reads game information (like where you stand). It does not automate anything.",
     "ApplicableVersion": "any",
     "RepoUrl": "https://github.com/The-Kinship/kinship-plugin",
     "Tags": [
       "roleplay",
+      "rp",
       "free company",
       "kinship"
     ],
@@ -17,7 +18,7 @@
     "DalamudApiLevel": 15,
     "IsHide": false,
     "IsTestingExclusive": false,
-    "LastUpdate": 1793377827,
+    "LastUpdate": 1793377850,
     "DownloadLinkInstall": "https://github.com/The-Kinship/kinship-plugin/releases/download/latest/latest.zip",
     "DownloadLinkTesting": "https://github.com/The-Kinship/kinship-plugin/releases/download/latest/latest.zip",
     "DownloadLinkUpdate": "https://github.com/The-Kinship/kinship-plugin/releases/download/latest/latest.zip",
