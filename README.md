@@ -3,6 +3,21 @@
 Companion plugin for The Kinship free company (Crystal / Mateus). Type `/kinship`.
 Reads the same Google Sheet as the website. See INSTALL.md.
 
+---
+A note from the author
+I wanted to make sure I wrote something to anyone looking at my plugin. No AI writing, just me. (full disclosure I have terrible spelling and grammar so I  did have AI check that) 
+This is my first plugin (and likely my last). I created it because I love RPing in game, and I wanted to bring back a heavy RP guild like I had years and years ago in WoW. FFXIV lacked an all-in-one RP tool that had all the elements I wanted. Plugins had one or two features, but they weren't together, and some were too complicated to learn. With others, the dev stepped away and took the plugin servers down.
+I used AI to code this, and I used AI to design the websites. I didn't type in a generic "Make me an RP plugin" and just put up whatever Claude spit out.
+First, I just wanted to transfer a site one of my kiddos made for me for keeping track of RP combat. It was an outside website that didn't touch the game. I wanted to move it to my Carrd site so I had access to edit it and didn't have to pester her.
+I moved the website to a GitHub site…
+I discovered I could make it an in-game plugin…
+I started adding other features I missed from RP addons I've used in other MMORPGs, and from tools on FFXIV that are no longer in use. I also started adding my own wants and features that I felt would be very useful and beneficial to my FC.
+I spent a lot of time sitting at my desk sketching out UIs, taking screenshots to fine-tune things, detailing features, troubleshooting issues, and testing features. It wasn't quick, but I've really enjoyed seeing this plugin come to life. I've been extremely excited and really, really proud of it.
+A simple dice roller on a website became something much, much more. It became a self-contained RP system.
+I made this because I love to RP, and I wanted to offer those who join my FC an amazing level of interactive and immersive RP to go along with the game. There was no ill will, intent or malice behind any of this. So before you judge it for being made with AI, look at the code, look at the plugin, and look at what I was trying to create in the desire to just make the RP better.
+---
+
+
 
 ## How this was made, and is it safe?
 
