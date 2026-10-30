@@ -24,7 +24,7 @@ public sealed class AboutPluginTab
     {
         ImGui.TextColored(Gold, "About this plugin");
         ImGui.Spacing();
-        ImGui.TextWrapped("The Kinship plugin is a passion project. It was started for our Free Company to make our RP more immersive. The community didn't have one with all the features I wanted, so I made one!");
+        ImGui.TextWrapped("Rafter Cat's RP Toolbox is a passion project. It was started for our Free Company to make our RP more immersive. The community didn't have one with all the features I wanted, so I made one!");
         ImGui.Spacing();
         ImGui.TextWrapped("It's my first plugin, and I hope everyone enjoys it.");
         ImGui.Spacing();

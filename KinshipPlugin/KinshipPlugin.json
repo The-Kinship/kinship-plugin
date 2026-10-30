@@ -1,10 +1,10 @@
 {
   "Author": "The Kinship",
-  "Name": "The Kinship",
-  "Punchline": "Companion for The Kinship free company.",
-  "Description": "Companion for The Kinship, a role-play free company. Type /kinship to open.\n\nIt adds:\n- Faction info, roster, announcements, plots and sect pages\n- RP-only items, inventory, stashes and signs\n- Wearable gear (Armory) and status effects\n- Profile cards when you mouse over someone\n- Mail, quests, scenes and small fights\n\nIt only reads game information (like where you stand). It does not automate anything.",
+  "Name": "Rafter Cat's RP ToolBox",
+  "Punchline": "An all-in-one RP toolkit: items, quests, statuses, profiles and combat.",
+  "Description": "An all-in-one role-play toolkit, made for The Kinship free company and open to anyone. Type /rrp, /rptoolbox or /kinship to open.\n\nIt adds:\n- Faction info, roster, announcements, plots and sect pages\n- RP-only items, inventory, stashes and signs\n- Wearable gear (Armory) and status effects\n- Profile cards when you mouse over someone\n- Mail, quests, scenes and small fights\n\nIt only reads game information (like where you stand). It does not automate anything.",
   "ApplicableVersion": "any",
-  "Tags": [ "roleplay", "free company", "kinship" ],
+  "Tags": [ "roleplay", "rp", "free company", "kinship" ],
   "RepoUrl": "https://github.com/The-Kinship/kinship-plugin",
   "IconUrl": "https://raw.githubusercontent.com/The-Kinship/kinship-plugin/main/images/icon.png"
 }

@@ -32,7 +32,7 @@ public sealed class DisclaimerWindow : Window, IDisposable
         Alpha.Mark();
         ImGui.TextColored(Gold, "Please read");
         ImGui.Spacing();
-        ImGui.TextWrapped("The Kinship plugin is a third-party add-on. It is not made or supported by Square Enix. Use it at your own risk.");
+        ImGui.TextWrapped("Rafter Cat's RP Toolbox is a third-party add-on. It is not made or supported by Square Enix. Use it at your own risk.");
         ImGui.Spacing();
         ImGui.TextWrapped("It does not cheat, automate the game, or inject code, and it only reads information from the game. But it still carries the same risk as any other third-party add-on, and Square Enix has the final say on what is allowed.");
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();

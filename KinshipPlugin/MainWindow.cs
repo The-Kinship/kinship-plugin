@@ -20,7 +20,7 @@ public sealed class MainWindow : Window, IDisposable
     private readonly RosterTab roster = new();
     private readonly ItemsTab items;
 
-    public MainWindow() : base("The Kinship##KinshipMain", ImGuiWindowFlags.None)
+    public MainWindow() : base("Rafter Cat's RP Toolbox##KinshipMain", ImGuiWindowFlags.None)
     {
         items = new ItemsTab(combat, rp);
         Size = new Vector2(440, 520);
@@ -74,7 +74,7 @@ public sealed class MainWindow : Window, IDisposable
         return Plugin.Images.HasFailed(CrestPng) ? CrestJpg : CrestPng;
     }
 
-    public override void PreDraw() { WindowName = (Alpha.On ? "The Kinship (Alpha test)" : "The Kinship") + "##KinshipMain"; }
+    public override void PreDraw() { WindowName = (Alpha.On ? "Rafter Cat's RP Toolbox (Alpha test)" : "Rafter Cat's RP Toolbox") + "##KinshipMain"; }
 
     public override void Draw()
     {

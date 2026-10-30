@@ -28,7 +28,7 @@ public sealed class TopBar : IDisposable
         {
             entry = Plugin.DtrBar.Get("Kinship");
             SetText("Text", "Kinship");
-            SetText("Tooltip", "The Kinship: click to open, right click for options");
+            SetText("Tooltip", "Rafter Cat's RP Toolbox: click to open, right click for options");
             Hook();
             entry.Shown = Plugin.Config.TopBarButton;
         }
@@ -135,9 +135,9 @@ public sealed class TopBarMenu : Window, IDisposable
     {
         frames++;
         if (frames > 2 && ImGui.IsMouseClicked(ImGuiMouseButton.Left) && !ImGui.IsWindowHovered()) { IsOpen = false; return; }
-        ImGui.TextColored(Gold, "The Kinship");
+        ImGui.TextColored(Gold, "Rafter Cat's RP Toolbox");
         ImGui.Separator();
-        if (ImGui.Selectable("Open the Kinship window")) { Plugin.ShowMain(); IsOpen = false; return; }
+        if (ImGui.Selectable("Open the Toolbox window")) { Plugin.ShowMain(); IsOpen = false; return; }
         if (ImGui.Selectable(Idle.Paused ? "Turn the plugin back on (paused)" : "Pause the plugin")) { Idle.Paused = !Idle.Paused; IsOpen = false; return; }
         if (ImGui.Selectable("About this plugin")) { Plugin.ShowAbout(false); IsOpen = false; return; }
         if (ImGui.Selectable("Report a bug or abuse")) { Plugin.ShowAbout(true); IsOpen = false; return; }

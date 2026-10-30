@@ -12,7 +12,7 @@ namespace KinshipPlugin;
 
 public sealed class Plugin : IDalamudPlugin
 {
-    private const string CommandName = "/kinship";
+    private static readonly string[] CommandNames = { "/kinship", "/rrp", "/rptoolbox" };
 
     [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
     [PluginService] internal static ICommandManager CommandManager { get; private set; } = null!;
@@ -225,10 +225,8 @@ public sealed class Plugin : IDalamudPlugin
         windows.AddWindow(topMenu);
         topBar = new TopBar(topMenu);
 
-        CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
-        {
-            HelpMessage = "Open The Kinship window."
-        });
+        foreach (var cmd in CommandNames)
+            CommandManager.AddHandler(cmd, new CommandInfo(OnCommand) { HelpMessage = "Open Rafter Cat's RP Toolbox." });
 
         PluginInterface.UiBuilder.Draw += CheckCharacter;
         PluginInterface.UiBuilder.Draw += topBar.Update;
@@ -272,7 +270,7 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.Draw -= topBar.Update;
         PluginInterface.UiBuilder.Draw -= windows.Draw;
         PluginInterface.UiBuilder.OpenMainUi -= ToggleMain;
-        CommandManager.RemoveHandler(CommandName);
+        foreach (var cmd in CommandNames) CommandManager.RemoveHandler(cmd);
         windows.RemoveAllWindows();
         main.Dispose();
         notice.Dispose();

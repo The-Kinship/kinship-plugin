@@ -1,7 +1,7 @@
 <Project Sdk="Dalamud.NET.Sdk/15.0.0">
   <PropertyGroup>
-    <Version>0.56.3.0</Version>
-    <Description>The Kinship free company companion: faction info, sects, plots and combat.</Description>
+    <Version>0.57.0.0</Version>
+    <Description>Rafter Cat's RP Toolbox: items, quests, statuses, profiles and combat.</Description>
     <PackageProjectUrl>https://github.com/The-Kinship/kinship-plugin</PackageProjectUrl>
     <IsPackable>false</IsPackable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
