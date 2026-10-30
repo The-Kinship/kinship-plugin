@@ -46,6 +46,7 @@ public sealed class StatusTab
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         DrawEveryone(s);
         DrawReadings();
+        picker.Draw();
     }
 
     /// <summary>Alpha only: the sect readings, so testers who can't open the sect pages can still try them.</summary>
