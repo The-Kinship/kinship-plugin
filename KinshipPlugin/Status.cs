@@ -45,7 +45,7 @@ public sealed record StatusSnap(List<StatusView> All, string Error, string Notic
 /// <summary>Statuses (buffs and debuffs): everyone's are shown, and you can only add your own. Items and Advocates add them to others.</summary>
 public sealed class StatusState
 {
-    public const int Max = 6;
+    public static int Max { get; private set; } = 10;   // the server says how many (it was 6 at first)
     private readonly object gate = new();
     private List<StatusView> all = new();
     private string error = "", notice = "";
@@ -72,6 +72,7 @@ public sealed class StatusState
             var now = DateTime.UtcNow;
             var list = r.Statuses ?? new();
             foreach (var s in list) s.FetchedAt = now;
+            if (r.MaxStatuses is > 0) Max = r.MaxStatuses.Value;
             lock (gate) { all = list; lastList = now; }
         }
         catch (Exception) { /* keep the list we have */ }

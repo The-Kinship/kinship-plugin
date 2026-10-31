@@ -23,6 +23,7 @@ public static class TagBadges
         "Ember" => new(0.95f, 0.45f, 0.35f, 1f),
         "Banker" => new(0.95f, 0.85f, 0.45f, 1f),
         "Kin" => new(0.85f, 0.88f, 0.95f, 1f),
+        "Plugin Only" => new(0.45f, 0.80f, 0.85f, 1f),
         "Alt" => new(0.60f, 0.65f, 0.72f, 1f),
         _ => Gold,
     };
