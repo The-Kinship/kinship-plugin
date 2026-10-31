@@ -31,7 +31,7 @@ public sealed class StashOverlay : Window, IDisposable
         Size = vp.Size; SizeCondition = ImGuiCond.Always;
     }
 
-    public override bool DrawConditions() => Plugin.Config.StashLabels && Plugin.Config.Me().ItemsToken.Length > 0;
+    public override bool DrawConditions() => !Idle.Paused && Plugin.Config.StashLabels && Plugin.Config.Me().ItemsToken.Length > 0;
 
     public override void Draw()
     {

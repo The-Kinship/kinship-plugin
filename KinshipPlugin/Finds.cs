@@ -36,6 +36,15 @@ public sealed class FindState
     private string error = "", notice = "";
     private bool busy;
     private DateTime lastList = DateTime.MinValue, noticeAt = DateTime.MinValue;
+    private DateTime tabSeen = DateTime.MinValue;
+    /// <summary>Called by the tab every frame it is on screen. While it is open the list also includes everything you made, and the first frame refreshes straight away.</summary>
+    public void TabOpen()
+    {
+        lock (gate) { if ((DateTime.UtcNow - tabSeen).TotalSeconds > 5) lastList = DateTime.MinValue; tabSeen = DateTime.UtcNow; }
+    }
+    private string ListPath(string p) { lock (gate) { return (DateTime.UtcNow - tabSeen).TotalSeconds < 5 ? p + "?full=1" : p; } }
+    public int MaxMine { get; private set; } = 20;
+
 
     public List<FindView> All { get { lock (gate) { return finds; } } }   // only ever replaced, never edited in place
     public (string Error, string Notice, bool Busy) Messages() { lock (gate) { return (error, notice, busy); } }
@@ -64,8 +73,8 @@ public sealed class FindState
     {
         try
         {
-            var r = await ItemsState.SendAsync(HttpMethod.Get, "/finds", null).ConfigureAwait(false);
-            lock (gate) { finds = r.Finds ?? new(); lastList = DateTime.UtcNow; }
+            var r = await ItemsState.SendAsync(HttpMethod.Get, ListPath("/finds"), null).ConfigureAwait(false);
+            lock (gate) { finds = r.Finds ?? new(); lastList = DateTime.UtcNow; if (r.MaxMine > 0) MaxMine = r.MaxMine; }
         }
         catch (Exception) { /* keep the list we have */ }
     }
@@ -145,7 +154,7 @@ public sealed class FindWindow : Window, IDisposable
 
     public override bool DrawConditions()
     {
-        if (Plugin.Config.Me().ItemsToken.Length == 0) return false;
+        if (Plugin.Config.Me().ItemsToken.Length == 0 || Idle.Paused) return false;
         Plugin.Finds.RefreshIfDue(20);
         shown = Near(shown ? FindState.PopupStay : FindState.PopupRange).Count > 0;
         return shown || Plugin.Finds.RecentNotice();

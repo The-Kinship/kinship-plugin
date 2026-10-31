@@ -44,7 +44,7 @@ public sealed class SignReaderWindow : Window, IDisposable
     public override bool DrawConditions()
     {
         if (Plugin.Config.Me().ItemsToken.Length == 0) return false;
-        return Plugin.Signs.Reading != null || AnyNear();
+        return Plugin.Signs.Reading != null || (!Idle.Paused && AnyNear());
     }
 
     public override void Draw()
