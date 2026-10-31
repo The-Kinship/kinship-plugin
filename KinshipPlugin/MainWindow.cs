@@ -97,7 +97,9 @@ public sealed class MainWindow : Window, IDisposable
             ImGui.EndTabBar();
         }
 
-        if (s.Length > 0) { ImGui.Separator(); ImGui.TextColored(Dim, s); }
+        ImGui.Separator();
+        ImGui.PushTextWrapPos(0f); ImGui.TextColored(Dim, "Some actions can take up to 30 seconds to go through. Please don't press buttons over and over, and give anything a full minute before you worry."); ImGui.PopTextWrapPos();
+        if (s.Length > 0) ImGui.TextColored(Dim, s);
     }
 
     private static void DrawPauseButton()

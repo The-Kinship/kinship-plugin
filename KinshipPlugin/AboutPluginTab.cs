@@ -28,6 +28,8 @@ public sealed class AboutPluginTab
         ImGui.Spacing();
         ImGui.TextWrapped("It's my first plugin, and I hope everyone enjoys it.");
         ImGui.Spacing();
+        ImGui.TextWrapped("A note on patience: the plugin runs on a free server, so some actions (using an item, removing a status, sending mail, a bank exchange) can take up to 30 seconds to go through. Please do not press a button over and over. Give anything a full minute before you worry, and press Refresh if it still looks the same.");
+        ImGui.Spacing();
         ImGui.TextWrapped("What it does: it only reads game information (like where you are standing) and keeps everything else in its own RP system. It never plays the game for you and never changes anything in the game.");
 
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
