@@ -64,6 +64,12 @@ public sealed class BankState
         _ = r;
     }
 
+    public async Task RequestExchangeAsync(int amount)
+    {
+        var r = await Exec(() => ItemsState.SendAsync(HttpMethod.Post, "/reports/exchange", new { amount }), $"Exchange request sent for {amount:N0} gold. A banker will mail you the gil.").ConfigureAwait(false);
+        _ = r;
+    }
+
     // ---------- bank tools (bank password) ----------
     private async Task<ItemReply?> RunAdmin(Func<string, Task<ItemReply>> action, string? done = null)
     {

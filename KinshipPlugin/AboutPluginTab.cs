@@ -110,7 +110,7 @@ public static class ReportsAdmin
     public static void Draw()
     {
         if (!ImGui.CollapsingHeader("Reports from members")) return;
-        ImGui.TextWrapped("Bugs and abuse reports sent from the About Plugin tab. Uses the creation password.");
+        ImGui.TextWrapped("Bugs and abuse reports sent from the About Plugin tab, and gold exchange tickets from the Bank tab. For an exchange: take the gold in Bank tools, mail the gil in game, then Mark done. Uses the creation password.");
         UiUtil.CreatePasswordInput();
         var a = ReportState.I.Admin();
         if (a.Error.Length > 0) ImGui.TextColored(Red, a.Error);
@@ -125,7 +125,7 @@ public static class ReportsAdmin
         {
             ImGui.PushID((int)r.Id);
             var when = DateTime.TryParse(r.CreatedAt, null, System.Globalization.DateTimeStyles.RoundtripKind, out var d) ? d.ToLocalTime().ToString("MMM d, h:mm tt") : r.CreatedAt;
-            ImGui.TextColored(r.Done ? Dim : (r.Kind == "abuse" ? Red : Gold), (r.Kind == "abuse" ? "[Abuse] " : "[Bug] ") + r.Member + (r.About.Length > 0 ? " about " + r.About : "") + (r.Done ? "  (done)" : ""));
+            ImGui.TextColored(r.Done ? Dim : (r.Kind == "abuse" ? Red : r.Kind == "exchange" ? Green : Gold), (r.Kind == "abuse" ? "[Abuse] " : r.Kind == "exchange" ? "[Exchange] " : "[Bug] ") + r.Member + (r.About.Length > 0 ? " about " + r.About : "") + (r.Done ? "  (done)" : ""));
             ImGui.TextColored(Dim, when);
             ImGui.PushTextWrapPos(0f); ImGui.TextUnformatted(r.Text); ImGui.PopTextWrapPos();
             if (ImGui.SmallButton(r.Done ? "Reopen" : "Mark done")) _ = ReportState.I.AdminDoneAsync(r.Id);

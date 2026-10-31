@@ -15,7 +15,7 @@ public sealed class BankTab
     private static readonly Vector4 Green = new(0.4f, 0.8f, 0.5f, 1f);
 
     private string payTo = "", mintTo = "", mintNote = "";
-    private int payAmount = 1, mintAmount = 10;
+    private int payAmount = 1, mintAmount = 10, exchangeAmount = 100;
     private bool membersAsked;
 
     public void Draw(ItemsSnap inv)
@@ -27,12 +27,13 @@ public sealed class BankTab
         ImGui.TextColored(Gold, "The Kinship Bank");
         ImGui.TextColored(Coin, $"Gold: {Plugin.Items.Gold:N0}");
         ImGui.SameLine(); if (ImGui.SmallButton("Refresh##bank")) _ = Plugin.Bank.RefreshAsync();
-        ImGui.TextWrapped("((The in-game exchange rate is 1 gold to 1 gil. To exchange gold for gil, see a banker in game.))");
+        ImGui.TextWrapped("((The in-game exchange rate is 1 gold to 1 gil. To exchange gold for gil, use Exchange gold for gil below or see a banker in game.))");
         if (s.Error.Length > 0) ImGui.TextColored(Red, s.Error);
         else if (s.Notice.Length > 0) ImGui.TextColored(Green, s.Notice);
         ImGui.Spacing();
 
         DrawPay(inv, s);
+        DrawExchange(s);
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         DrawHistory(s);
     }
@@ -54,6 +55,19 @@ public sealed class BankTab
         if (ImGui.Button("Pay")) { _ = Plugin.Bank.PayAsync(payTo, payAmount); }
         if (!ok) ImGui.EndDisabled();
         if (payAmount > Plugin.Items.Gold) { ImGui.SameLine(); ImGui.TextColored(Dim, "You don't have that much."); }
+    }
+
+    private void DrawExchange(BankSnap s)
+    {
+        if (!ImGui.CollapsingHeader("Exchange gold for gil")) return;
+        ImGui.TextWrapped("Send a ticket to the bankers asking to turn gold into gil at 1 to 1. When a banker sees it they take the gold from your purse and mail you the gil in game. You can have one request open at a time.");
+        ImGui.SetNextItemWidth(120f); ImGui.InputInt("Gold##exchange", ref exchangeAmount, 100);
+        if (exchangeAmount < 1) exchangeAmount = 1;
+        var ok = exchangeAmount <= Plugin.Items.Gold && !s.Busy;
+        if (!ok) ImGui.BeginDisabled();
+        if (ImGui.Button("Submit exchange ticket")) { _ = Plugin.Bank.RequestExchangeAsync(exchangeAmount); }
+        if (!ok) ImGui.EndDisabled();
+        if (exchangeAmount > Plugin.Items.Gold) { ImGui.SameLine(); ImGui.TextColored(Dim, "You don't have that much."); }
     }
 
     private static void DrawHistory(BankSnap s)
