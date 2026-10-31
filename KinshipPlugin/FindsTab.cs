@@ -12,13 +12,13 @@ public sealed class FindsTab
     private static readonly Vector4 Dim = new(0.65f, 0.65f, 0.7f, 1f);
     private static readonly Vector4 Red = new(0.95f, 0.4f, 0.35f, 1f);
     private static readonly Vector4 Green = new(0.4f, 0.8f, 0.5f, 1f);
-    private const int MaxMine = 20;
 
     private string pickedId = "", label = "", text = "", mode = "once", confirmDelete = "";
     private int minutes = 20;
 
     public void Draw(ItemsSnap inv)
     {
+        Plugin.Finds.TabOpen();
         Plugin.Finds.RefreshIfDue(15);
         var (error, notice, busy) = Plugin.Finds.Messages();
         ImGui.TextColored(Parchment, "World items");
@@ -62,6 +62,7 @@ public sealed class FindsTab
             minutes = Math.Clamp(minutes, 1, 10080);
         }
         var mine = Plugin.Finds.All.Count(f => f.Mine);
+        var MaxMine = Plugin.Finds.MaxMine;
         if (mine >= MaxMine) ImGui.TextColored(Dim, $"You already have {MaxMine} world items. Delete one to place another.");
         var ok = chosen != null && label.Trim().Length > 0 && !busy && mine < MaxMine;
         if (!ok) ImGui.BeginDisabled();

@@ -35,7 +35,7 @@ public sealed class ItemReply
     public List<SignView>? Signs { get; set; } public SignView? Sign { get; set; }
     public List<ZoneCount>? Zones { get; set; } public int Elsewhere { get; set; }
     public DuelView? Duel { get; set; }
-    public int Open { get; set; }
+    public int Open { get; set; } public int MaxMine { get; set; }
     public List<ReportView>? Reports { get; set; } public List<MarkPerson>? People { get; set; } public WipeInfo? Wipe { get; set; } public List<string>? Removed { get; set; }
     public List<ProfileView>? Profiles { get; set; } public ProfileView? Profile { get; set; }
     public List<ArmorySlot>? Slots { get; set; } public ArmoryBonus? Bonus { get; set; } public List<string>? Broke { get; set; }

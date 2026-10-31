@@ -13,7 +13,6 @@ public sealed class SignsTab
     private static readonly Vector4 Dim = new(0.65f, 0.65f, 0.7f, 1f);
     private static readonly Vector4 Red = new(0.95f, 0.4f, 0.35f, 1f);
     private static readonly Vector4 Green = new(0.4f, 0.8f, 0.5f, 1f);
-    private const int MaxMine = 10;
 
     private string newName = "", newText = "";
     private string? managing, confirmDelete;
@@ -21,6 +20,7 @@ public sealed class SignsTab
 
     public void Draw()
     {
+        Plugin.Signs.TabOpen();
         Plugin.Signs.RefreshIfDue(15);
         var s = Plugin.Signs.Snapshot();
 
@@ -52,6 +52,7 @@ public sealed class SignsTab
         if (newGold < 0) newGold = 0;
         ImGui.TextColored(Dim, $"Comes out of your purse ({Plugin.Items.Gold:N0} gold). The first person to read the sign takes it. You can take it back yourself at the sign, or by deleting the sign.");
         var mine = s.Signs.Count(x => x.Mine);
+        var MaxMine = Plugin.Signs.MaxMine;
         if (mine >= MaxMine) ImGui.TextColored(Dim, $"You already have {MaxMine} signs. Delete one to make another.");
         var ok = newName.Trim().Length > 0 && newText.Trim().Length > 0 && !s.Busy && mine < MaxMine;
         if (!ok) ImGui.BeginDisabled();

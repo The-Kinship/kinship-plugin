@@ -23,6 +23,7 @@ public sealed class StashesTab
 
     public void Draw(ItemsSnap inv)
     {
+        Plugin.Stashes.TabOpen();
         Plugin.Stashes.RefreshIfDue(15);
         var s = Plugin.Stashes.Snapshot();
         if (s.Open != null) { DrawOpen(s, inv, false); return; }

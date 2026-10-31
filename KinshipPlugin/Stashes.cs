@@ -133,6 +133,15 @@ public sealed class StashState
     private string error = "", notice = "";
     private bool busy;
     private DateTime lastList = DateTime.MinValue;
+    private DateTime tabSeen = DateTime.MinValue;
+    /// <summary>Called by the tab every frame it is on screen. While it is open the list also includes everything you made, and the first frame refreshes straight away.</summary>
+    public void TabOpen()
+    {
+        lock (gate) { if ((DateTime.UtcNow - tabSeen).TotalSeconds > 5) lastList = DateTime.MinValue; tabSeen = DateTime.UtcNow; }
+    }
+    private string ListPath(string p) { lock (gate) { return (DateTime.UtcNow - tabSeen).TotalSeconds < 5 ? p + "?full=1" : p; } }
+    public int MaxMine { get; private set; } = 3;
+
 
     public List<StashView> All { get { lock (gate) { return stashes; } } }   // never edited in place, only replaced
     public StashSnap Snapshot() { lock (gate) { return new StashSnap(stashes, zones, open, openItems.ToList(), error, notice, busy); } }
@@ -171,7 +180,7 @@ public sealed class StashState
     {
         try
         {
-            var r = await ItemsState.SendAsync(HttpMethod.Get, "/stashes", null).ConfigureAwait(false);
+            var r = await ItemsState.SendAsync(HttpMethod.Get, ListPath("/stashes"), null).ConfigureAwait(false);
             lock (gate) { stashes = r.Stashes ?? new(); zones = r.Zones ?? new(); lastList = DateTime.UtcNow; if (open != null) open = stashes.FirstOrDefault(s => s.Id == open.Id); }
         }
         catch (Exception) { /* keep the list we have */ }
