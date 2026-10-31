@@ -85,6 +85,7 @@ public sealed class Plugin : IDalamudPlugin
     {
         Idle.Update();
         WorldInfo.Track();   // remember where you stand; the server uses it to show only nearby stashes and signs
+        ReportState.I.Poll();   // SM badge: open reports and exchange tickets
         Mail?.Poll();        // checks for new mail about once a minute
         Armory?.Poll();      // and whether any worn gear broke
         Duels?.Poll();       // and whether anyone challenged you

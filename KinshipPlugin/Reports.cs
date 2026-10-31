@@ -25,6 +25,28 @@ public sealed class ReportState
     public void ClearMessages() { lock (gate) { error = ""; notice = ""; } }
     public (List<ReportView> List, string Error, string Notice, bool Busy, bool Loaded) Admin() { lock (gate) { return (list.ToList(), adminError, adminNotice, adminBusy, adminLoaded); } }
 
+    private int openCount = -1; private DateTime lastPoll = DateTime.MinValue;
+    /// <summary>How many reports and exchange tickets still need an SM. 0 when no creation password is saved.</summary>
+    public int OpenCount { get { lock (gate) { return Math.Max(0, openCount); } } }
+    public void Poll()
+    {
+        if (Idle.Asleep) return;
+        bool due;
+        lock (gate) { due = Plugin.Config.CreatePassword.Length > 0 && (DateTime.UtcNow - lastPoll).TotalSeconds > 60; if (due) lastPoll = DateTime.UtcNow; }
+        if (due) _ = PollAsync();
+    }
+    private async Task PollAsync()
+    {
+        try
+        {
+            var r = await ItemsState.SendAsync(HttpMethod.Post, "/reports/admin/count", new { adminPassword = Plugin.Config.CreatePassword }).ConfigureAwait(false);
+            bool more;
+            lock (gate) { more = openCount >= 0 && r.Open > openCount; openCount = r.Open; }
+            if (more) _ = Plugin.Framework.RunOnFrameworkThread(() => Plugin.Chat.Print("[Kinship] There is something new waiting in SM Tools."));
+        }
+        catch (Exception) { /* try again next minute */ }
+    }
+
     public async Task<bool> SendAsync(string kind, string about, string text)
     {
         lock (gate) { if (busy) return false; busy = true; error = ""; notice = ""; }
@@ -46,7 +68,7 @@ public sealed class ReportState
         try
         {
             var r = await ItemsState.SendAsync(HttpMethod.Post, path, body).ConfigureAwait(false);
-            if (r.Reports != null) lock (gate) { list = r.Reports; adminLoaded = true; }
+            if (r.Reports != null) lock (gate) { list = r.Reports; adminLoaded = true; openCount = r.Reports.Count(x => !x.Done); }
             if (done != null) lock (gate) { adminNotice = done; }
         }
         catch (CombatException ex) { lock (gate) { adminError = ex.Message; } }

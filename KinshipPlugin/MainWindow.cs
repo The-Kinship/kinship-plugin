@@ -91,7 +91,7 @@ public sealed class MainWindow : Window, IDisposable
             if (ImGui.BeginTabItem("Plots")) { DrawPlots(p); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Sects")) { sects.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("RP")) { items.Draw(); ImGui.EndTabItem(); }
-            if (ImGui.BeginTabItem("SM Tools")) { items.DrawSmTools(); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem((ReportState.I.OpenCount > 0 ? $"SM Tools ({ReportState.I.OpenCount})" : "SM Tools") + "###smtoolstab")) { items.DrawSmTools(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Guest")) { DrawGuest(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Settings")) { DrawSettings(); ImGui.EndTabItem(); }
             ImGui.EndTabBar();
