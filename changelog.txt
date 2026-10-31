@@ -1,3 +1,4 @@
+0.58.0: New Jobs tab: a board of quests posted by the SMs. Take a job and do it for the reward. Some jobs are open to everyone, some are first come, first served (and go back on the board if given up).
 0.57.0: The plugin is now called Rafter Cat's RP ToolBox (window title, top bar and plugin list). Two new commands, /rrp and /rptoolbox. /kinship still works.
 0.56.3: Fixed the "Choose icon" button on the Status tab (the pop-up never opened there).
 0.56.2: Quest editor now warns that an NPC or enemy name matches every NPC with that name, in every place.
