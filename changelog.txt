@@ -1,3 +1,5 @@
+0.63.1: Pausing the plugin now also hides world item, sign and stash pop-ups and labels until you turn it back on.
+0.63.0: World items, signs and stashes now load by zone, and the limits are much bigger (SM and Advocate tags: 1,000 world items and 500 signs).
 0.62.1: SM Tools now shows a number when bug reports, abuse reports or exchange tickets are waiting.
 0.62.0: Bank tab: new Exchange gold for gil section. Submit an exchange ticket and the bankers see it in SM Tools and mail you the gil.
 0.61.0: You can now change the name you registered with. Inventory tab, Change my name. Your items, gold and everything else stay with you.
