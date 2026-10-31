@@ -26,7 +26,7 @@ public sealed class StatusTab
         Plugin.Status.RefreshIfDue(15);
         var s = Plugin.Status.Snapshot();
         var mine = s.All.Where(x => x.Mine).ToList();
-        var mineReal = mine.Count(x => !x.IsCombined);
+        var mineReal = mine.Count(x => !x.IsCombined && !x.Carried);
 
         ImGui.TextColored(Gold, "Statuses");
         ImGui.TextWrapped("Buffs and debuffs your character has. Everyone can see everyone's. Items can give or remove them, and you can add little ones for yourself.");
@@ -85,7 +85,7 @@ public sealed class StatusTab
         ImGui.SameLine();
         ImGui.BeginGroup();
         ImGui.TextColored(st.IsDebuff ? DebuffColour : BuffColour, st.Name);
-        ImGui.SameLine(); ImGui.TextColored(Dim, StatusView.Format(st.Remaining));
+        if (!st.Carried) { ImGui.SameLine(); ImGui.TextColored(Dim, StatusView.Format(st.Remaining)); }
         if (st.Description.Length > 0) { ImGui.PushTextWrapPos(ImGui.GetFontSize() * 28f); ImGui.TextUnformatted(st.Description); ImGui.PopTextWrapPos(); }
         if (st.BonusText().Length > 0) ImGui.TextColored(Gold, st.BonusText());
         if (!busy && st.CanRemove && ImGui.SmallButton("Remove##rm" + st.Id)) _ = Plugin.Status.RemoveAsync(st.Id);

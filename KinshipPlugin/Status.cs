@@ -12,6 +12,7 @@ public sealed class StatusView
     public bool IsCombined => Id.StartsWith("combat-");   // the Combat Buff / Combat Debuff totals, worked out by the server
     public string Id { get; set; } = ""; public string MemberName { get; set; } = ""; public string Name { get; set; } = "";
     public string Icon { get; set; } = ""; public string Description { get; set; } = ""; public bool IsDebuff { get; set; }
+    public bool Carried { get; set; }   // from an item the person is holding: it does not count toward the six
     public int? SecondsLeft { get; set; } public bool Mine { get; set; } public bool CanRemove { get; set; } public bool Self { get; set; } public int AtkBonus { get; set; } public int HealBonus { get; set; }
     public string BonusText() { var p = new List<string>(); if (AtkBonus != 0) p.Add($"{AtkBonus:+#;-#} to attack rolls"); if (HealBonus != 0) p.Add($"{HealBonus:+#;-#} to heal rolls"); return string.Join(", ", p); }
     [JsonIgnore] public DateTime FetchedAt { get; set; } = DateTime.UtcNow;

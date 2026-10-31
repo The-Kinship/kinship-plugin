@@ -339,7 +339,7 @@ public sealed class ItemsTab
         var f = new ItemForm
         {
             Name = it.Name, Icon = it.Icon, Description = it.Description, Flavor = it.Flavor, UseLabel = it.UseLabel, UseText = it.UseText ?? "", Consumable = it.Consumable,
-            Requires = it.Requires, RequiresConsume = it.RequiresConsume, StName = it.StName, StDesc = it.StDesc, StIcon = it.StIcon, StDebuff = it.StDebuff, WearSlot = it.WearSlot, LifespanDays = it.LifespanDays, GearAtk = it.GearAtk, GearHeal = it.GearHeal, StMinutes = it.StMinutes, StAtk = it.StAtk, StHeal = it.StHeal, Cures = it.Cures, StType = it.StType, StCure = it.StCure,
+            Requires = it.Requires, RequiresConsume = it.RequiresConsume, StName = it.StName, StDesc = it.StDesc, StIcon = it.StIcon, StDebuff = it.StDebuff, Carried = it.Carried, WearSlot = it.WearSlot, LifespanDays = it.LifespanDays, GearAtk = it.GearAtk, GearHeal = it.GearHeal, StMinutes = it.StMinutes, StAtk = it.StAtk, StHeal = it.StHeal, Cures = it.Cures, StType = it.StType, StCure = it.StCure,
         };
         if (recipe && it.CombineWith != null)
         {
@@ -442,9 +442,14 @@ public sealed class ItemsTab
             if (ImGui.SmallButton("Choose status icon")) picker.Open(v => form.StIcon = v);
             if (form.StIcon.Length > 0) { ImGui.SameLine(); if (ImGui.SmallButton("Use the item's icon")) form.StIcon = ""; }
             ImGui.Text("What it does"); ImGui.InputTextMultiline("##fstd", ref form.StDesc, 200, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 52f));
-            ImGui.SetNextItemWidth(120f); ImGui.InputInt("Minutes##fstm", ref form.StMinutes, 1);
-            if (form.StMinutes < 0) form.StMinutes = 0;
-            ImGui.TextColored(Dim, "0 means it lasts until something removes it.");
+            ImGui.Checkbox("Active while carried (no need to use it)##fcarry", ref form.Carried);
+            if (form.Carried) ImGui.TextColored(Dim, "Whoever has this in their main inventory has the status. It can't be cured or removed while they hold it, and it goes when the item does. It doesn't use up their six status slots, and several copies give it once.");
+            else
+            {
+                ImGui.SetNextItemWidth(120f); ImGui.InputInt("Minutes##fstm", ref form.StMinutes, 1);
+                if (form.StMinutes < 0) form.StMinutes = 0;
+                ImGui.TextColored(Dim, "0 means it lasts until something removes it.");
+            }
             ImGui.Checkbox("It is a debuff (bad)", ref form.StDebuff);
             if (gift)
             {
@@ -469,7 +474,7 @@ public sealed class ItemsTab
         }
         ImGui.SetNextItemWidth(240f); ImGui.InputText("Removes the status##fcu", ref form.Cures, 30);
         ImGui.TextColored(Dim, "The exact name of a status this cures, like Chocolate poison. If they don't have it, nothing is used up.");
-        if ((form.StName.Trim().Length > 0 || form.Cures.Trim().Length > 0) && form.UseText.Trim().Length == 0) ImGui.TextColored(Red, "Fill in \"What happens\" so there is an action, like Drink.");
+        if (((form.StName.Trim().Length > 0 && !form.Carried) || form.Cures.Trim().Length > 0) && form.UseText.Trim().Length == 0) ImGui.TextColored(Red, "Fill in \"What happens\" so there is an action, like Drink.");
 
         if (!inResult)
         {
