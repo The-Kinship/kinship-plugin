@@ -113,6 +113,19 @@ public sealed class StatusTab
     {
         if (!ImGui.CollapsingHeader("Add a status to myself")) return;
         IconAndFields(form, "self");
+        if (ItemsState.AlphaGear)
+        {
+            ImGui.SetNextItemWidth(200f);
+            if (ImGui.BeginCombo("Kind##selfk", form.Type == "sickness" ? "Sickness" : form.Type == "curse" ? "Curse" : "Neither"))
+            {
+                if (ImGui.Selectable("Neither", form.Type.Length == 0)) form.Type = "";
+                if (ImGui.Selectable("Sickness (Life Watch can diagnose)", form.Type == "sickness")) form.Type = "sickness";
+                if (ImGui.Selectable("Curse (Onyx Blood Guard can diagnose)", form.Type == "curse")) form.Type = "curse";
+                ImGui.EndCombo();
+            }
+            if (form.Type.Length > 0) { ImGui.Text("Cure information (shown to a successful diagnosis)"); ImGui.InputTextMultiline("##selfcure", ref form.Cure, 200, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 52f)); }
+            ImGui.TextColored(Dim, "Alpha test only: lets you set up a sickness or curse on yourself to try the readings below.");
+        }
         var ok = form.Name.Trim().Length > 0 && form.Icon.Length > 0 && !s.Busy && count < StatusState.Max;
         if (count >= StatusState.Max) ImGui.TextColored(Dim, $"You already have {StatusState.Max}. Remove one first.");
         if (!ok) ImGui.BeginDisabled();

@@ -108,7 +108,9 @@ public sealed class StatusState
     }
     public bool IsBusy() { lock (gate) { return busy; } }
 
-    public Task<bool> AddSelfAsync(StatusForm f) => Exec(() => ItemsState.SendAsync(HttpMethod.Post, "/statuses/self", Body(f)), "Status added.");
+    public Task<bool> AddSelfAsync(StatusForm f) => Exec(() => ItemsState.SendAsync(HttpMethod.Post, "/statuses/self", ItemsState.AlphaGear
+        ? new { name = f.Name.Trim(), description = f.Description.Trim(), icon = f.Icon, minutes = f.Minutes, isDebuff = f.Debuff, statusType = f.Type, cureInfo = f.Cure.Trim() }
+        : (object)Body(f)), "Status added.");
     public Task<bool> RemoveAsync(string id) => Exec(() => ItemsState.SendAsync(HttpMethod.Post, $"/statuses/{id}/remove", new { }), "Status removed.");
 
     // ---------- Advocate tools (creation password) ----------
