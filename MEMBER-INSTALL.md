@@ -10,3 +10,5 @@ You need XIVLauncher with Dalamud (the plugin system most players already use).
 5. Type `/rrp` or `/rptoolbox` to open it. (`/kinship` works too.)
 
 Updates arrive on their own. Please keep this address to FC members.
+
+A note on patience: the plugin runs on a free server, so some actions can take up to 30 seconds to go through. Please don't press buttons over and over. Give anything a full minute before you worry.
