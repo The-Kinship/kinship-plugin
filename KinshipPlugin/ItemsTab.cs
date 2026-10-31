@@ -20,6 +20,7 @@ public sealed class ItemsTab
     private Mode mode = Mode.Inventory;
 
     // sign in
+    private string renameTo = "";
     private string name = Plugin.Config.Me().ItemsName.Length > 0 ? Plugin.Config.Me().ItemsName : Plugin.Config.Me().CombatName;
     private string memberPassword = "", recoveryCode = "";
     private bool joinExisting = true;
@@ -226,6 +227,18 @@ public sealed class ItemsTab
             ImGui.TextWrapped("This one code covers all of your characters. Write it down. If you play on another computer or reinstall, enter it on the RP tab and pick your character to get everything back.");
             ImGui.TextColored(Gold, s.Recovery.Length > 0 ? s.Recovery : "(not saved on this computer)");
             if (ImGui.SmallButton("Sign out")) { Plugin.Items.SignOut(); mode = Mode.Inventory; }
+        }
+
+        if (ImGui.CollapsingHeader("Change my name"))
+        {
+            ImGui.TextWrapped("This is the name you registered with. Everyone sees it on the roster, in mail and on statuses. Your items, gold and everything else stay with you.");
+            ImGui.TextColored(Gold, "Now: " + s.Name);
+            ImGui.SetNextItemWidth(240f); ImGui.InputText("New name##renamebox", ref renameTo, 40);
+            var okRename = renameTo.Trim().Length >= 2 && renameTo.Trim() != s.Name && !s.Busy;
+            if (!okRename) ImGui.BeginDisabled();
+            if (ImGui.Button("Change name##rename")) { _ = Plugin.Items.RenameAsync(renameTo); renameTo = ""; }
+            if (!okRename) ImGui.EndDisabled();
+            ImGui.TextWrapped("Tell an Advocate if you are on the website roster so they can update it there.");
         }
 
     }

@@ -168,6 +168,17 @@ public sealed class ItemsState
         await RefreshAsync(true).ConfigureAwait(false);
     }
 
+    /// <summary>Changes the name this character is registered under.</summary>
+    public async Task RenameAsync(string newName)
+    {
+        var r = await Run(() => SendAsync(HttpMethod.Post, "/items/rename", new { name = newName.Trim() })).ConfigureAwait(false);
+        if (r?.Name == null) return;
+        Plugin.Config.Me().ItemsName = r.Name;
+        Plugin.Config.Save();
+        lock (gate) { notice = "Your name is now " + r.Name + "."; loadedOnce = false; }
+        await RefreshAsync(true).ConfigureAwait(false);
+    }
+
     private List<string> found = new();
     /// <summary>The characters a recovery code covers, after "Find my characters".</summary>
     public List<string> Found() { lock (gate) { return found.ToList(); } }
