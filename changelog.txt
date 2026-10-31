@@ -1,3 +1,4 @@
+0.64.1: Fixed a wrong error shown when removing a status (it worked). Added a note that some actions take up to 30 seconds, so please don't press buttons repeatedly.
 0.64.0: Alpha test: you can now give yourself a sickness or curse (with cure info) from the Status tab to test diagnosing.
 0.63.1: Pausing the plugin now also hides world item, sign and stash pop-ups and labels until you turn it back on.
 0.63.0: World items, signs and stashes now load by zone, and the limits are much bigger (SM and Advocate tags: 1,000 world items and 500 signs).
