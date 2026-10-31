@@ -1,3 +1,4 @@
+0.62.1: SM Tools now shows a number when bug reports, abuse reports or exchange tickets are waiting.
 0.62.0: Bank tab: new Exchange gold for gil section. Submit an exchange ticket and the bankers see it in SM Tools and mail you the gil.
 0.61.0: You can now change the name you registered with. Inventory tab, Change my name. Your items, gold and everything else stay with you.
 0.60.0: More room. You can now hold 20 item slots (was 10) and have 10 statuses (was 6). New "Plugin Only" tag SMs can give in SM Tools, for members who use the plugin without joining the in-game FC.
