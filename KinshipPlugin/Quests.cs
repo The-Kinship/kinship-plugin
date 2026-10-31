@@ -49,7 +49,10 @@ public sealed class QuestView
     public int Step { get; set; } public int Total { get; set; } public bool Done { get; set; } public bool Failed { get; set; } public QuestNow? Current { get; set; }
     public List<QuestStepView>? Steps { get; set; } public List<QuestPlayer>? Players { get; set; } public List<QuestClaim>? Claims { get; set; }
     public QuestPlace? StartPlace { get; set; } public string StartText { get; set; } = ""; public List<QuestNoticeView>? Notices { get; set; }
+    public string Board { get; set; } = ""; public string BoardMode { get; set; } = ""; public string TakenBy { get; set; } = "";   // the Jobs board: "main" when posted
 }
+/// <summary>A job on the Jobs board.</summary>
+public sealed class JobView { public string QuestId { get; set; } = ""; public string Title { get; set; } = ""; public string Intro { get; set; } = ""; public int Steps { get; set; } public bool FirstCome { get; set; } }
 public sealed class TalkLine { public string Quest { get; set; } = ""; public bool Ok { get; set; } public bool Failed { get; set; } public string Text { get; set; } = ""; public bool Finished { get; set; } public List<string>? Gained { get; set; } public string? StatusGained { get; set; } }
 /// <summary>A step a party mate completed for you.</summary>
 public sealed class SharedLine { public string Quest { get; set; } = ""; public string By { get; set; } = ""; public string Text { get; set; } = ""; public List<string>? Gained { get; set; } public string? StatusGained { get; set; } public bool Finished { get; set; } }
@@ -73,6 +76,7 @@ public sealed class QuestForm
     public List<NoticeForm> Notices = new();
     public string Id = "", Title = "", Intro = "", StartText = "";
     public bool HasStart; public Spot? StartPlace;
+    public bool Board, FirstCome;   // post on the Jobs board; first come, first served
     public List<StepForm> Steps = new() { new StepForm() };
 }
 public sealed record QuestSnap(List<QuestView> Mine, List<QuestView> Admin, string Error, string Notice, bool Busy);
@@ -161,6 +165,61 @@ public sealed class QuestState
         finally { lock (gate) { busy = false; } }
         await RefreshAsync().ConfigureAwait(false);
         _ = Plugin.Items.RefreshAsync(true);
+    }
+
+    // ---------- the Jobs board ----------
+    private List<JobView> jobs = new();
+    private string jobsError = "";
+    private bool jobsLoaded, jobsLoading;
+    private DateTime lastJobs = DateTime.MinValue;
+    public (List<JobView> Jobs, string Error, bool Loaded) JobsSnap() { lock (gate) { return (jobs.ToList(), jobsError, jobsLoaded); } }
+    /// <summary>Loads the board when the tab is opened, then at most once a minute.</summary>
+    public void JobsRefreshIfDue(int seconds)
+    {
+        if (Idle.Asleep) return;
+        bool due;
+        lock (gate) { due = !jobsLoading && Plugin.Config.Me().ItemsToken.Length > 0 && (DateTime.UtcNow - lastJobs).TotalSeconds > seconds; if (due) { lastJobs = DateTime.UtcNow; jobsLoading = true; } }
+        if (due) _ = JobsAsync();
+    }
+    public async Task JobsAsync()
+    {
+        lock (gate) { jobsLoading = true; lastJobs = DateTime.UtcNow; }
+        try
+        {
+            var r = await ItemsState.SendAsync(HttpMethod.Get, "/quests/jobs", null).ConfigureAwait(false);
+            lock (gate) { jobs = r.Jobs ?? new(); jobsError = ""; jobsLoaded = true; }
+        }
+        catch (CombatException ex) { lock (gate) { jobsError = ex.Message; } }
+        catch (Exception ex) { Plugin.Log.Warning(ex, "Jobs board failed"); lock (gate) { jobsError = "Couldn't reach the server. Check your connection and try again."; } }
+        finally { lock (gate) { jobsLoading = false; } }
+    }
+    public async Task TakeJobAsync(JobView j)
+    {
+        lock (gate) { if (busy) return; busy = true; error = ""; notice = ""; }
+        try
+        {
+            await ItemsState.SendAsync(HttpMethod.Post, "/quests/jobs/take", new { questId = j.QuestId }).ConfigureAwait(false);
+            lock (gate) { notice = $"You took the job: {j.Title}. Find it in the Quests tab."; }
+        }
+        catch (CombatException ex) { lock (gate) { error = ex.Message; } }
+        catch (Exception ex) { Plugin.Log.Warning(ex, "Take job failed"); lock (gate) { error = "Couldn't reach the server. Check your connection and try again."; } }
+        finally { lock (gate) { busy = false; } }
+        await JobsAsync().ConfigureAwait(false);
+        await RefreshAsync().ConfigureAwait(false);
+    }
+    public async Task DropJobAsync(string questId)
+    {
+        lock (gate) { if (busy) return; busy = true; error = ""; notice = ""; }
+        try
+        {
+            await ItemsState.SendAsync(HttpMethod.Post, "/quests/jobs/drop", new { questId }).ConfigureAwait(false);
+            lock (gate) { notice = "You gave the job up."; }
+        }
+        catch (CombatException ex) { lock (gate) { error = ex.Message; } }
+        catch (Exception ex) { Plugin.Log.Warning(ex, "Give up job failed"); lock (gate) { error = "Couldn't reach the server. Check your connection and try again."; } }
+        finally { lock (gate) { busy = false; } }
+        await RefreshAsync().ConfigureAwait(false);
+        await JobsAsync().ConfigureAwait(false);
     }
 
     public QuestSnap Snapshot() { lock (gate) { return new QuestSnap(mine.ToList(), admin.ToList(), error, notice, busy); } }
@@ -361,7 +420,7 @@ public sealed class QuestState
             }
             return d;
         }).ToList();
-        var body = new Dictionary<string, object?> { ["title"] = f.Title.Trim(), ["intro"] = f.Intro.Trim(), ["steps"] = steps };
+        var body = new Dictionary<string, object?> { ["title"] = f.Title.Trim(), ["intro"] = f.Intro.Trim(), ["steps"] = steps, ["board"] = f.Board ? "main" : "", ["boardMode"] = f.FirstCome ? "first" : "all" };
         if (f.HasStart && f.StartPlace != null)
         {
             var p = f.StartPlace;

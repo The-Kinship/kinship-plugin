@@ -44,7 +44,7 @@ public sealed class ItemReply
     public string? StatusGained { get; set; } public string? StatusCured { get; set; } public List<StatusView>? Statuses { get; set; }
     public QuestFight? Fight { get; set; } public int? Claimed { get; set; }
     public QuestOffer? Offer { get; set; } public List<QuestStart>? Starts { get; set; }
-    public List<QuestView>? Quests { get; set; } public List<TalkLine>? Results { get; set; }
+    public List<QuestView>? Quests { get; set; } public List<TalkLine>? Results { get; set; } public List<JobView>? Jobs { get; set; }
     public int? Roll { get; set; } public string? Patient { get; set; } public bool? Success { get; set; } public string? Condition { get; set; } public string? Cure { get; set; }
     public string? Combined { get; set; } public bool Failed { get; set; } public List<string>? Used { get; set; } public int? Copies { get; set; }
     public List<BankEntry>? History { get; set; } public List<BankEntry>? Recent { get; set; } public List<BankMember>? Balances { get; set; }

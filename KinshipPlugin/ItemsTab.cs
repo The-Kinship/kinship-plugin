@@ -45,6 +45,7 @@ public sealed class ItemsTab
     private readonly DuelTab duelTab = new();
     private readonly StatusTab statusTab = new();
     private readonly QuestsTab questsTab = new();
+    private readonly JobsTab jobsTab = new();
     private string? confirmAdminDelete, confirmAdminRemove, confirmAdminStash, confirmAdminSign, confirmAdminMail;
     private string giftRecipient = "", giftStashId = "", giftStashName = "";
     private int giftCopies = 1;
@@ -85,6 +86,7 @@ public sealed class ItemsTab
             var unread = Plugin.Mail.Unread;
             if (ImGui.BeginTabItem((unread > 0 ? $"Mail ({unread})" : "Mail") + "###mailtab")) { mailTab.Draw(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Quests")) { questsTab.Draw(s); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Jobs")) { jobsTab.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Fight")) { duelTab.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Combat")) { combat.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Party")) { rp.Draw(); ImGui.EndTabItem(); }

@@ -17,7 +17,7 @@ public sealed class QuestsTab
     private readonly IconPicker picker = new("questpick");
     private QuestForm form = new();
     private bool editing;
-    private string assignTo = "", assignQuest = "";
+    private string assignTo = "", assignQuest = "", confirmDrop = "";
 
     private static string NameOf(string t) => t == "give" ? "Hand over an item" : t == "receive" ? "They give an item" : t == "look" ? "Look at a spot" : t == "listen" ? "Listen at a spot" : t == "search" ? "Search a spot" : t == "arrive" ? "Walk into an area" : t == "fight" ? "A fight" : "They talk";
 
@@ -76,6 +76,12 @@ public sealed class QuestsTab
         {
             ImGui.TextColored(Gold, q.Title);
             ImGui.SameLine(); ImGui.TextColored(Dim, $"step {q.Step + 1} of {q.Total}");
+            if (q.Board == "main")
+            {
+                ImGui.SameLine();
+                var sure = confirmDrop == q.QuestId;
+                if (!s.Busy && ImGui.SmallButton((sure ? "Really give up? Click again" : "Give up job") + "##qdj" + q.QuestId)) { if (sure) { confirmDrop = ""; _ = Plugin.Quests.DropJobAsync(q.QuestId); } else confirmDrop = q.QuestId; }
+            }
             ImGui.Indent();
             if (q.Intro.Length > 0) { ImGui.PushTextWrapPos(ImGui.GetFontSize() * 30f); ImGui.TextUnformatted(q.Intro); ImGui.PopTextWrapPos(); }
             if (q.Current != null)
@@ -121,6 +127,7 @@ public sealed class QuestsTab
         foreach (var q in s.Admin)
         {
             ImGui.TextColored(Gold, q.Title); ImGui.SameLine(); ImGui.TextColored(Dim, $"{q.Steps?.Count ?? 0} steps");
+            if (q.Board == "main") ImGui.TextColored(Dim, "   On the Jobs board: " + (q.BoardMode == "first" ? (q.TakenBy.Length > 0 ? $"first come, taken by {q.TakenBy}" : "first come, still free") : "open to everyone"));
             if (q.Players != null)
                 foreach (var p in q.Players) ImGui.TextColored(p.Done ? Green : Dim, $"   {p.Name}: " + (p.Done ? "finished" : $"on step {p.Step + 1}"));
             if (q.Claims != null)
@@ -163,6 +170,17 @@ public sealed class QuestsTab
         ImGui.TextColored(Gold, editing && form.Id.Length > 0 ? "Edit quest" : "New quest");
         ImGui.SetNextItemWidth(260f); ImGui.InputText("Title##qf", ref form.Title, 60);
         ImGui.Text("Introduction (optional)"); ImGui.InputTextMultiline("##qfi", ref form.Intro, 400, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 52f));
+        if (ImGui.CollapsingHeader("Jobs board (optional)##qboard"))
+        {
+            ImGui.Checkbox("Post this quest on the Jobs board##qpost", ref form.Board);
+            if (form.Board)
+            {
+                if (ImGui.RadioButton("Everyone can take it (once each)##qbm0", !form.FirstCome)) form.FirstCome = false;
+                if (ImGui.RadioButton("First come, first served##qbm1", form.FirstCome)) form.FirstCome = true;
+                ImGui.TextColored(Dim, form.FirstCome ? "Whoever takes it first has it. It goes away for everyone else, and comes back if they give it up." : "Every registered member can take it and do it once. Good for events.");
+            }
+            ImGui.TextColored(Dim, "Members see the board in the Jobs tab and take jobs for the reward. Untick to take the job down.");
+        }
         if (ImGui.CollapsingHeader("Starting spot (optional)##qstart"))
         {
             ImGui.Checkbox("Players can find this quest at a spot in the world##qhs", ref form.HasStart);
@@ -325,7 +343,7 @@ public sealed class QuestsTab
 
     private static QuestForm FormFrom(QuestView q)
     {
-        var f = new QuestForm { Id = q.Id, Title = q.Title, Intro = q.Intro, Steps = new() };
+        var f = new QuestForm { Id = q.Id, Title = q.Title, Intro = q.Intro, Steps = new(), Board = q.Board == "main", FirstCome = q.BoardMode == "first" };
         if (q.StartPlace != null)
         {
             f.HasStart = true; f.StartText = q.StartText;
