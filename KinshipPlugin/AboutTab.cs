@@ -33,15 +33,22 @@ public static class AboutTab
             ImGui.TextColored(Gold, "Quality RP over quantity");
             ImGui.TextWrapped("The Kinship is a heavy RP free company that focuses on giving its members an in-depth, immersive, and inclusive RP environment to thrive in. We value quality RP over quantity of members.");
             ImGui.Spacing();
-            ImGui.TextWrapped("Though we follow a very classic \u201cMisfit & Kingdom\u201d style, we try to make sure our RP surpasses the standard, dull, repetitive RP tropes that seem to be everywhere.");
+            ImGui.TextWrapped("We follow a Syndicate and Sanctuary theme, and we try to make sure our RP surpasses the standard, dull, repetitive RP tropes that seem to be everywhere.");
         }
 
         if (ImGui.CollapsingHeader("What we offer"))
         {
+            ImGui.TextColored(Gold, "In character (IC)");
             ImGui.TextColored(Dim, "A story for every kind of roleplayer");
             Item("Company-Wide Story Lines", "Plots that everyone can engage in and participate with.");
             Item("Focused RP Styles", "More specific RP opportunities tailored to a more focused style, like guard-style RP, magic ritual RP, or pure social RP.");
             Item("Member-Driven RP", "Bring your own story lines and plots to the forefront of our company, and engage with plots that help with your own personal character development.");
+            ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+            ImGui.TextColored(Gold, "Out of character (OOC)");
+            ImGui.TextColored(Dim, "The people behind the characters");
+            Item("Active Social Circle", "A lively, friendly group to talk, hang out and play with.");
+            Item("Extremely Casual PVE and PVP", "The focus isn't winning or being top tier. The focus is getting together, doing something and having fun, whether we win, lose, wipe, or come out on top.");
+            Item("No Elitist Attitude", "No elitism when it comes to PVP or PVE. Everyone is welcome at the table.");
         }
 
         if (ImGui.CollapsingHeader("How we're led"))
