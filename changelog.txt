@@ -1,3 +1,5 @@
+0.66.1: The plot progression picture is now display only (it no longer opens larger, since it blurs when zoomed). New artwork.
+0.66.0: SMs can add a website link to an item (right-click it to open). The Iron Vanguard is now The Iron Pack, led by The Alpha.
 0.65.0: The About the plugin tab now links to the new in-depth tab by tab guide on the website.
 0.64.1: Fixed a wrong error shown when removing a status (it worked). Added a note that some actions take up to 30 seconds, so please don't press buttons repeatedly.
 0.64.0: Alpha test: you can now give yourself a sickness or curse (with cure info) from the Status tab to test diagnosing.
