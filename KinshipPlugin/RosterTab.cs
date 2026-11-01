@@ -21,7 +21,7 @@ public sealed class RosterTab
     {
         var t = sect.ToLowerInvariant();
         if (t.Contains("onyx") || t.Contains("blood")) return "onyx";
-        if (t.Contains("iron") || t.Contains("vanguard")) return "iron";
+        if (t.Contains("iron") || t.Contains("vanguard") || t.Contains("pack")) return "iron";
         if (t.Contains("life") || t.Contains("watch")) return "life";
         if (t.Contains("ember") || t.Contains("court")) return "ember";
         return "";

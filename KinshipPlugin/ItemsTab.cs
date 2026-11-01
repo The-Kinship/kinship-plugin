@@ -181,6 +181,7 @@ public sealed class ItemsTab
                 {
                     if (it.CanCombine && ImGui.MenuItem("Combine")) _ = Plugin.Items.CombineAsync(it.Id);
                     if (it.UseLabel.Length > 0 && ImGui.MenuItem(it.UseLabel)) _ = Plugin.Items.UseAsync(it.Id);
+                    if (it.Link.Length > 0 && ImGui.MenuItem("Open website link")) AboutTab.OpenLink(it.Link);
                     if (it.CanEdit && ImGui.MenuItem("Edit")) StartEdit(it);
                     if (it.CanEdit && it.UseLabel.Length > 0 && ImGui.MenuItem("Put an item inside...")) { sealing = it; giving = null; confirmDelete = null; }
                     if (it.CanEdit && it.Holds > 0 && ImGui.MenuItem("Take out what's inside")) _ = Plugin.Items.UnsealAsync(it.Id);
@@ -316,6 +317,7 @@ public sealed class ItemsTab
         if (it.Holds > 0) { ImGui.Spacing(); ImGui.TextColored(Gold, it.Holds == 1 ? "Something is inside." : $"{it.Holds} things are inside."); }
         if (it.CanCombine) { ImGui.Spacing(); ImGui.TextColored(Green, "Click to combine with other reagents"); }
         if (it.UseLabel.Length > 0) { ImGui.Spacing(); ImGui.TextColored(Green, "Click to " + it.UseLabel.ToLowerInvariant() + (it.Consumable ? "  (used up)" : "")); }
+        if (it.Link.Length > 0) { ImGui.Spacing(); ImGui.TextColored(Green, "Right-click to open its website link"); }
         ImGui.PopTextWrapPos();
         ImGui.EndTooltip();
     }
@@ -351,7 +353,7 @@ public sealed class ItemsTab
     {
         var f = new ItemForm
         {
-            Name = it.Name, Icon = it.Icon, Description = it.Description, Flavor = it.Flavor, UseLabel = it.UseLabel, UseText = it.UseText ?? "", Consumable = it.Consumable,
+            Name = it.Name, Icon = it.Icon, Description = it.Description, Flavor = it.Flavor, UseLabel = it.UseLabel, Link = it.Link, UseText = it.UseText ?? "", Consumable = it.Consumable,
             Requires = it.Requires, RequiresConsume = it.RequiresConsume, StName = it.StName, StDesc = it.StDesc, StIcon = it.StIcon, StDebuff = it.StDebuff, Carried = it.Carried, WearSlot = it.WearSlot, LifespanDays = it.LifespanDays, GearAtk = it.GearAtk, GearHeal = it.GearHeal, StMinutes = it.StMinutes, StAtk = it.StAtk, StHeal = it.StHeal, Cures = it.Cures, StType = it.StType, StCure = it.StCure,
         };
         if (recipe && it.CombineWith != null)
@@ -422,6 +424,10 @@ public sealed class ItemsTab
         ImGui.TextColored(Dim, "e.g. Eat, Read, Open. Leave blank for an item that can't be used.");
         ImGui.Text("What happens"); ImGui.InputTextMultiline("##fuse", ref form.UseText, 400, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 64f));
         ImGui.Checkbox("Used up when used", ref form.Consumable);
+        ImGui.Spacing();
+        ImGui.TextColored(Gold, "Website link (SMs only, optional)");
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - 8f); ImGui.InputText("##flink", ref form.Link, 200);
+        ImGui.TextColored(Dim, "Must start with https://  Right-clicking the item opens it, e.g. a profile or roster form.");
         ImGui.Spacing();
         DrawGearFields(form, gift);
         ImGui.Spacing();

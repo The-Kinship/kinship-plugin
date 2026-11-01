@@ -19,7 +19,7 @@ public static class SectData
     public static readonly Dictionary<string, SectInfo> All = new()
     {
         ["onyx"]  = new("onyx",  "The Onyx Blood Guard", "The Prefect",            "onyx.jpg",       Hex(0x8b, 0x5c, 0xf6), "Magic, research, and the occult."),
-        ["iron"]  = new("iron",  "The Iron Vanguard",    "The Vanguard Commander", "vanguard.jpg",   Hex(0x8f, 0xa6, 0xcf), "Military, patrols, and peacekeeping."),
+        ["iron"]  = new("iron",  "The Iron Pack",        "The Alpha", "vanguard.jpg",   Hex(0x8f, 0xa6, 0xcf), "Military, patrols, and peacekeeping."),
         ["life"]  = new("life",  "The Life Watch",       "The Life Warden",        "lifewatch.jpg",  Hex(0x4f, 0x9d, 0x5d), "Healing of body and mind."),
         ["ember"] = new("ember", "The Ember Court",      "The Baron / Baroness",   "ember-court.jpg",Hex(0xd9, 0x47, 0x2b), "Social RP, events, and welcomes."),
         ["crypt"] = new("crypt", "The Onyx Crypt",       "",                       "onyx.jpg",       Hex(0x8b, 0x5c, 0xf6), "", true),

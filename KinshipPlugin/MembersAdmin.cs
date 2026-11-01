@@ -18,7 +18,7 @@ public static class TagBadges
     public static Vector4 ColorOf(string tag) => tag switch
     {
         "Onyx" => new(0.62f, 0.45f, 0.98f, 1f),
-        "Vanguard" => new(0.74f, 0.80f, 0.90f, 1f),
+        "Iron Pack" => new(0.74f, 0.80f, 0.90f, 1f),
         "Life Watch" => new(0.42f, 0.78f, 0.50f, 1f),
         "Ember" => new(0.95f, 0.45f, 0.35f, 1f),
         "Banker" => new(0.95f, 0.85f, 0.45f, 1f),

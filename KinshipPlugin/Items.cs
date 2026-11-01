@@ -16,7 +16,7 @@ public sealed class ItemView
 {
     public string Id { get; set; } = ""; public string Name { get; set; } = ""; public string Icon { get; set; } = "";
     public string Description { get; set; } = ""; public string Flavor { get; set; } = ""; public string UseLabel { get; set; } = "";
-    public string? UseText { get; set; } public bool Consumable { get; set; } public bool CanEdit { get; set; }
+    public string Link { get; set; } = ""; public string? UseText { get; set; } public bool Consumable { get; set; } public bool CanEdit { get; set; }
     public string? Owner { get; set; } public string? Creator { get; set; }
     public string Requires { get; set; } = ""; public bool RequiresConsume { get; set; } public int Holds { get; set; } public int Qty { get; set; } = 1;
     public string StName { get; set; } = ""; public string StDesc { get; set; } = ""; public string StIcon { get; set; } = "";
@@ -53,7 +53,7 @@ public sealed class ItemReply
 }
 public sealed class ItemForm
 {
-    public string Name = "", Icon = "", Description = "", Flavor = "", UseLabel = "", UseText = "", Requires = "";
+    public string Name = "", Icon = "", Description = "", Flavor = "", UseLabel = "", UseText = "", Requires = "", Link = "";
     public string StName = "", StDesc = "", StIcon = "", Cures = "", StType = "", StCure = "", StartsQuest = "";
     public int FailChance;                   // percent chance the combination fails (0 = never)
     public string[] With = { "", "", "" };   // other reagents this combines with
@@ -282,7 +282,7 @@ public sealed class ItemsState
         var d = new Dictionary<string, object?>
         {
             ["name"] = f.Name.Trim(), ["icon"] = f.Icon, ["description"] = f.Description.Trim(), ["flavor"] = f.Flavor.Trim(),
-            ["useLabel"] = f.UseLabel.Trim(), ["useText"] = f.UseText.Trim(), ["requires"] = f.Requires.Trim(), ["requiresConsume"] = f.RequiresConsume,
+            ["link"] = f.Link.Trim(), ["useLabel"] = f.UseLabel.Trim(), ["useText"] = f.UseText.Trim(), ["requires"] = f.Requires.Trim(), ["requiresConsume"] = f.RequiresConsume,
             ["stName"] = f.StName.Trim(), ["stDesc"] = f.StDesc.Trim(), ["stIcon"] = f.StIcon, ["stDebuff"] = f.StDebuff, ["stMinutes"] = f.StMinutes, ["startsQuest"] = f.StartsQuest, ["stType"] = f.StType, ["stCure"] = f.StCure.Trim(), ["stAtk"] = f.StAtk, ["stHeal"] = f.StHeal,
             ["cures"] = f.Cures.Trim(), ["consumable"] = f.Consumable, ["carried"] = f.Carried && f.StName.Trim().Length > 0,
             ["wearSlot"] = f.WearSlot, ["lifespanDays"] = f.LifespanDays, ["gearAtk"] = f.GearAtk, ["gearHeal"] = f.GearHeal,
