@@ -30,6 +30,14 @@ public sealed class AboutPluginTab
         ImGui.Spacing();
         ImGui.TextWrapped("A note on patience: the plugin runs on a free server, so some actions (using an item, removing a status, sending mail, a bank exchange) can take up to 30 seconds to go through. Please do not press a button over and over. Give anything a full minute before you worry, and press Refresh if it still looks the same.");
         ImGui.Spacing();
+        ImGui.TextWrapped("Want the full picture? Check out the in-depth guide for a full, expansive explanation of every feature, tab by tab.");
+        var guideSite = AboutTab.Link("website_url");
+        if (!guideSite.StartsWith("http")) guideSite = DefaultSite;
+        if (!guideSite.EndsWith("/")) guideSite += "/";
+        ImGui.TextColored(new Vector4(0.56f, 0.65f, 0.81f, 1f), "In-depth tab by tab guide (opens your browser)");
+        if (ImGui.IsItemHovered()) { ImGui.SetMouseCursor(ImGuiMouseCursor.Hand); ImGui.SetTooltip(guideSite + "toolbox-guide.html"); }
+        if (ImGui.IsItemClicked(ImGuiMouseButton.Left)) AboutTab.OpenLink(guideSite + "toolbox-guide.html");
+        ImGui.Spacing();
         ImGui.TextWrapped("What it does: it only reads game information (like where you are standing) and keeps everything else in its own RP system. It never plays the game for you and never changes anything in the game.");
 
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
