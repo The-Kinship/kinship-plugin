@@ -100,10 +100,10 @@ public static class AboutTab
         }
     }
 
-    /// <summary>The plot progression graphic. Click it to open it large.</summary>
+    /// <summary>The plot progression graphic. Display only: it cannot be clicked or enlarged.</summary>
     public static void ExamplePlot()
     {
-        if (UiUtil.FullWidth("plot-example.jpg")) Plugin.ShowImage("plot-example.jpg");
+        UiUtil.FullWidth("plot-example.jpg");
     }
 
     private static void Item(string title, string text)

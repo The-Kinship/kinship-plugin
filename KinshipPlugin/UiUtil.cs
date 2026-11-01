@@ -19,16 +19,13 @@ public static class UiUtil
         ImGui.Image(wrap.Handle, size);
     }
 
-    /// <summary>Draws a website image at the full width of the window. Click it to open it larger. Returns true if clicked.</summary>
-    public static bool FullWidth(string file)
+    /// <summary>Draws a website image at the full width of the window. Display only; never enlarges.</summary>
+    public static void FullWidth(string file)
     {
         var wrap = Plugin.Images.Get(Img(file));
-        if (wrap == null) { if (!Plugin.Images.HasFailed(Img(file))) ImGui.TextColored(new Vector4(0.65f, 0.65f, 0.7f, 1f), "Loading image..."); return false; }
+        if (wrap == null) { if (!Plugin.Images.HasFailed(Img(file))) ImGui.TextColored(new Vector4(0.65f, 0.65f, 0.7f, 1f), "Loading image..."); return; }
         var w = ImGui.GetContentRegionAvail().X;
         ImGui.Image(wrap.Handle, new Vector2(w, w * wrap.Height / wrap.Width));
-        var hover = ImGui.IsItemHovered();
-        if (hover) { ImGui.SetMouseCursor(ImGuiMouseCursor.Hand); ImGui.SetTooltip("Click to enlarge"); }
-        return hover && ImGui.IsMouseReleased(ImGuiMouseButton.Left);
     }
 
     /// <summary>The creation-password box SMs fill in once before creating a room or scene.</summary>
