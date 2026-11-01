@@ -1,3 +1,4 @@
+0.66.3: About tab updated: Syndicate and Sanctuary theme wording, and What we offer is now split into In character and Out of character.
 0.66.2: Re-release so the item website link box and The Iron Pack changes reach everyone (no new features).
 0.66.1: The plot progression picture is now display only (it no longer opens larger, since it blurs when zoomed). New artwork.
 0.66.0: SMs can add a website link to an item (right-click it to open). The Iron Vanguard is now The Iron Pack, led by The Alpha.
