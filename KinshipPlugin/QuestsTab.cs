@@ -197,6 +197,19 @@ public sealed class QuestsTab
         }
         for (var i = 0; i < form.Steps.Count; i++) DrawStep(form.Steps[i], i);
         if (form.Steps.Count < QuestState.MaxSteps && ImGui.Button("Add a step##qas")) form.Steps.Add(new StepForm());
+        if (ImGui.CollapsingHeader($"Reward for finishing the quest (optional)##qrw"))
+        {
+            ImGui.TextColored(Dim, "Paid once, when the last step is finished. Gold goes straight into the player's personal bank. Leave both empty for no reward.");
+            ImGui.SetNextItemWidth(140f); ImGui.InputInt("Gold##qrwg", ref form.RewardGold, 5, 100);
+            form.RewardGold = Math.Clamp(form.RewardGold, 0, 1000000);
+            ImGui.Spacing();
+            var rwrap = ItemIcons.Wrap(form.RewardIcon);
+            if (rwrap != null) { ImGui.Image(rwrap.Handle, new Vector2(32f, 32f)); ImGui.SameLine(); }
+            if (ImGui.SmallButton("Choose item icon##qrwi")) picker.Open(v => form.RewardIcon = v);
+            ImGui.SetNextItemWidth(220f); ImGui.InputText("Item reward (name)##qrwn", ref form.RewardName, 40);
+            ImGui.SetNextItemWidth(300f); ImGui.InputText("Item description##qrwd", ref form.RewardDesc, 300);
+            ImGui.TextColored(Dim, "Leave the item name empty for gold only. Fill in both for gold and an item.");
+        }
         DrawNotices();
         var valid = form.Title.Trim().Length > 0 && form.Steps.All(StepOk) && form.Notices.All(n => n.Place != null && n.Text.Trim().Length > 0) && !s.Busy && (!form.HasStart || (form.StartPlace != null && form.StartText.Trim().Length > 0));
         if (!valid) ImGui.BeginDisabled();
@@ -343,7 +356,7 @@ public sealed class QuestsTab
 
     private static QuestForm FormFrom(QuestView q)
     {
-        var f = new QuestForm { Id = q.Id, Title = q.Title, Intro = q.Intro, Steps = new(), Board = q.Board == "main", FirstCome = q.BoardMode == "first" };
+        var f = new QuestForm { Id = q.Id, Title = q.Title, Intro = q.Intro, Steps = new(), Board = q.Board == "main", FirstCome = q.BoardMode == "first", RewardGold = q.Reward?.Gold ?? 0, RewardName = q.Reward?.Gift?.Name ?? "", RewardIcon = q.Reward?.Gift?.Icon is { Length: > 0 } rwi ? rwi : "game:20001", RewardDesc = q.Reward?.Gift?.Description ?? "" };
         if (q.StartPlace != null)
         {
             f.HasStart = true; f.StartText = q.StartText;

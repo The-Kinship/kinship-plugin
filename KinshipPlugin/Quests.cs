@@ -43,8 +43,10 @@ public sealed class QuestStepView
 public sealed class QuestPlayer { public string Name { get; set; } = ""; public int Step { get; set; } public bool Done { get; set; } }
 public sealed class QuestClaim { public int Step { get; set; } public string Name { get; set; } = ""; }
 /// <summary>One quest. Players get QuestId/Step/Current; Advocates get Id/Steps/Players.</summary>
+public sealed class QuestReward { public int Gold { get; set; } public QuestGift? Gift { get; set; } }
 public sealed class QuestView
 {
+    public QuestReward? Reward { get; set; }
     public string QuestId { get; set; } = ""; public string Id { get; set; } = ""; public string Title { get; set; } = ""; public string Intro { get; set; } = "";
     public int Step { get; set; } public int Total { get; set; } public bool Done { get; set; } public bool Failed { get; set; } public QuestNow? Current { get; set; }
     public List<QuestStepView>? Steps { get; set; } public List<QuestPlayer>? Players { get; set; } public List<QuestClaim>? Claims { get; set; }
@@ -77,6 +79,7 @@ public sealed class QuestForm
     public string Id = "", Title = "", Intro = "", StartText = "";
     public bool HasStart; public Spot? StartPlace;
     public bool Board, FirstCome;   // post on the Jobs board; first come, first served
+    public int RewardGold; public string RewardName = "", RewardIcon = "game:20001", RewardDesc = "";   // paid when the last step is finished
     public List<StepForm> Steps = new() { new StepForm() };
 }
 public sealed record QuestSnap(List<QuestView> Mine, List<QuestView> Admin, string Error, string Notice, bool Busy);
@@ -126,7 +129,7 @@ public sealed class QuestState
                 else if (!string.IsNullOrEmpty(r.Text)) talk = new TalkResult(target, new(), r.Text);
                 else { fight = null; talk = new TalkResult(target, new(), ""); }
             }
-            if (r.Fight is { Status: "won" }) { await RefreshAsync().ConfigureAwait(false); _ = Plugin.Items.RefreshAsync(true); _ = Plugin.Status.RefreshAsync(); }
+            if (r.Fight is { Status: "won" }) { await RefreshAsync().ConfigureAwait(false); _ = Plugin.Items.RefreshAsync(true); _ = Plugin.Bank.RefreshAsync(); _ = Plugin.Status.RefreshAsync(); }
         }
         catch (CombatException ex) { lock (gate) { error = ex.Message; } }
         catch (Exception ex) { Plugin.Log.Warning(ex, "Quest fight failed"); lock (gate) { error = "Couldn't reach the server. Check your connection and try again."; } }
@@ -164,7 +167,7 @@ public sealed class QuestState
         catch (Exception ex) { Plugin.Log.Warning(ex, "Quest accept failed"); lock (gate) { error = "Couldn't reach the server. Check your connection and try again."; } }
         finally { lock (gate) { busy = false; } }
         await RefreshAsync().ConfigureAwait(false);
-        _ = Plugin.Items.RefreshAsync(true);
+        _ = Plugin.Items.RefreshAsync(true); _ = Plugin.Bank.RefreshAsync();
     }
 
     // ---------- the Jobs board ----------
@@ -273,7 +276,7 @@ public sealed class QuestState
             {
                 var lines = r.Shared.Select(s => new TalkLine { Quest = s.Quest, Ok = true, Finished = s.Finished, Gained = s.Gained, StatusGained = s.StatusGained, Text = $"{s.By} and your party moved this on.\n\n{s.Text}" }).ToList();
                 lock (gate) { talk = new TalkResult("Your party", lines, ""); }
-                if (r.Shared.Any(s => s.Gained is { Count: > 0 })) _ = Plugin.Items.RefreshAsync(true);
+                if (r.Shared.Any(s => s.Gained is { Count: > 0 })) { _ = Plugin.Items.RefreshAsync(true); _ = Plugin.Bank.RefreshAsync(); }
             }
             var st = await ItemsState.SendAsync(HttpMethod.Get, "/quests/starts", null).ConfigureAwait(false);
             lock (gate) { starts = st.Starts ?? new(); }
@@ -376,7 +379,7 @@ public sealed class QuestState
         catch (Exception ex) { Plugin.Log.Warning(ex, "Quest talk failed"); lock (gate) { talk = new TalkResult(npc, new(), "Couldn't reach the server. Check your connection and try again."); } }
         finally { lock (gate) { busy = false; } }
         await RefreshAsync().ConfigureAwait(false);
-        _ = Plugin.Items.RefreshAsync(true);
+        _ = Plugin.Items.RefreshAsync(true); _ = Plugin.Bank.RefreshAsync();
         _ = Plugin.Status.RefreshAsync();
     }
 
@@ -421,6 +424,14 @@ public sealed class QuestState
             return d;
         }).ToList();
         var body = new Dictionary<string, object?> { ["title"] = f.Title.Trim(), ["intro"] = f.Intro.Trim(), ["steps"] = steps, ["board"] = f.Board ? "main" : "", ["boardMode"] = f.FirstCome ? "first" : "all" };
+        var rwGold = Math.Clamp(f.RewardGold, 0, 1000000);
+        if (rwGold > 0 || f.RewardName.Trim().Length > 0)
+        {
+            var rw = new Dictionary<string, object?> { ["gold"] = rwGold };
+            if (f.RewardName.Trim().Length > 0) rw["gift"] = new Dictionary<string, object?> { ["name"] = f.RewardName.Trim(), ["icon"] = f.RewardIcon, ["description"] = f.RewardDesc.Trim() };
+            body["reward"] = rw;
+        }
+        else body["reward"] = null;
         if (f.HasStart && f.StartPlace != null)
         {
             var p = f.StartPlace;
