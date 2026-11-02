@@ -1,3 +1,4 @@
+0.67.1: Quests can now have up to 50 steps (was 12).
 0.67.0: Quests can now pay a reward when finished: gold into the personal bank, an item, or both. Set it in the quest editor.
 0.66.3: About tab updated: Syndicate and Sanctuary theme wording, and What we offer is now split into In character and Out of character.
 0.66.2: Re-release so the item website link box and The Iron Pack changes reach everyone (no new features).
