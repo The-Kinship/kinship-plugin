@@ -87,7 +87,7 @@ public sealed record QuestSnap(List<QuestView> Mine, List<QuestView> Admin, stri
 /// <summary>Quests: the server keeps the quests and each player's place. Talking to your targeted NPC moves you along.</summary>
 public sealed class QuestState
 {
-    public const int MaxSteps = 12;
+    public const int MaxSteps = 50;
     public const float ActionRange = 8f;   // how close you must be for the words to show and the buttons to work
 
     public static string Phrase(string type) => type == "fight" ? "Danger lurks here..." : type == "listen" ? "You hear something..." : type == "search" ? "Something may be hidden here..." : "You notice something...";
