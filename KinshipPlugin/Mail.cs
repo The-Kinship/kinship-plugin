@@ -125,7 +125,20 @@ public sealed class MailState
     // ---------- Advocate tools (creation password) ----------
     public sealed class AdminMail { public string Id { get; set; } = ""; public string From { get; set; } = ""; public string To { get; set; } = ""; public string Subject { get; set; } = ""; public bool Anonymous { get; set; } public int Gold { get; set; } public bool Returned { get; set; } public string SentAt { get; set; } = ""; }
     private List<AdminMail> admin = new();
-    private string adminError = "";
+    private string adminError = "", adminNotice = "";
+    public string AdminNotice() { lock (gate) { return adminNotice; } }
+    public async Task AdminBroadcastAsync(string subject, string body, string tag)
+    {
+        var pw = Plugin.Config.CreatePassword;
+        if (pw.Length == 0) { lock (gate) { adminError = "Enter the creation password first."; adminNotice = ""; } return; }
+        try
+        {
+            var r = await ItemsState.SendAsync(HttpMethod.Post, "/mail/admin/broadcast", new { adminPassword = pw, subject, body, tag }).ConfigureAwait(false);
+            lock (gate) { adminError = ""; adminNotice = $"Sent to {r.Delivered} member(s)." + (r.NotDelivered > 0 ? $" {r.NotDelivered} skipped because their mailbox is full." : ""); }
+        }
+        catch (CombatException ex) { lock (gate) { adminError = ex.Message; adminNotice = ""; } }
+        catch (Exception) { lock (gate) { adminError = "Couldn't reach the server. Try again."; adminNotice = ""; } }
+    }
     public List<AdminMail> AdminList() { lock (gate) { return admin.ToList(); } }
     public string AdminError() { lock (gate) { return adminError; } }
     public async Task AdminLoadAsync()

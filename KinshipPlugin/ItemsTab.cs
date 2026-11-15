@@ -47,6 +47,7 @@ public sealed class ItemsTab
     private readonly StatusTab statusTab = new();
     private readonly QuestsTab questsTab = new();
     private readonly JobsTab jobsTab = new();
+    private string bcSubject = "", bcBody = "", bcTag = ""; private bool confirmBroadcast;
     private string? confirmAdminDelete, confirmAdminRemove, confirmAdminStash, confirmAdminSign, confirmAdminMail;
     private string giftRecipient = "", giftStashId = "", giftStashName = "";
     private int giftCopies = 1;
@@ -635,6 +636,27 @@ public sealed class ItemsTab
 
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         var mails = Plugin.Mail.AdminList();
+        ImGui.TextColored(Gold, "Mail everyone");
+        ImGui.TextColored(Dim, "One text mail to every registered member, from \"The Kinship\". No gold or items. Members with a full mailbox are skipped.");
+        ImGui.SetNextItemWidth(260f); ImGui.InputText("Subject##bcs", ref bcSubject, 60);
+        ImGui.InputTextMultiline("##bcb", ref bcBody, 1500, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 90f));
+        ImGui.SetNextItemWidth(140f); ImGui.InputText("Only members with this tag (optional)##bct", ref bcTag, 20);
+        ImGui.TextColored(Dim, "For example Iron Pack, Onyx, Kin. Leave empty to send to everyone.");
+        var bcReady = bcSubject.Trim().Length > 0 && bcBody.Trim().Length > 0;
+        if (!confirmBroadcast)
+        {
+            if (!bcReady) ImGui.BeginDisabled();
+            if (ImGui.Button("Send to everyone##bcgo")) confirmBroadcast = true;
+            if (!bcReady) ImGui.EndDisabled();
+        }
+        else
+        {
+            ImGui.TextColored(Red, bcTag.Trim().Length > 0 ? $"Send this to every member tagged {bcTag.Trim()}?" : "Send this to every registered member?");
+            if (ImGui.SmallButton("Yes, send##bcyes")) { _ = Plugin.Mail.AdminBroadcastAsync(bcSubject.Trim(), bcBody.Trim(), bcTag.Trim()); bcSubject = ""; bcBody = ""; confirmBroadcast = false; }
+            ImGui.SameLine(); if (ImGui.SmallButton("Cancel##bcno")) confirmBroadcast = false;
+        }
+        if (Plugin.Mail.AdminNotice().Length > 0) ImGui.TextColored(Green, Plugin.Mail.AdminNotice());
+        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         ImGui.TextColored(Gold, $"Mail ({mails.Count})");
         ImGui.SameLine(); if (ImGui.SmallButton("Load mail")) _ = Plugin.Mail.AdminLoadAsync();
         if (Plugin.Mail.AdminError().Length > 0) ImGui.TextColored(Red, Plugin.Mail.AdminError());
