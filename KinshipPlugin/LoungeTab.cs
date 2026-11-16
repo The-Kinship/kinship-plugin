@@ -19,7 +19,7 @@ public sealed class LoungeTab
     private string customer = "";
     private string hoursEdit = ""; private int rateEdit; private bool infoLoaded;
     private string? editId; private string mName = "", mDesc = ""; private int mPrice = 100; private bool mGift; private string gIcon = "game:20001", gName = "", gDesc = "", gLabel = "", gText = "";
-    private string posName = ""; private string callMode = "", callReason = "", callPatron = ""; private bool callIc = true; private bool confirmNight; private string? confirmPay;
+    private string resetText = ""; private bool resetNights; private string posName = ""; private string callMode = "", callReason = "", callPatron = ""; private bool callIc = true; private bool confirmNight; private string? confirmPay;
     private string svcCustomer = "", svcName = ""; private int svcCustom = 45, svcPrice = 10000; private string? editSvc;
     private string patronAdd = "", venueLabel = "", adEdit = "", nightDate = "", nightTime = "20:00", nightNote = "", rosterName = ""; private int venueRadius = 40, nightHours = 4; private string? editNight; private bool adLoaded;
     private static readonly (string Label, string Prefix)[] AdChannels = BuildChannels();
@@ -600,6 +600,21 @@ public sealed class LoungeTab
                         _ = Plugin.Lounge.SetRolesAsync(posName.Trim(), next);
                     }
                 }
+        }
+        if (ImGui.CollapsingHeader("Reset the Lounge (SMs only)##lghreset"))
+        {
+            ImGui.TextColored(Red, "This wipes the whole Lounge and starts it fresh. It cannot be undone.");
+            ImGui.TextWrapped("Wiped: the menu, hours and pay rate, the venue spot, advert and Party Finder listing, schedule, positions, patrons, calls, services and bookings, everyone's shifts (including unpaid ones, so pay people first), and the current night's sales. Kept: people's accounts and banks, and items already handed out.");
+            ImGui.Checkbox("Also delete the saved past nights##resetn", ref resetNights);
+            ImGui.SetNextItemWidth(120f); ImGui.InputText("Type RESET to confirm##resett", ref resetText, 10);
+            var ready = resetText == "RESET";
+            if (!ready) ImGui.BeginDisabled();
+            if (ImGui.Button("Reset the Lounge##resetgo"))
+            {
+                _ = Plugin.Lounge.ResetAsync(resetNights);
+                resetText = ""; infoLoaded = false; pfLoaded = false; adLoaded = false;
+            }
+            if (!ready) ImGui.EndDisabled();
         }
         if (ImGui.CollapsingHeader("Staff and pay##lgh4", ImGuiTreeNodeFlags.DefaultOpen))
         {

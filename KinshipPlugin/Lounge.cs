@@ -199,6 +199,7 @@ public sealed class LoungeState
     public Task CloseNightAsync() => Call(HttpMethod.Post, "/lounge/closenight", new { });
     public Task StartNightAsync() => Call(HttpMethod.Post, "/lounge/startnight", new { });
     public Task SavePfAsync(string text, int minutes) => Call(HttpMethod.Post, "/lounge/pf/save", new { text, minutes });
+    public Task ResetAsync(bool nights) => Call(HttpMethod.Post, "/lounge/reset", new { confirm = "RESET", nights });
     public Task StopPfAsync() { lock (gate) { pfAlert = false; } return Call(HttpMethod.Post, "/lounge/pf/stop", new { }); }
     public Task PostedAsync() => Call(HttpMethod.Post, "/lounge/pf/posted", new { });
     public Task ViewNightAsync(string id) => Call(HttpMethod.Post, "/lounge/night", new { id });

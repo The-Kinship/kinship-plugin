@@ -1,3 +1,4 @@
+0.78.0: Lounge: Reset the Lounge button (SMs only) wipes the whole venue to start fresh, with a type-RESET check and an option to keep or delete past nights.
 0.77.1: Lounge: fix buttons being ignored (a background check could swallow your click; now your clicks wait their turn), and far fewer background checks and database writes.
 0.77.0: Lounge: Party Finder reminder can be switched off (Stop button), turns off by itself when the night closes or the listing is empty, and ignores old forgotten posts. The saved listing text is kept for next week.
 0.76.1: Lounge: the Active calls box now has its own gold border so it stands out from the rest of the window.
