@@ -1,3 +1,4 @@
+0.73.0: Lounge: Patrons tab (who is in the venue, who is waiting, who is helping whom), Schedule tab (nights and who is working), and an Advert with a chat-channel picker and Copy for chat.
 0.72.0: Lounge: on-screen pop-ups (Party Finder refresh reminder, service time is up), and a Services tab where each staff member sets services and prices, starts timed bookings, and closes them into a receipt that also lands in the receipt book.
 0.71.0: Lounge: closed nights are saved (Past nights, plus a text file on the closer's computer), and a new Party Finder tab with a shared listing, Copy button, I posted it, and a refresh reminder.
 0.70.0: Lounge receipt book now shows who sold what: under each item, every person who worked that night with how many they sold (zero included).

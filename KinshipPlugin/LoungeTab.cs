@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System;
 using System.Linq;
 using System.Numerics;
@@ -20,6 +21,15 @@ public sealed class LoungeTab
     private string? editId; private string mName = "", mDesc = ""; private int mPrice = 100; private bool mGift; private string gIcon = "game:20001", gName = "", gDesc = "", gLabel = "", gText = "";
     private bool confirmNight; private string? confirmPay;
     private string svcCustomer = "", svcName = ""; private int svcCustom = 45, svcPrice = 10000; private string? editSvc;
+    private string patronAdd = "", venueLabel = "", adEdit = "", nightDate = "", nightTime = "20:00", nightNote = "", rosterName = ""; private int venueRadius = 40, nightHours = 4; private string? editNight; private bool adLoaded;
+    private static readonly (string Label, string Prefix)[] AdChannels = BuildChannels();
+    private static (string, string)[] BuildChannels()
+    {
+        var l = new List<(string, string)> { ("Shout (the whole area)", "/shout "), ("Yell", "/yell "), ("Say", "/say "), ("Free Company", "/fc "), ("Party", "/p ") };
+        for (var i = 1; i <= 8; i++) l.Add(($"Linkshell {i}", $"/l{i} "));
+        for (var i = 1; i <= 8; i++) l.Add(($"Cross-world linkshell {i}", $"/cwl{i} "));
+        return l.ToArray();
+    }
     private bool pfLoaded; private string pfEdit = ""; private int pfMinutes = 55;
     private string nightText = "", nightTitle = "";
 
@@ -45,7 +55,9 @@ public sealed class LoungeTab
             if (ImGui.BeginTabItem("Time clock")) { DrawClock(v); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Cash register")) { DrawRegister(v); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Services")) { DrawServices(v); ImGui.EndTabItem(); }
-            if (ImGui.BeginTabItem("Party Finder")) { DrawPf(v); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Patrons")) { Plugin.Lounge.RefreshIfDue(6); DrawPatrons(v); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Schedule")) { DrawSchedule(v); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Party Finder and Ads")) { DrawPf(v); ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing(); DrawAdvert(v); ImGui.EndTabItem(); }
             if (v.CanManage && ImGui.BeginTabItem("Management")) { DrawManager(v); ImGui.EndTabItem(); }
             ImGui.EndTabBar();
         }
@@ -204,6 +216,159 @@ public sealed class LoungeTab
                 var until = DateTime.TryParse(a.EndsAt, null, System.Globalization.DateTimeStyles.RoundtripKind, out var e) ? e.ToLocalTime().ToString("h:mm tt") : "";
                 ImGui.Text($"{a.Who}: {a.Name} until {until}");
             }
+        }
+    }
+
+    private static string Ago(string iso)
+    {
+        if (!DateTime.TryParse(iso, null, System.Globalization.DateTimeStyles.RoundtripKind, out var t)) return "";
+        var m = (int)Math.Max(0, (DateTime.UtcNow - t.ToUniversalTime()).TotalMinutes);
+        return m < 1 ? "just now" : m < 60 ? $"{m} min" : $"{m / 60} h {m % 60} min";
+    }
+
+    private void DrawPatrons(LoungeView v)
+    {
+        var onShift = v.Me.Since.Length > 0;
+        var waiting = v.Patrons.Where(p => p.Helper.Length == 0 && p.HelpedAt.Length == 0).ToList();
+        var busy = v.Patrons.Where(p => p.Helper.Length > 0).ToList();
+        var done = v.Patrons.Where(p => p.Helper.Length == 0 && p.HelpedAt.Length > 0).ToList();
+        ImGui.TextColored(Gold, $"In the venue: {v.Patrons.Count}");
+        ImGui.Text($"Waiting for help: {waiting.Count}   Being helped: {busy.Count}   Helped already: {done.Count}");
+        if (v.Venue == null) ImGui.TextColored(Dim, "No venue spot is set, so nobody is detected automatically. A manager can set it below. You can still add people by hand.");
+        else
+        {
+            var here = WorldInfo.CurrentRoom == v.Venue.Room;
+            ImGui.TextColored(here ? Green : Dim, here ? "You are at the venue: people nearby are detected automatically while you are clocked in." : "You are not at the venue right now. Someone clocked in at the venue spot keeps this list up to date.");
+        }
+        if (!onShift) ImGui.TextColored(Dim, "Clock in on the Time clock tab to help people.");
+        ImGui.SetNextItemWidth(180f); ImGui.InputText("##patronadd", ref patronAdd, 40);
+        ImGui.SameLine();
+        if (!onShift || patronAdd.Trim().Length == 0) ImGui.BeginDisabled();
+        if (ImGui.Button("Add by name##patronaddb")) { _ = Plugin.Lounge.PatronAddAsync(patronAdd.Trim()); patronAdd = ""; }
+        if (!onShift || patronAdd.Trim().Length == 0) ImGui.EndDisabled();
+        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        if (v.Patrons.Count == 0) ImGui.TextColored(Dim, "Nobody is in the venue.");
+        void Row(LoungePatron p, string state)
+        {
+            ImGui.PushID("pt" + p.Name);
+            ImGui.Text(p.Name);
+            ImGui.SameLine(); ImGui.TextColored(Dim, $"here {Ago(p.ArrivedAt)}");
+            ImGui.Text("    " + state);
+            if (!onShift) ImGui.BeginDisabled();
+            if (p.Helper.Length == 0) { if (ImGui.SmallButton("Help")) _ = Plugin.Lounge.PatronHelpAsync(p.Name); }
+            else if (p.Mine) { if (ImGui.SmallButton("Done, helped")) _ = Plugin.Lounge.PatronDoneAsync(p.Name); ImGui.SameLine(); if (ImGui.SmallButton("Unhelp")) _ = Plugin.Lounge.PatronUnhelpAsync(p.Name); }
+            else if (v.CanManage) { if (ImGui.SmallButton("Unhelp (manager)")) _ = Plugin.Lounge.PatronUnhelpAsync(p.Name); }
+            if (p.Manual) { ImGui.SameLine(); if (ImGui.SmallButton("Remove")) _ = Plugin.Lounge.PatronRemoveAsync(p.Name); }
+            if (!onShift) ImGui.EndDisabled();
+            ImGui.PopID();
+        }
+        foreach (var p in waiting) Row(p, "WAITING FOR HELP");
+        foreach (var p in busy) Row(p, p.Mine ? "BEING HELPED BY YOU" : $"BEING HELPED BY {p.Helper}");
+        foreach (var p in done) Row(p, $"Helped by {p.HelpedBy} ({Ago(p.HelpedAt)} ago)");
+
+        if (v.CanManage)
+        {
+            ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+            if (ImGui.CollapsingHeader("Venue spot (managers)##venue"))
+            {
+                ImGui.TextWrapped("Stand inside the venue (in your house, or on the plot) and press Set venue here. Staff who are clocked in at that same place will see who is nearby. Stand in the same kind of place the staff will be: inside the house if you set it inside.");
+                if (v.Venue != null) ImGui.TextColored(Green, $"Set: {(v.Venue.Label.Length > 0 ? v.Venue.Label + ", " : "")}radius {v.Venue.Radius}");
+                ImGui.SetNextItemWidth(200f); ImGui.InputText("Name for it (optional)##vlabel", ref venueLabel, 60);
+                ImGui.SetNextItemWidth(100f); ImGui.InputInt("Radius##vrad", ref venueRadius, 5, 10); venueRadius = Math.Clamp(venueRadius, 5, 300);
+                if (ImGui.Button("Set venue here##vset")) _ = Plugin.Lounge.SetVenueAsync(venueLabel.Trim(), venueRadius);
+                if (v.Venue != null) { ImGui.SameLine(); if (ImGui.Button("Clear##vclr")) _ = Plugin.Lounge.ClearVenueAsync(); }
+            }
+        }
+    }
+
+    private void DrawSchedule(LoungeView v)
+    {
+        ImGui.TextColored(Dim, "Upcoming nights. Times are shown in your own time zone. Press I can work to put your name down; a manager confirms who is working.");
+        if (v.Schedule.Count == 0) ImGui.TextColored(Dim, "Nothing is scheduled yet.");
+        foreach (var n in v.Schedule)
+        {
+            ImGui.PushID("nt" + n.Id);
+            ImGui.Spacing();
+            if (DateTime.TryParse(n.StartsAt, null, System.Globalization.DateTimeStyles.RoundtripKind, out var s) && DateTime.TryParse(n.EndsAt, null, System.Globalization.DateTimeStyles.RoundtripKind, out var e))
+                ImGui.TextColored(Gold, $"{s.ToLocalTime():dddd, MMM d}   {s.ToLocalTime():h:mm tt} to {e.ToLocalTime():h:mm tt}");
+            if (n.Note.Length > 0) ImGui.TextWrapped(n.Note);
+            var working = n.Staff.Where(x => x.Status == "working").Select(x => x.Name).ToList();
+            var avail = n.Staff.Where(x => x.Status != "working").Select(x => x.Name).ToList();
+            ImGui.Text("Working: " + (working.Count == 0 ? "nobody yet" : string.Join(", ", working)));
+            if (avail.Count > 0) ImGui.TextColored(Dim, "Can work: " + string.Join(", ", avail));
+            if (n.Mine.Length == 0) { if (ImGui.SmallButton("I can work")) _ = Plugin.Lounge.RsvpAsync(n.Id, true); }
+            else { ImGui.TextColored(Green, n.Mine == "working" ? "You are on the roster." : "You said you can work."); ImGui.SameLine(); if (ImGui.SmallButton("Take me off")) _ = Plugin.Lounge.RsvpAsync(n.Id, false); }
+            if (v.CanManage)
+            {
+                if (ImGui.SmallButton("Edit"))
+                {
+                    editNight = n.Id; nightNote = n.Note;
+                    if (DateTime.TryParse(n.StartsAt, null, System.Globalization.DateTimeStyles.RoundtripKind, out var s2) && DateTime.TryParse(n.EndsAt, null, System.Globalization.DateTimeStyles.RoundtripKind, out var e2))
+                    { nightDate = s2.ToLocalTime().ToString("yyyy-MM-dd"); nightTime = s2.ToLocalTime().ToString("HH:mm"); nightHours = Math.Clamp((int)Math.Round((e2 - s2).TotalHours), 1, 24); }
+                }
+                ImGui.SameLine(); if (ImGui.SmallButton("Remove night")) _ = Plugin.Lounge.DeleteNightAsync(n.Id);
+                foreach (var x in n.Staff)
+                {
+                    ImGui.PushID("r" + x.Name);
+                    ImGui.Text("    " + x.Name + (x.Status == "working" ? " (working)" : " (can work)"));
+                    if (x.Status != "working") { ImGui.SameLine(); if (ImGui.SmallButton("Confirm")) _ = Plugin.Lounge.SetRosterAsync(n.Id, x.Name, "working"); }
+                    ImGui.SameLine(); if (ImGui.SmallButton("Remove")) _ = Plugin.Lounge.SetRosterAsync(n.Id, x.Name, "");
+                    ImGui.PopID();
+                }
+                ImGui.SetNextItemWidth(150f); ImGui.InputText("##rname", ref rosterName, 40); ImGui.SameLine();
+                if (ImGui.SmallButton("Put on roster") && rosterName.Trim().Length > 0) { _ = Plugin.Lounge.SetRosterAsync(n.Id, rosterName.Trim(), "working"); rosterName = ""; }
+            }
+            ImGui.Separator();
+            ImGui.PopID();
+        }
+        if (v.CanManage)
+        {
+            ImGui.Spacing();
+            ImGui.TextColored(Gold, editNight == null ? "Add a night" : "Edit this night");
+            if (nightDate.Length == 0) nightDate = DateTime.Now.AddDays(1).ToString("yyyy-MM-dd");
+            ImGui.SetNextItemWidth(110f); ImGui.InputText("Date (yyyy-mm-dd)##nd", ref nightDate, 10);
+            ImGui.SetNextItemWidth(70f); ImGui.InputText("Start (24 hour, like 20:00)##nt", ref nightTime, 5);
+            ImGui.SetNextItemWidth(100f); ImGui.InputInt("Hours open##nh", ref nightHours, 1, 1); nightHours = Math.Clamp(nightHours, 1, 24);
+            ImGui.SetNextItemWidth(320f); ImGui.InputText("Note (optional)##nn", ref nightNote, 200);
+            var ok = DateTime.TryParse(nightDate + " " + nightTime, out var local);
+            if (!ok) ImGui.TextColored(Red, "That date or time is not valid.");
+            if (!ok) ImGui.BeginDisabled();
+            if (ImGui.Button((editNight == null ? "Add night" : "Save night") + "##nsave"))
+            {
+                var start = DateTime.SpecifyKind(local, DateTimeKind.Local).ToUniversalTime();
+                _ = Plugin.Lounge.SaveNightAsync(editNight, start.ToString("o"), start.AddHours(nightHours).ToString("o"), nightNote.Trim());
+                editNight = null; nightNote = "";
+            }
+            if (!ok) ImGui.EndDisabled();
+            if (editNight != null) { ImGui.SameLine(); if (ImGui.Button("Cancel##ncan")) { editNight = null; nightNote = ""; } }
+        }
+    }
+
+    private void DrawAdvert(LoungeView v)
+    {
+        if (!adLoaded) { adLoaded = true; adEdit = v.AdText; }
+        ImGui.TextColored(Gold, "Advert");
+        if (v.AdText.Length == 0) ImGui.TextColored(Dim, "No advert has been written yet.");
+        else ImGui.TextWrapped(v.AdText);
+        var ch = Math.Clamp(Plugin.Config.LoungeAdChannel, 0, AdChannels.Length - 1);
+        ImGui.SetNextItemWidth(240f);
+        if (ImGui.BeginCombo("Chat channel##adch", AdChannels[ch].Label))
+        {
+            for (var i = 0; i < AdChannels.Length; i++)
+                if (ImGui.Selectable(AdChannels[i].Label, i == ch)) { Plugin.Config.LoungeAdChannel = i; Plugin.Config.Save(); }
+            ImGui.EndCombo();
+        }
+        ImGui.TextColored(Dim, "Shout reaches the whole area (in a housing ward, that ward). In the game's chat window the channel is picked by the start of the line.");
+        if (v.AdText.Length == 0) ImGui.BeginDisabled();
+        if (ImGui.Button("Copy advert for chat##adcopy")) ImGui.SetClipboardText(AdChannels[ch].Prefix + v.AdText);
+        if (v.AdText.Length == 0) ImGui.EndDisabled();
+        ImGui.TextColored(Dim, "Then click in the game's chat box, press Ctrl+V and press Enter. The plugin never sends chat for you.");
+        if (v.CanManage)
+        {
+            ImGui.Spacing();
+            ImGui.InputTextMultiline("##adedit", ref adEdit, 400, new System.Numerics.Vector2(420f, 70f));
+            ImGui.TextColored(Dim, $"{adEdit.Length}/400");
+            if (ImGui.Button("Save advert##adsave")) _ = Plugin.Lounge.SaveAdAsync(adEdit.Trim());
         }
     }
 

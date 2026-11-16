@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Numerics;
+using Dalamud.Game.ClientState.Objects.SubKinds;
 using System.Threading.Tasks;
 
 namespace KinshipPlugin;
@@ -82,8 +84,13 @@ public sealed class LoungeNight
 }
 public sealed class LoungeTonight { public List<LoungeLine> Items { get; set; } = new(); public int Count { get; set; } public long Total { get; set; } public List<LoungeServiceLine> Services { get; set; } = new(); public long ServiceTotal { get; set; } public long Grand { get; set; } }
 public sealed class LoungeStaff { public string Name { get; set; } = ""; public int Minutes { get; set; } public int Gold { get; set; } public bool ClockedIn { get; set; } }
+public sealed class LoungeVenue { public string Room { get; set; } = ""; public float X { get; set; } public float Y { get; set; } public float Z { get; set; } public int Radius { get; set; } = 40; public string Label { get; set; } = ""; }
+public sealed class LoungePatron { public string Name { get; set; } = ""; public string ArrivedAt { get; set; } = ""; public string Helper { get; set; } = ""; public bool Mine { get; set; } public string HelpedAt { get; set; } = ""; public string HelpedBy { get; set; } = ""; public bool Manual { get; set; } }
+public sealed class LoungeRoster { public string Name { get; set; } = ""; public string Status { get; set; } = ""; }
+public sealed class LoungePlan { public string Id { get; set; } = ""; public string StartsAt { get; set; } = ""; public string EndsAt { get; set; } = ""; public string Note { get; set; } = ""; public List<LoungeRoster> Staff { get; set; } = new(); public string Mine { get; set; } = ""; }
 public sealed class LoungeView
 {
+    public string AdText { get; set; } = ""; public LoungeVenue? Venue { get; set; } public List<LoungePatron> Patrons { get; set; } = new(); public List<LoungePlan> Schedule { get; set; } = new();
     public string Msg { get; set; } = ""; public bool CanManage { get; set; } public string Hours { get; set; } = ""; public int Rate { get; set; }
     public List<LoungeMenuItem> Menu { get; set; } = new(); public List<LoungeWorker> Working { get; set; } = new();
     public LoungeMe Me { get; set; } = new(); public LoungeTonight? Tonight { get; set; } public List<LoungeStaff>? Staff { get; set; }
@@ -102,7 +109,38 @@ public sealed class LoungeState
     public void CloseNight() { lock (gate) { openNight = null; } }
 
     /// <summary>Runs about once a second. If you were the one who posted the Party Finder listing, tells you in chat when it is time to refresh it.</summary>
-    public void Tick()
+    public void Tick() { PfTick(); ReportPatrons(); }
+
+    // Staff who are clocked in and standing at the venue tell the server who is nearby. Only names are sent; it is read-only and nothing is sent to the game.
+    private DateTime lastReport = DateTime.MinValue;
+    private void ReportPatrons()
+    {
+        try
+        {
+            if (Idle.Asleep || (DateTime.UtcNow - lastReport).TotalSeconds < 8) return;
+            LoungeView? v; bool b;
+            lock (gate) { v = view; b = busy; }
+            if (b || v == null || v.Venue == null || v.Venue.Room.Length == 0 || v.Me.Since.Length == 0) return;
+            if (WorldInfo.CurrentRoom != v.Venue.Room) return;
+            var me = Plugin.ObjectTable.LocalPlayer;
+            if (me == null) return;
+            var centre = new Vector3(v.Venue.X, v.Venue.Y, v.Venue.Z);
+            var names = new List<string>();
+            foreach (var o in Plugin.ObjectTable)
+            {
+                if (o is not IPlayerCharacter pc || pc.Address == me.Address) continue;
+                if (Vector3.Distance(pc.Position, centre) > v.Venue.Radius) continue;
+                var n = pc.Name.ToString();
+                if (n.Length > 0) names.Add(n);
+                if (names.Count >= 60) break;
+            }
+            lastReport = DateTime.UtcNow;
+            _ = Call(HttpMethod.Post, "/lounge/patrons/report", new { names }, quiet: true);
+        }
+        catch (Exception) { }
+    }
+
+    private void PfTick()
     {
         lock (gate)
         {
@@ -160,6 +198,23 @@ public sealed class LoungeState
     public Task DeleteServiceAsync(string id) => Call(HttpMethod.Post, "/lounge/service/delete", new { id });
     public Task StartSessionAsync(string serviceId, int minutes, string customer) => Call(HttpMethod.Post, "/lounge/session/start", new { serviceId, minutes, customer });
     public Task ExtendAsync(int minutes) => Call(HttpMethod.Post, "/lounge/session/extend", new { minutes });
+    public Task PatronHelpAsync(string name) => Call(HttpMethod.Post, "/lounge/patrons/help", new { name });
+    public Task PatronUnhelpAsync(string name) => Call(HttpMethod.Post, "/lounge/patrons/unhelp", new { name });
+    public Task PatronDoneAsync(string name) => Call(HttpMethod.Post, "/lounge/patrons/done", new { name });
+    public Task PatronAddAsync(string name) => Call(HttpMethod.Post, "/lounge/patrons/add", new { name });
+    public Task PatronRemoveAsync(string name) => Call(HttpMethod.Post, "/lounge/patrons/remove", new { name });
+    public Task SetVenueAsync(string label, int radius)
+    {
+        var p = WorldInfo.PlayerPos(); var room = WorldInfo.CurrentRoom;
+        if (p == null || room.Length == 0) { lock (gate) { error = "You need to be standing in a housing ward or inside a house to set the venue."; } return Task.CompletedTask; }
+        return Call(HttpMethod.Post, "/lounge/venue/set", new { room, x = p.Value.X, y = p.Value.Y, z = p.Value.Z, radius, label });
+    }
+    public Task ClearVenueAsync() => Call(HttpMethod.Post, "/lounge/venue/clear", new { });
+    public Task SaveAdAsync(string text) => Call(HttpMethod.Post, "/lounge/ad/save", new { text });
+    public Task SaveNightAsync(string? id, string startsAt, string endsAt, string note) => Call(HttpMethod.Post, "/lounge/schedule/save", new { id, startsAt, endsAt, note });
+    public Task DeleteNightAsync(string id) => Call(HttpMethod.Post, "/lounge/schedule/delete", new { id });
+    public Task RsvpAsync(string nightId, bool on) => Call(HttpMethod.Post, "/lounge/schedule/rsvp", new { nightId, on });
+    public Task SetRosterAsync(string nightId, string name, string status) => Call(HttpMethod.Post, "/lounge/roster/set", new { nightId, name, status });
     public Task EndSessionAsync(string? name = null) => Call(HttpMethod.Post, "/lounge/session/end", new { name });
 
     private async Task Call(HttpMethod method, string path, object? body, bool quiet = false)

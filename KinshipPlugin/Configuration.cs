@@ -34,6 +34,7 @@ public class Configuration : IPluginConfiguration
     /// <summary>Show the small plot notice when you log in.</summary>
     public bool ShowPlotNotice { get; set; } = true;
     public bool LoungeMode { get; set; }
+    public int LoungeAdChannel { get; set; }
 
     /// <summary>Height of the crest in the main window, in pixels.</summary>
     public int CrestHeight { get; set; } = 200;
