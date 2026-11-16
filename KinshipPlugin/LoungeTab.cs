@@ -19,7 +19,7 @@ public sealed class LoungeTab
     private string customer = "";
     private string hoursEdit = ""; private int rateEdit; private bool infoLoaded;
     private string? editId; private string mName = "", mDesc = ""; private int mPrice = 100; private bool mGift; private string gIcon = "game:20001", gName = "", gDesc = "", gLabel = "", gText = "";
-    private string callMsg = ""; private bool confirmNight; private string? confirmPay;
+    private string posName = ""; private string callMode = "", callReason = "", callPatron = ""; private bool callIc = true; private bool confirmNight; private string? confirmPay;
     private string svcCustomer = "", svcName = ""; private int svcCustom = 45, svcPrice = 10000; private string? editSvc;
     private string patronAdd = "", venueLabel = "", adEdit = "", nightDate = "", nightTime = "20:00", nightNote = "", rosterName = ""; private int venueRadius = 40, nightHours = 4; private string? editNight; private bool adLoaded;
     private static readonly (string Label, string Prefix)[] AdChannels = BuildChannels();
@@ -49,10 +49,13 @@ public sealed class LoungeTab
         else if (notice.Length > 0) ImGui.TextColored(Green, notice);
         if (busy) ImGui.TextColored(Dim, "Working...");
         if (!v.NightOpen) ImGui.TextColored(Gold, "The night is closed. A manager starts the next one.");
-        if (ImGui.SmallButton("Call manager##lgcm")) callMsg = "Call manager is a placeholder for now. It will ping a manager later.";
-        ImGui.SameLine(); if (ImGui.SmallButton("Call security##lgcs")) callMsg = "Call security is a placeholder for now. It will ping security later.";
-        ImGui.SameLine(); if (ImGui.SmallButton("Ban a customer##lgcb")) callMsg = "Ban a customer is a placeholder for now. It will ping a manager to remove someone from the property and block them.";
-        if (callMsg.Length > 0) ImGui.TextColored(Dim, callMsg);
+        var shift = v.Me.Since.Length > 0;
+        if (!shift) ImGui.BeginDisabled();
+        if (ImGui.SmallButton("Call manager##lgcm")) callMode = callMode == "manager" ? "" : "manager";
+        ImGui.SameLine(); if (ImGui.SmallButton("Call security##lgcs")) callMode = callMode == "security" ? "" : "security";
+        ImGui.SameLine(); if (ImGui.SmallButton("Ban a customer##lgcb")) callMode = callMode == "ban" ? "" : "ban";
+        if (!shift) { ImGui.EndDisabled(); ImGui.SameLine(); ImGui.TextColored(Dim, "Clock in to use these."); }
+        DrawCall(v);
         ImGui.Spacing();
         if (ImGui.BeginTabBar("lounge_tabs", ImGuiTabBarFlags.FittingPolicyScroll))
         {
@@ -88,7 +91,7 @@ public sealed class LoungeTab
     {
         ImGui.TextColored(Gold, "On shift");
         if (v.Working.Count == 0) ImGui.TextColored(Dim, "Nobody is clocked in.");
-        foreach (var w in v.Working) ImGui.Text($"{w.Name}  (since {Local(w.Since)})");
+        foreach (var w in v.Working) ImGui.Text($"{w.Name}{(w.Roles.Count > 0 ? "  [" + string.Join(", ", w.Roles) + "]" : "")}  (since {Local(w.Since)})");
         ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         var onShift = v.Me.Since.Length > 0;
         if (onShift)
@@ -222,6 +225,39 @@ public sealed class LoungeTab
                 ImGui.Text($"{a.Who}: {a.Name} until {until}");
             }
         }
+    }
+
+    private void DrawCall(LoungeView v)
+    {
+        if (callMode.Length == 0) return;
+        if (callMode == "manager")
+        {
+            ImGui.Text("Ask a manager to come over. Is it:");
+            if (ImGui.RadioButton("IC (in character)##cic", callIc)) callIc = true;
+            ImGui.SameLine(); if (ImGui.RadioButton("OOC (out of character)##cooc", !callIc)) callIc = false;
+            if (ImGui.Button("Send to the manager on shift##csm")) { _ = Plugin.Lounge.CallManagerAsync(callIc); callMode = ""; }
+        }
+        else if (callMode == "security")
+        {
+            ImGui.Text("Send a call to everyone on shift with the Security position.");
+            if (ImGui.Button("Send to security##css")) { _ = Plugin.Lounge.CallSecurityAsync(); callMode = ""; }
+        }
+        else
+        {
+            ImGui.Text("Ask a manager to remove someone from the property and block them.");
+            ImGui.SetNextItemWidth(200f); ImGui.InputText("Customer name##cbn", ref callPatron, 40);
+            if (v.Patrons.Count > 0 && ImGui.BeginCombo("##cbp", "pick from the venue"))
+            {
+                foreach (var p in v.Patrons) if (ImGui.Selectable(p.Name + "##cbs" + p.Name)) callPatron = p.Name;
+                ImGui.EndCombo();
+            }
+            ImGui.SetNextItemWidth(320f); ImGui.InputText("Reason (griefing, refusing to leave...)##cbr", ref callReason, 200);
+            var ok = callPatron.Trim().Length > 0;
+            if (!ok) ImGui.BeginDisabled();
+            if (ImGui.Button("Send to the manager on shift##csb")) { _ = Plugin.Lounge.CallBanAsync(callPatron.Trim(), callReason.Trim()); callMode = ""; callPatron = ""; callReason = ""; }
+            if (!ok) ImGui.EndDisabled();
+        }
+        ImGui.SameLine(); if (ImGui.Button("Cancel##ccan")) callMode = "";
     }
 
     private static string Ago(string iso)
@@ -515,6 +551,23 @@ public sealed class LoungeTab
             }
         }
 
+        if (ImGui.CollapsingHeader("Positions##lghpos"))
+        {
+            ImGui.TextColored(Dim, "Who is the manager, security, bartender and so on. The Call manager and Call security buttons go to people on shift with those positions.");
+            foreach (var r in v.Roles) ImGui.Text($"{r.Name}: {string.Join(", ", r.Roles)}");
+            ImGui.SetNextItemWidth(180f); ImGui.InputText("Name (exactly as registered)##posn", ref posName, 40);
+            var cur = v.Roles.FirstOrDefault(r => string.Equals(r.Name, posName.Trim(), StringComparison.OrdinalIgnoreCase))?.Roles ?? new List<string>();
+            if (posName.Trim().Length > 0)
+                foreach (var role in LoungeState.Positions)
+                {
+                    var on = cur.Contains(role);
+                    if (ImGui.Checkbox(role + "##pos" + role, ref on))
+                    {
+                        var next = cur.Where(x => x != role).ToList(); if (on) next.Add(role);
+                        _ = Plugin.Lounge.SetRolesAsync(posName.Trim(), next);
+                    }
+                }
+        }
         if (ImGui.CollapsingHeader("Staff and pay##lgh4", ImGuiTreeNodeFlags.DefaultOpen))
         {
         var staff = v.Staff ?? new();

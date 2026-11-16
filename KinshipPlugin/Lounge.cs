@@ -10,7 +10,9 @@ namespace KinshipPlugin;
 
 public sealed class LoungeGift { public string Name { get; set; } = ""; public string Icon { get; set; } = "game:20001"; public string Description { get; set; } = ""; public string UseLabel { get; set; } = ""; public string UseText { get; set; } = ""; }
 public sealed class LoungeMenuItem { public string Id { get; set; } = ""; public string Name { get; set; } = ""; public int Price { get; set; } public string Description { get; set; } = ""; public LoungeGift? Gift { get; set; } }
-public sealed class LoungeWorker { public string Name { get; set; } = ""; public string Since { get; set; } = ""; }
+public sealed class LoungeWorker { public string Name { get; set; } = ""; public string Since { get; set; } = ""; public List<string> Roles { get; set; } = new(); }
+public sealed class LoungeStaffRoles { public string Name { get; set; } = ""; public List<string> Roles { get; set; } = new(); }
+public sealed class LoungePing { public string Id { get; set; } = ""; public string Kind { get; set; } = ""; public string Text { get; set; } = ""; public string At { get; set; } = ""; public string Responder { get; set; } = ""; }
 public sealed class LoungeMe { public string Since { get; set; } = ""; public int UnpaidMinutes { get; set; } public int UnpaidGold { get; set; } public int SoldCount { get; set; } public long SoldTotal { get; set; } }
 public sealed class LoungeBy { public string Name { get; set; } = ""; public int Count { get; set; } }
 public sealed class LoungeLine { public string Name { get; set; } = ""; public int Price { get; set; } public int Count { get; set; } public long Total { get; set; } public List<LoungeBy> By { get; set; } = new(); }
@@ -90,6 +92,7 @@ public sealed class LoungeRoster { public string Name { get; set; } = ""; public
 public sealed class LoungePlan { public string Id { get; set; } = ""; public string StartsAt { get; set; } = ""; public string EndsAt { get; set; } = ""; public string Note { get; set; } = ""; public List<LoungeRoster> Staff { get; set; } = new(); public string Mine { get; set; } = ""; }
 public sealed class LoungeView
 {
+    public List<LoungeStaffRoles> Roles { get; set; } = new(); public List<LoungePing> Pings { get; set; } = new();
     public bool NightOpen { get; set; } = true; public string AdText { get; set; } = ""; public LoungeVenue? Venue { get; set; } public List<LoungePatron> Patrons { get; set; } = new(); public List<LoungePlan> Schedule { get; set; } = new();
     public string Msg { get; set; } = ""; public bool CanManage { get; set; } public string Hours { get; set; } = ""; public int Rate { get; set; }
     public List<LoungeMenuItem> Menu { get; set; } = new(); public List<LoungeWorker> Working { get; set; } = new();
@@ -109,7 +112,7 @@ public sealed class LoungeState
     public void CloseNight() { lock (gate) { openNight = null; } }
 
     /// <summary>Runs about once a second. If you were the one who posted the Party Finder listing, tells you in chat when it is time to refresh it.</summary>
-    public void Tick() { PfTick(); ReportPatrons(); }
+    public void Tick() { PfTick(); ReportPatrons(); bool on; lock (gate) { on = view?.Me.Since.Length > 0; } if (on) RefreshIfDue(10); }   // clocked in: check for calls every few seconds
 
     // Staff who are clocked in and standing at the venue tell the server who is nearby. Only names are sent; it is read-only and nothing is sent to the game.
     private DateTime lastReport = DateTime.MinValue;
@@ -199,6 +202,15 @@ public sealed class LoungeState
     public Task DeleteServiceAsync(string id) => Call(HttpMethod.Post, "/lounge/service/delete", new { id });
     public Task StartSessionAsync(string serviceId, int minutes, string customer) => Call(HttpMethod.Post, "/lounge/session/start", new { serviceId, minutes, customer });
     public Task ExtendAsync(int minutes) => Call(HttpMethod.Post, "/lounge/session/extend", new { minutes });
+    public static readonly string[] Positions = { "Manager", "Security", "Bartender", "Server", "Host", "Entertainer", "Cook", "Other" };
+    public Task SetRolesAsync(string name, IEnumerable<string> roles) => Call(HttpMethod.Post, "/lounge/roles/set", new { name, roles = roles.ToArray() });
+    public Task CallManagerAsync(bool ic) => Call(HttpMethod.Post, "/lounge/call/manager", new { ic = ic ? "IC" : "OOC" });
+    public Task CallSecurityAsync() => Call(HttpMethod.Post, "/lounge/call/security", new { });
+    public Task CallBanAsync(string patron, string reason) => Call(HttpMethod.Post, "/lounge/call/ban", new { patron, reason });
+    public Task RespondAsync(string id) { lock (gate) { dismissed.Add(id); } return Call(HttpMethod.Post, "/lounge/call/respond", new { id }); }
+    public Task DismissPingAsync(string id) { lock (gate) { dismissed.Add(id); } return Call(HttpMethod.Post, "/lounge/call/dismiss", new { id }); }
+    private readonly HashSet<string> dismissed = new();
+    public List<LoungePing> Pings() { lock (gate) { return (view?.Pings ?? new()).Where(x => !dismissed.Contains(x.Id)).ToList(); } }
     public Task PatronHelpAsync(string name) => Call(HttpMethod.Post, "/lounge/patrons/help", new { name });
     public Task PatronUnhelpAsync(string name) => Call(HttpMethod.Post, "/lounge/patrons/unhelp", new { name });
     public Task PatronDoneAsync(string name) => Call(HttpMethod.Post, "/lounge/patrons/done", new { name });

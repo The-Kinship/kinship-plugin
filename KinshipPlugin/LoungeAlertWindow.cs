@@ -29,7 +29,7 @@ public sealed class LoungeAlertWindow : Window, IDisposable
     {
         if (Plugin.Config.Me().ItemsToken.Length == 0) return false;
         var (pf, ses) = Plugin.Lounge.Alerts();
-        return pf || ses != null;
+        return pf || ses != null || Plugin.Lounge.Pings().Count > 0;
     }
 
     public override void PreDraw()
@@ -57,6 +57,19 @@ public sealed class LoungeAlertWindow : Window, IDisposable
     public override void Draw()
     {
         var (pf, ses) = Plugin.Lounge.Alerts();
+        var pings = Plugin.Lounge.Pings();
+        foreach (var g in pings)
+        {
+            ImGui.PushID("png" + g.Id);
+            ImGui.TextColored(Gold, g.Kind == "security" ? "Embershade Lounge  -  security call" : g.Kind == "ban" ? "Embershade Lounge  -  ban request" : "Embershade Lounge  -  manager call");
+            Big(g.Text);
+            if (g.Responder.Length > 0) ImGui.TextColored(Dim, $"{g.Responder} is responding.");
+            if (g.Responder.Length == 0 && ImGui.Button("I'll go")) _ = Plugin.Lounge.RespondAsync(g.Id);
+            if (g.Responder.Length == 0) ImGui.SameLine();
+            if (ImGui.Button("Dismiss")) _ = Plugin.Lounge.DismissPingAsync(g.Id);
+            ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+            ImGui.PopID();
+        }
         if (ses != null)
         {
             ImGui.TextColored(Gold, "Embershade Lounge  -  service");

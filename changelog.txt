@@ -1,3 +1,4 @@
+0.75.0: Lounge: staff positions (Manager, Security, Bartender, Server...), and the call buttons now work: Call manager (IC or OOC), Call security, and Ban a customer with a reason pop up on the right people.
 0.74.0: Lounge: the night now has two buttons, Close the night and Start a new night (selling pauses while closed); placeholder Call manager, Call security and Ban a customer buttons along the top.
 0.73.0: Lounge: Patrons tab (who is in the venue, who is waiting, who is helping whom), Schedule tab (nights and who is working), and an Advert with a chat-channel picker and Copy for chat.
 0.72.0: Lounge: on-screen pop-ups (Party Finder refresh reminder, service time is up), and a Services tab where each staff member sets services and prices, starts timed bookings, and closes them into a receipt that also lands in the receipt book.
