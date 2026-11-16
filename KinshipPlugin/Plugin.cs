@@ -40,6 +40,7 @@ public sealed class Plugin : IDalamudPlugin
     internal static FindState Finds { get; private set; } = null!;
     internal static BankState Bank { get; private set; } = null!;
     internal static MailState Mail { get; private set; } = null!;
+    internal static LoungeState Lounge { get; private set; } = null!;
     internal static ArmoryState Armory { get; private set; } = null!;
     internal static DuelState Duels { get; private set; } = null!;
     internal static ProfileState Profiles { get; private set; } = null!;
@@ -119,6 +120,7 @@ public sealed class Plugin : IDalamudPlugin
         Finds = new FindState();
         Bank = new BankState();
         Mail = new MailState();
+        Lounge = new LoungeState();
         Armory = new ArmoryState();
         Duels = new DuelState();
         Profiles = new ProfileState();
@@ -168,6 +170,7 @@ public sealed class Plugin : IDalamudPlugin
         Finds = new FindState();
         Bank = new BankState();
         Mail = new MailState();
+        Lounge = new LoungeState();
         Armory = new ArmoryState();
         Duels = new DuelState();
         Profiles = new ProfileState();
