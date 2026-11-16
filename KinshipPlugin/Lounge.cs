@@ -12,7 +12,33 @@ public sealed class LoungeWorker { public string Name { get; set; } = ""; public
 public sealed class LoungeMe { public string Since { get; set; } = ""; public int UnpaidMinutes { get; set; } public int UnpaidGold { get; set; } public int SoldCount { get; set; } public long SoldTotal { get; set; } }
 public sealed class LoungeBy { public string Name { get; set; } = ""; public int Count { get; set; } }
 public sealed class LoungeLine { public string Name { get; set; } = ""; public int Price { get; set; } public int Count { get; set; } public long Total { get; set; } public List<LoungeBy> By { get; set; } = new(); }
-public sealed class LoungePerson { public string Name { get; set; } = ""; public int Count { get; set; } public long Total { get; set; } public int Minutes { get; set; } }
+public sealed class LoungePerson { public string Name { get; set; } = ""; public int Count { get; set; } public long Total { get; set; } public int Minutes { get; set; } public long ServiceTotal { get; set; } }
+public sealed class LoungeService { public string Id { get; set; } = ""; public string Who { get; set; } = ""; public string Name { get; set; } = ""; public int Price { get; set; } }
+public sealed class LoungeSession { public string Id { get; set; } = ""; public string Name { get; set; } = ""; public string Customer { get; set; } = ""; public int Rate { get; set; } public int Minutes { get; set; } public string StartedAt { get; set; } = ""; public string EndsAt { get; set; } = ""; }
+public sealed class LoungeActive { public string Who { get; set; } = ""; public string Name { get; set; } = ""; public string Customer { get; set; } = ""; public string EndsAt { get; set; } = ""; }
+public sealed class LoungeServiceLine { public string Who { get; set; } = ""; public string Name { get; set; } = ""; public string Customer { get; set; } = ""; public int Rate { get; set; } public int Minutes { get; set; } public long Total { get; set; } }
+public static class Dur
+{
+    public static string Of(int m) => m < 60 ? $"{m} minutes" : m % 60 == 0 ? (m / 60 == 1 ? "1 hour" : $"{m / 60} hours") : $"{m / 60} hr {m % 60} min";
+}
+/// <summary>The little receipt for a finished service session.</summary>
+public sealed class LoungeReceipt
+{
+    public string Staff { get; set; } = ""; public string Service { get; set; } = ""; public string Customer { get; set; } = ""; public int Rate { get; set; } public int Minutes { get; set; } public long Total { get; set; } public string ClosedAt { get; set; } = "";
+    public string ToText()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Embershade Lounge service receipt");
+        sb.AppendLine($"Staff: {Staff}");
+        sb.AppendLine($"Service: {Service}");
+        if (Customer.Length > 0) sb.AppendLine($"Customer: {Customer}");
+        sb.AppendLine($"Rate: {Rate:N0} gil per hour");
+        sb.AppendLine($"Time: {Dur.Of(Minutes)}");
+        sb.Append($"Total due: {Total:N0} gil");
+        return sb.ToString();
+    }
+    public string OneLine() => $"[Kinship] Receipt: {Staff}, {Service}{(Customer.Length > 0 ? " for " + Customer : "")}, {Rate:N0} gil per hour x {Dur.Of(Minutes)} = {Total:N0} gil due.";
+}
 public sealed class LoungePf { public string Text { get; set; } = ""; public int Minutes { get; set; } = 55; public string PostedAt { get; set; } = ""; public string PostedBy { get; set; } = ""; }
 public sealed class LoungeNightRow { public string Id { get; set; } = ""; public string ClosedAt { get; set; } = ""; public int Count { get; set; } public long Total { get; set; } }
 /// <summary>A closed night, as saved on the server. ToText() makes the plain text receipt with dates in the viewer's own time zone.</summary>
@@ -20,6 +46,7 @@ public sealed class LoungeNight
 {
     public string NightStart { get; set; } = ""; public string ClosedAt { get; set; } = ""; public string ClosedBy { get; set; } = "";
     public List<LoungeLine> Items { get; set; } = new(); public List<LoungePerson> People { get; set; } = new(); public int Count { get; set; } public long Total { get; set; }
+    public List<LoungeServiceLine> Services { get; set; } = new(); public long ServiceTotal { get; set; } public long Grand { get; set; }
     private static string Fmt(string iso) => DateTime.TryParse(iso, null, System.Globalization.DateTimeStyles.RoundtripKind, out var d) ? d.ToLocalTime().ToString("ddd MMM d yyyy, h:mm tt") : iso;
     public DateTime ClosedLocal() => DateTime.TryParse(ClosedAt, null, System.Globalization.DateTimeStyles.RoundtripKind, out var d) ? d.ToLocalTime() : DateTime.Now;
     public string ToText()
@@ -37,14 +64,23 @@ public sealed class LoungeNight
             if (l.By.Count > 0) sb.AppendLine("      " + string.Join(", ", l.By.Select(b => $"{b.Name} sold {b.Count}")));
         }
         sb.AppendLine();
-        sb.AppendLine($"TOTAL: {Count} sold, {Total:N0} gil");
+        sb.AppendLine($"ITEMS TOTAL: {Count} sold, {Total:N0} gil");
+        if (Services.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("SERVICES");
+            foreach (var x in Services) sb.AppendLine($"  {x.Who}: {x.Name}{(x.Customer.Length > 0 ? " for " + x.Customer : "")}, {Dur.Of(x.Minutes)} at {x.Rate:N0} gil per hour = {x.Total:N0} gil");
+            sb.AppendLine($"SERVICES TOTAL: {Services.Count} booked, {ServiceTotal:N0} gil");
+        }
+        sb.AppendLine();
+        sb.AppendLine($"GRAND TOTAL: {(Grand > 0 || Services.Count > 0 ? Grand : Total):N0} gil");
         sb.AppendLine();
         sb.AppendLine("BY PERSON");
-        foreach (var p in People) sb.AppendLine($"  {p.Name}: {p.Count} sold, {p.Total:N0} gil, on shift {p.Minutes} min");
+        foreach (var p in People) sb.AppendLine($"  {p.Name}: {p.Count} sold, {p.Total:N0} gil" + (p.ServiceTotal > 0 ? $", services {p.ServiceTotal:N0} gil" : "") + $", on shift {p.Minutes} min");
         return sb.ToString();
     }
 }
-public sealed class LoungeTonight { public List<LoungeLine> Items { get; set; } = new(); public int Count { get; set; } public long Total { get; set; } }
+public sealed class LoungeTonight { public List<LoungeLine> Items { get; set; } = new(); public int Count { get; set; } public long Total { get; set; } public List<LoungeServiceLine> Services { get; set; } = new(); public long ServiceTotal { get; set; } public long Grand { get; set; } }
 public sealed class LoungeStaff { public string Name { get; set; } = ""; public int Minutes { get; set; } public int Gold { get; set; } public bool ClockedIn { get; set; } }
 public sealed class LoungeView
 {
@@ -52,6 +88,7 @@ public sealed class LoungeView
     public List<LoungeMenuItem> Menu { get; set; } = new(); public List<LoungeWorker> Working { get; set; } = new();
     public LoungeMe Me { get; set; } = new(); public LoungeTonight? Tonight { get; set; } public List<LoungeStaff>? Staff { get; set; }
     public LoungePf Pf { get; set; } = new(); public List<LoungeNightRow>? Nights { get; set; }
+    public List<LoungeService> Services { get; set; } = new(); public LoungeSession? Session { get; set; } public List<LoungeActive> Sessions { get; set; } = new();
 }
 
 /// <summary>The Embershade Lounge: hours, menu, clock in and out, receipts. Everything lives on the server; this keeps the last answer.</summary>
@@ -67,7 +104,6 @@ public sealed class LoungeState
     /// <summary>Runs about once a second. If you were the one who posted the Party Finder listing, tells you in chat when it is time to refresh it.</summary>
     public void Tick()
     {
-        string text = "";
         lock (gate)
         {
             if ((DateTime.UtcNow - lastTick).TotalSeconds < 5) return;
@@ -76,10 +112,26 @@ public sealed class LoungeState
             if (pf == null || pf.PostedAt.Length == 0 || pf.PostedAt == announced || !string.Equals(pf.PostedBy, Plugin.Config.Me().ItemsName, StringComparison.OrdinalIgnoreCase)) return;
             if (!DateTime.TryParse(pf.PostedAt, null, System.Globalization.DateTimeStyles.RoundtripKind, out var at)) return;
             if ((DateTime.UtcNow - at.ToUniversalTime()).TotalMinutes < pf.Minutes) return;
-            announced = pf.PostedAt; text = "[Kinship] Time to refresh the Embershade Lounge Party Finder listing.";
+            announced = pf.PostedAt; pfAlert = true;
         }
-        if (text.Length > 0) _ = Plugin.Framework.RunOnFrameworkThread(() => Plugin.Chat.Print(text));
     }
+
+    // ---- on-screen alerts: the Party Finder refresh reminder and "time is up" for a service session
+    private bool pfAlert; private DateTime snoozeUntil = DateTime.MinValue; private LoungeReceipt? lastReceipt;
+    public (bool Pf, LoungeSession? Session) Alerts()
+    {
+        lock (gate)
+        {
+            LoungeSession? due = null;
+            var ses = view?.Session;
+            if (ses != null && DateTime.UtcNow >= snoozeUntil && DateTime.TryParse(ses.EndsAt, null, System.Globalization.DateTimeStyles.RoundtripKind, out var end) && end.ToUniversalTime() <= DateTime.UtcNow) due = ses;
+            return (pfAlert, due);
+        }
+    }
+    public void DismissPf() { lock (gate) { pfAlert = false; } }
+    public void SnoozeSession() { lock (gate) { snoozeUntil = DateTime.UtcNow.AddMinutes(5); } }
+    public LoungeReceipt? LastReceipt() { lock (gate) { return lastReceipt; } }
+    public void DismissReceipt() { lock (gate) { lastReceipt = null; } }
 
     public (LoungeView? View, string Error, string Notice, bool Busy) Snapshot() { lock (gate) { return (view, error, notice, busy); } }
 
@@ -104,6 +156,11 @@ public sealed class LoungeState
     public Task SavePfAsync(string text, int minutes) => Call(HttpMethod.Post, "/lounge/pf/save", new { text, minutes });
     public Task PostedAsync() => Call(HttpMethod.Post, "/lounge/pf/posted", new { });
     public Task ViewNightAsync(string id) => Call(HttpMethod.Post, "/lounge/night", new { id });
+    public Task SaveServiceAsync(string? id, string name, int price) => Call(HttpMethod.Post, "/lounge/service/save", new { id, name, price });
+    public Task DeleteServiceAsync(string id) => Call(HttpMethod.Post, "/lounge/service/delete", new { id });
+    public Task StartSessionAsync(string serviceId, int minutes, string customer) => Call(HttpMethod.Post, "/lounge/session/start", new { serviceId, minutes, customer });
+    public Task ExtendAsync(int minutes) => Call(HttpMethod.Post, "/lounge/session/extend", new { minutes });
+    public Task EndSessionAsync(string? name = null) => Call(HttpMethod.Post, "/lounge/session/end", new { name });
 
     private async Task Call(HttpMethod method, string path, object? body, bool quiet = false)
     {
@@ -117,7 +174,9 @@ public sealed class LoungeState
             {
                 if (r.Lounge != null) { view = r.Lounge; if (!quiet && r.Lounge.Msg.Length > 0) notice = r.Lounge.Msg + saved; }
                 if (r.Night != null) openNight = r.Night;
+                if (r.Receipt != null) { lastReceipt = r.Receipt; snoozeUntil = DateTime.MinValue; }
             }
+            if (r.Receipt != null) { var line = r.Receipt.OneLine(); _ = Plugin.Framework.RunOnFrameworkThread(() => Plugin.Chat.Print(line)); }
         }
         catch (CombatException ex) { if (!quiet) lock (gate) { error = ex.Message; } }
         catch (Exception ex) { Plugin.Log.Warning(ex, "Lounge request failed"); if (!quiet) lock (gate) { error = "Couldn't reach the server. Check your connection and try again."; } }

@@ -153,6 +153,7 @@ public sealed class Plugin : IDalamudPlugin
     private readonly QuestOverlay questOverlay;
     private readonly QuestReplyWindow questReply;
     private readonly QuestOfferWindow questOffer;
+    private readonly LoungeAlertWindow loungeAlert;
     private readonly QuestFightWindow questFight;
     private readonly StashReaderWindow stashReader;
     private readonly TopBarMenu topMenu;
@@ -221,6 +222,8 @@ public sealed class Plugin : IDalamudPlugin
         windows.AddWindow(questReply);
         questOffer = new QuestOfferWindow();
         windows.AddWindow(questOffer);
+        loungeAlert = new LoungeAlertWindow();
+        windows.AddWindow(loungeAlert);
         questFight = new QuestFightWindow();
         windows.AddWindow(questFight);
 
@@ -299,6 +302,7 @@ public sealed class Plugin : IDalamudPlugin
         questOverlay.Dispose();
         questReply.Dispose();
         questOffer.Dispose();
+        loungeAlert.Dispose();
         questFight.Dispose();
         stashReader.Dispose();
         topMenu.Dispose();

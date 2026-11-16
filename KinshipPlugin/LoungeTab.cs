@@ -19,6 +19,7 @@ public sealed class LoungeTab
     private string hoursEdit = ""; private int rateEdit; private bool infoLoaded;
     private string? editId; private string mName = "", mDesc = ""; private int mPrice = 100; private bool mGift; private string gIcon = "game:20001", gName = "", gDesc = "", gLabel = "", gText = "";
     private bool confirmNight; private string? confirmPay;
+    private string svcCustomer = "", svcName = ""; private int svcCustom = 45, svcPrice = 10000; private string? editSvc;
     private bool pfLoaded; private string pfEdit = ""; private int pfMinutes = 55;
     private string nightText = "", nightTitle = "";
 
@@ -43,6 +44,7 @@ public sealed class LoungeTab
             if (ImGui.BeginTabItem("Menu")) { DrawMenu(v); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Time clock")) { DrawClock(v); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Cash register")) { DrawRegister(v); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Services")) { DrawServices(v); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Party Finder")) { DrawPf(v); ImGui.EndTabItem(); }
             if (v.CanManage && ImGui.BeginTabItem("Management")) { DrawManager(v); ImGui.EndTabItem(); }
             ImGui.EndTabBar();
@@ -113,6 +115,96 @@ public sealed class LoungeTab
         ImGui.Text($"{v.Me.SoldCount} sold, {v.Me.SoldTotal:N0} gil");
         ImGui.SameLine(); if (ImGui.SmallButton("Undo my last sale")) _ = Plugin.Lounge.UndoAsync();
         ImGui.TextColored(Dim, "Undo works for sales from the last 15 minutes. It does not take back an item you handed over.");
+    }
+
+    private void DrawServices(LoungeView v)
+    {
+        var me = Plugin.Config.Me().ItemsName;
+        var onShift = v.Me.Since.Length > 0;
+        var receipt = Plugin.Lounge.LastReceipt();
+        if (receipt != null)
+        {
+            ImGui.TextColored(Gold, "Receipt");
+            ImGui.TextUnformatted(receipt.ToText());
+            if (ImGui.SmallButton("Copy receipt##svcr")) ImGui.SetClipboardText(receipt.ToText());
+            ImGui.SameLine(); if (ImGui.SmallButton("Dismiss##svcrd")) Plugin.Lounge.DismissReceipt();
+            ImGui.TextColored(Dim, "This is also added to the Lounge receipt book.");
+            ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        }
+        var ses = v.Session;
+        if (ses != null)
+        {
+            ImGui.TextColored(Gold, "Your session");
+            ImGui.Text(ses.Name + (ses.Customer.Length > 0 ? $" with {ses.Customer}" : "") + $"  -  {ses.Rate:N0} gil per hour, {Dur.Of(ses.Minutes)} booked");
+            if (DateTime.TryParse(ses.EndsAt, null, System.Globalization.DateTimeStyles.RoundtripKind, out var end))
+            {
+                var left = end.ToUniversalTime() - DateTime.UtcNow;
+                if (left.TotalSeconds > 0) ImGui.TextColored(Green, $"Time left: {(int)left.TotalMinutes}:{left.Seconds:00}");
+                else ImGui.TextColored(Red, "Time is up.");
+            }
+            ImGui.TextColored(Dim, $"Due so far: {Math.Round(ses.Rate * ses.Minutes / 60.0):N0} gil");
+            if (ImGui.Button("Add 30 minutes##svc30")) _ = Plugin.Lounge.ExtendAsync(30);
+            ImGui.SameLine(); if (ImGui.Button("Add 1 hour##svc60")) _ = Plugin.Lounge.ExtendAsync(60);
+            ImGui.SameLine(); if (ImGui.Button("Close session##svcend")) _ = Plugin.Lounge.EndSessionAsync();
+            ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        }
+
+        var mine = v.Services.Where(x => string.Equals(x.Who, me, StringComparison.OrdinalIgnoreCase)).ToList();
+        if (ses == null)
+        {
+            ImGui.TextColored(Gold, "Start a service");
+            if (!onShift) ImGui.TextColored(Dim, "Clock in on the Time clock tab first.");
+            else if (mine.Count == 0) ImGui.TextColored(Dim, "Add a service below, then you can start it here.");
+            ImGui.SetNextItemWidth(180f); ImGui.InputText("Customer (optional)##svcc", ref svcCustomer, 40);
+            ImGui.SetNextItemWidth(90f); ImGui.InputInt("Custom minutes##svcm", ref svcCustom, 5, 15); svcCustom = Math.Clamp(svcCustom, 15, 480);
+            if (!onShift) ImGui.BeginDisabled();
+            foreach (var x in mine)
+            {
+                ImGui.PushID("st" + x.Id);
+                ImGui.Text($"{x.Name}  -  {x.Price:N0} gil per hour");
+                if (ImGui.SmallButton("30 min")) _ = Plugin.Lounge.StartSessionAsync(x.Id, 30, svcCustomer.Trim());
+                ImGui.SameLine(); if (ImGui.SmallButton("1 hour")) _ = Plugin.Lounge.StartSessionAsync(x.Id, 60, svcCustomer.Trim());
+                ImGui.SameLine(); if (ImGui.SmallButton("2 hours")) _ = Plugin.Lounge.StartSessionAsync(x.Id, 120, svcCustomer.Trim());
+                ImGui.SameLine(); if (ImGui.SmallButton("Custom")) _ = Plugin.Lounge.StartSessionAsync(x.Id, svcCustom, svcCustomer.Trim());
+                ImGui.PopID();
+            }
+            if (!onShift) ImGui.EndDisabled();
+            ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        }
+
+        ImGui.TextColored(Gold, editSvc == null ? "My services" : "Edit service");
+        ImGui.TextColored(Dim, "Each staff member sets their own services and prices. The price is per hour; the total is worked out from the time booked.");
+        foreach (var x in mine)
+        {
+            ImGui.PushID("ms" + x.Id);
+            ImGui.Text($"{x.Name}  -  {x.Price:N0} gil per hour"); ImGui.SameLine();
+            if (ImGui.SmallButton("Edit")) { editSvc = x.Id; svcName = x.Name; svcPrice = x.Price; }
+            ImGui.SameLine(); if (ImGui.SmallButton("Remove")) _ = Plugin.Lounge.DeleteServiceAsync(x.Id);
+            ImGui.PopID();
+        }
+        ImGui.SetNextItemWidth(220f); ImGui.InputText("Service name##svcn", ref svcName, 40);
+        ImGui.SetNextItemWidth(140f); ImGui.InputInt("Price per hour (gil)##svcp", ref svcPrice, 1000, 10000); svcPrice = Math.Clamp(svcPrice, 0, 1000000);
+        var okSvc = svcName.Trim().Length > 0;
+        if (!okSvc) ImGui.BeginDisabled();
+        if (ImGui.Button((editSvc == null ? "Add service" : "Save service") + "##svcadd")) { _ = Plugin.Lounge.SaveServiceAsync(editSvc, svcName.Trim(), svcPrice); editSvc = null; svcName = ""; svcPrice = 10000; }
+        if (!okSvc) ImGui.EndDisabled();
+        if (editSvc != null) { ImGui.SameLine(); if (ImGui.Button("Cancel##svccan")) { editSvc = null; svcName = ""; svcPrice = 10000; } }
+
+        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        ImGui.TextColored(Gold, "Who offers what");
+        if (v.Services.Count == 0) ImGui.TextColored(Dim, "Nobody has added a service yet.");
+        foreach (var g in v.Services.GroupBy(x => x.Who))
+            ImGui.TextWrapped($"{g.Key}: " + string.Join(";  ", g.Select(x => $"{x.Name} ({x.Price:N0} gil per hour)")));
+        if (v.Sessions.Count > 0)
+        {
+            ImGui.Spacing();
+            ImGui.TextColored(Gold, "Busy right now");
+            foreach (var a in v.Sessions)
+            {
+                var until = DateTime.TryParse(a.EndsAt, null, System.Globalization.DateTimeStyles.RoundtripKind, out var e) ? e.ToLocalTime().ToString("h:mm tt") : "";
+                ImGui.Text($"{a.Who}: {a.Name} until {until}");
+            }
+        }
     }
 
     private void DrawPf(LoungeView v)
@@ -197,7 +289,7 @@ public sealed class LoungeTab
         if (ImGui.CollapsingHeader("Receipt book, tonight##lgh3", ImGuiTreeNodeFlags.DefaultOpen))
         {
         var t = v.Tonight;
-        if (t == null || t.Items.Count == 0) ImGui.TextColored(Dim, "Nothing sold yet.");
+        if (t == null || (t.Items.Count == 0 && t.Services.Count == 0)) ImGui.TextColored(Dim, "Nothing sold yet.");
         else
         {
             foreach (var l in t.Items)
@@ -205,8 +297,16 @@ public sealed class LoungeTab
                 ImGui.Text($"{l.Count} x {l.Name}  =  {l.Total:N0} gil");
                 if (l.By.Count > 0) { ImGui.Indent(14f); ImGui.TextColored(Dim, string.Join(",  ", l.By.Select(b => $"{b.Name} sold {b.Count}"))); ImGui.Unindent(14f); }
             }
-            ImGui.TextColored(Green, $"Total: {t.Count} sold, {t.Total:N0} gil expected");
+            ImGui.TextColored(Green, $"Items: {t.Count} sold, {t.Total:N0} gil");
         }
+        if (t != null && t.Services.Count > 0)
+        {
+            ImGui.Spacing();
+            ImGui.TextColored(Gold, "Services booked");
+            foreach (var x in t.Services) ImGui.Text($"{x.Who}: {x.Name}{(x.Customer.Length > 0 ? " for " + x.Customer : "")}, {Dur.Of(x.Minutes)} at {x.Rate:N0} per hour = {x.Total:N0} gil");
+            ImGui.TextColored(Green, $"Services: {t.Services.Count} booked, {t.ServiceTotal:N0} gil");
+        }
+        if (t != null && (t.Items.Count > 0 || t.Services.Count > 0)) ImGui.TextColored(Green, $"Grand total expected: {t.Grand:N0} gil");
         if (!confirmNight) { if (ImGui.SmallButton("Close the night and start a new one##lgnn")) confirmNight = true; }
         else
         {
@@ -249,6 +349,8 @@ public sealed class LoungeTab
             ImGui.PushID("st" + s.Name);
             ImGui.Text(s.Name); ImGui.SameLine();
             ImGui.TextColored(Dim, (s.ClockedIn ? "clocked in" : "off shift") + (s.Gold > 0 || s.Minutes > 0 ? $", owed {s.Gold:N0} gold for {s.Minutes} min" : ""));
+            var busySvc = v.Sessions.FirstOrDefault(x => string.Equals(x.Who, s.Name, StringComparison.OrdinalIgnoreCase));
+            if (busySvc != null) { ImGui.SameLine(); ImGui.TextColored(Dim, $"in session: {busySvc.Name}"); ImGui.SameLine(); if (ImGui.SmallButton("Close session")) _ = Plugin.Lounge.EndSessionAsync(s.Name); }
             if (s.ClockedIn) { ImGui.SameLine(); if (ImGui.SmallButton("Clock out")) _ = Plugin.Lounge.ClockOutAsync(s.Name); }
             if (!s.ClockedIn && s.Minutes > 0)
             {
