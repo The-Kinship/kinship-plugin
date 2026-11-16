@@ -48,7 +48,7 @@ public sealed class LoungeTab
 
     private void DrawMenu(LoungeView v)
     {
-        ImGui.TextColored(Dim, "Press Copy description to copy a drink or dish so you can paste it when a customer asks what it is.");
+        ImGui.TextColored(Dim, "Press Copy description to copy just the description, so you can paste it when a customer asks what it is.");
         ImGui.Spacing();
         if (v.Menu.Count == 0) ImGui.TextColored(Dim, "The menu is empty.");
         foreach (var m in v.Menu)
@@ -56,7 +56,7 @@ public sealed class LoungeTab
             ImGui.PushID("menu" + m.Id);
             ImGui.Text($"{m.Name}  -  {m.Price:N0} gil" + (m.Gift != null ? "  (comes with an item)" : ""));
             if (m.Description.Length > 0) ImGui.TextWrapped(m.Description);
-            if (ImGui.SmallButton("Copy description")) ImGui.SetClipboardText(m.Description.Length > 0 ? $"{m.Name}: {m.Description}" : m.Name);
+            if (ImGui.SmallButton("Copy description")) ImGui.SetClipboardText(m.Description.Length > 0 ? m.Description : m.Name);
             ImGui.PopID();
             ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         }
