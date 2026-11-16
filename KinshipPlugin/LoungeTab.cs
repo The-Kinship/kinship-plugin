@@ -19,7 +19,7 @@ public sealed class LoungeTab
     private string customer = "";
     private string hoursEdit = ""; private int rateEdit; private bool infoLoaded;
     private string? editId; private string mName = "", mDesc = ""; private int mPrice = 100; private bool mGift; private string gIcon = "game:20001", gName = "", gDesc = "", gLabel = "", gText = "";
-    private bool confirmNight; private string? confirmPay;
+    private string callMsg = ""; private bool confirmNight; private string? confirmPay;
     private string svcCustomer = "", svcName = ""; private int svcCustom = 45, svcPrice = 10000; private string? editSvc;
     private string patronAdd = "", venueLabel = "", adEdit = "", nightDate = "", nightTime = "20:00", nightNote = "", rosterName = ""; private int venueRadius = 40, nightHours = 4; private string? editNight; private bool adLoaded;
     private static readonly (string Label, string Prefix)[] AdChannels = BuildChannels();
@@ -48,6 +48,11 @@ public sealed class LoungeTab
         if (error.Length > 0) ImGui.TextColored(Red, error);
         else if (notice.Length > 0) ImGui.TextColored(Green, notice);
         if (busy) ImGui.TextColored(Dim, "Working...");
+        if (!v.NightOpen) ImGui.TextColored(Gold, "The night is closed. A manager starts the next one.");
+        if (ImGui.SmallButton("Call manager##lgcm")) callMsg = "Call manager is a placeholder for now. It will ping a manager later.";
+        ImGui.SameLine(); if (ImGui.SmallButton("Call security##lgcs")) callMsg = "Call security is a placeholder for now. It will ping security later.";
+        ImGui.SameLine(); if (ImGui.SmallButton("Ban a customer##lgcb")) callMsg = "Ban a customer is a placeholder for now. It will ping a manager to remove someone from the property and block them.";
+        if (callMsg.Length > 0) ImGui.TextColored(Dim, callMsg);
         ImGui.Spacing();
         if (ImGui.BeginTabBar("lounge_tabs", ImGuiTabBarFlags.FittingPolicyScroll))
         {
@@ -472,11 +477,16 @@ public sealed class LoungeTab
             ImGui.TextColored(Green, $"Services: {t.Services.Count} booked, {t.ServiceTotal:N0} gil");
         }
         if (t != null && (t.Items.Count > 0 || t.Services.Count > 0)) ImGui.TextColored(Green, $"Grand total expected: {t.Grand:N0} gil");
-        if (!confirmNight) { if (ImGui.SmallButton("Close the night and start a new one##lgnn")) confirmNight = true; }
+        if (!v.NightOpen)
+        {
+            ImGui.TextColored(Gold, "The night is closed. Selling is switched off until you start a new night.");
+            if (ImGui.Button("Start a new night##lgstart")) _ = Plugin.Lounge.StartNightAsync();
+        }
+        else if (!confirmNight) { if (ImGui.Button("Close the night##lgnn")) confirmNight = true; }
         else
         {
-            ImGui.TextColored(Red, "Clear the receipt book and start a new night?");
-            if (ImGui.SmallButton("Yes, start a new night##lgny")) { _ = Plugin.Lounge.NewNightAsync(); confirmNight = false; }
+            ImGui.TextColored(Red, "Close the night? The receipt book is saved to Past nights and cleared.");
+            if (ImGui.SmallButton("Yes, close the night##lgny")) { _ = Plugin.Lounge.CloseNightAsync(); confirmNight = false; }
             ImGui.SameLine(); if (ImGui.SmallButton("Cancel##lgnc")) confirmNight = false;
         }
         }

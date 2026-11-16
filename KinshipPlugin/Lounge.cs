@@ -90,7 +90,7 @@ public sealed class LoungeRoster { public string Name { get; set; } = ""; public
 public sealed class LoungePlan { public string Id { get; set; } = ""; public string StartsAt { get; set; } = ""; public string EndsAt { get; set; } = ""; public string Note { get; set; } = ""; public List<LoungeRoster> Staff { get; set; } = new(); public string Mine { get; set; } = ""; }
 public sealed class LoungeView
 {
-    public string AdText { get; set; } = ""; public LoungeVenue? Venue { get; set; } public List<LoungePatron> Patrons { get; set; } = new(); public List<LoungePlan> Schedule { get; set; } = new();
+    public bool NightOpen { get; set; } = true; public string AdText { get; set; } = ""; public LoungeVenue? Venue { get; set; } public List<LoungePatron> Patrons { get; set; } = new(); public List<LoungePlan> Schedule { get; set; } = new();
     public string Msg { get; set; } = ""; public bool CanManage { get; set; } public string Hours { get; set; } = ""; public int Rate { get; set; }
     public List<LoungeMenuItem> Menu { get; set; } = new(); public List<LoungeWorker> Working { get; set; } = new();
     public LoungeMe Me { get; set; } = new(); public LoungeTonight? Tonight { get; set; } public List<LoungeStaff>? Staff { get; set; }
@@ -190,7 +190,8 @@ public sealed class LoungeState
     public Task DeleteMenuAsync(string id) => Call(HttpMethod.Post, "/lounge/menu/delete", new { id });
     public Task ClockOutAsync(string name) => Call(HttpMethod.Post, "/lounge/clockout", new { name });
     public Task PayAsync(string name) => Call(HttpMethod.Post, "/lounge/pay", new { name });
-    public Task NewNightAsync() => Call(HttpMethod.Post, "/lounge/newnight", new { });
+    public Task CloseNightAsync() => Call(HttpMethod.Post, "/lounge/closenight", new { });
+    public Task StartNightAsync() => Call(HttpMethod.Post, "/lounge/startnight", new { });
     public Task SavePfAsync(string text, int minutes) => Call(HttpMethod.Post, "/lounge/pf/save", new { text, minutes });
     public Task PostedAsync() => Call(HttpMethod.Post, "/lounge/pf/posted", new { });
     public Task ViewNightAsync(string id) => Call(HttpMethod.Post, "/lounge/night", new { id });
@@ -224,7 +225,7 @@ public sealed class LoungeState
         {
             var r = await ItemsState.SendAsync(method, path, body).ConfigureAwait(false);
             string saved = "";
-            if (r.Night != null && path == "/lounge/newnight") saved = SaveReceipt(r.Night);
+            if (r.Night != null && path == "/lounge/closenight") saved = SaveReceipt(r.Night);
             lock (gate)
             {
                 if (r.Lounge != null) { view = r.Lounge; if (!quiet && r.Lounge.Msg.Length > 0) notice = r.Lounge.Msg + saved; }
