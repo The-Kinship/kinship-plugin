@@ -67,6 +67,21 @@ public sealed class LoungeTab
             ImGui.EndTabBar();
         }
         {
+            ImGui.Spacing(); ImGui.Separator();
+            ImGui.TextColored(Gold, "Active calls");
+            if (v.Calls.Count == 0) ImGui.TextColored(Dim, "No active calls.");
+            foreach (var c in v.Calls)
+            {
+                ImGui.PushID("call" + c.Id);
+                ImGui.TextWrapped(c.Text);
+                ImGui.Text("    status: " + (c.Responder.Length == 0 ? "OPEN, nobody assigned yet" : $"{c.Responder} assigned"));
+                ImGui.SameLine(); ImGui.TextColored(Dim, $"({Ago(c.At)} ago)");
+                if (c.Responder.Length == 0 && v.Me.Since.Length > 0) { ImGui.SameLine(); if (ImGui.SmallButton("I'll take it")) _ = Plugin.Lounge.RespondAsync(c.Id); }
+                if (v.CanClearCalls) { ImGui.SameLine(); if (ImGui.SmallButton("Clear")) _ = Plugin.Lounge.ClearCallAsync(c.Id); }
+                ImGui.PopID();
+            }
+        }
+        {
             // Messages live at the bottom so nothing above them jumps around while you click.
             ImGui.Spacing(); ImGui.Separator();
             if (error.Length > 0) ImGui.TextColored(Red, error);

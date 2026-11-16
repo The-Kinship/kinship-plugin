@@ -92,6 +92,7 @@ public sealed class LoungeRoster { public string Name { get; set; } = ""; public
 public sealed class LoungePlan { public string Id { get; set; } = ""; public string StartsAt { get; set; } = ""; public string EndsAt { get; set; } = ""; public string Note { get; set; } = ""; public List<LoungeRoster> Staff { get; set; } = new(); public string Mine { get; set; } = ""; }
 public sealed class LoungeView
 {
+    public List<LoungePing> Calls { get; set; } = new(); public bool CanClearCalls { get; set; }
     public List<LoungeStaffRoles> Roles { get; set; } = new(); public List<LoungePing> Pings { get; set; } = new();
     public bool NightOpen { get; set; } = true; public string AdText { get; set; } = ""; public LoungeVenue? Venue { get; set; } public List<LoungePatron> Patrons { get; set; } = new(); public List<LoungePlan> Schedule { get; set; } = new();
     public string Msg { get; set; } = ""; public bool CanManage { get; set; } public string Hours { get; set; } = ""; public int Rate { get; set; }
@@ -208,6 +209,7 @@ public sealed class LoungeState
     public Task CallSecurityAsync() => Call(HttpMethod.Post, "/lounge/call/security", new { });
     public Task CallBanAsync(string patron, string reason) => Call(HttpMethod.Post, "/lounge/call/ban", new { patron, reason });
     public Task RespondAsync(string id) { lock (gate) { dismissed.Add(id); } return Call(HttpMethod.Post, "/lounge/call/respond", new { id }); }
+    public Task ClearCallAsync(string id) => Call(HttpMethod.Post, "/lounge/call/clear", new { id });
     public Task DismissPingAsync(string id) { lock (gate) { dismissed.Add(id); } return Call(HttpMethod.Post, "/lounge/call/dismiss", new { id }); }
     private readonly HashSet<string> dismissed = new();
     public List<LoungePing> Pings() { lock (gate) { return (view?.Pings ?? new()).Where(x => !dismissed.Contains(x.Id)).ToList(); } }

@@ -1,3 +1,4 @@
+0.76.0: Lounge: an Active calls box at the bottom shows every open call and who is assigned; any clocked-in staff can take one, and a manager clears it.
 0.75.1: Lounge: Call security/manager now reaches you when you are the only one with that position (it was skipping the sender); status messages and "Working..." moved to the bottom so buttons stop jumping, and background checks no longer show "Working...".
 0.75.0: Lounge: staff positions (Manager, Security, Bartender, Server...), and the call buttons now work: Call manager (IC or OOC), Call security, and Ban a customer with a reason pop up on the right people.
 0.74.0: Lounge: the night now has two buttons, Close the night and Start a new night (selling pauses while closed); placeholder Call manager, Call security and Ban a customer buttons along the top.
