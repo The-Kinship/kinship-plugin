@@ -105,7 +105,7 @@ public sealed class LoungeView
 /// <summary>The Embershade Lounge: hours, menu, clock in and out, receipts. Everything lives on the server; this keeps the last answer.</summary>
 public sealed class LoungeState
 {
-    private readonly object gate = new();
+    private readonly object gate = new(); private readonly System.Threading.SemaphoreSlim sem = new(1, 1);
     private LoungeView? view; private string error = "", notice = ""; private bool busy, loud; private DateTime lastLoad = DateTime.MinValue, lastTick = DateTime.MinValue;
     private LoungeNight? openNight; private string announced = "";
 
@@ -113,7 +113,7 @@ public sealed class LoungeState
     public void CloseNight() { lock (gate) { openNight = null; } }
 
     /// <summary>Runs about once a second. If you were the one who posted the Party Finder listing, tells you in chat when it is time to refresh it.</summary>
-    public void Tick() { PfTick(); ReportPatrons(); bool on; lock (gate) { on = view?.Me.Since.Length > 0; } if (on) RefreshIfDue(10); }   // clocked in: check for calls every few seconds
+    public void Tick() { PfTick(); ReportPatrons(); bool on; lock (gate) { on = view?.Me.Since.Length > 0; } if (on) RefreshIfDue(15); }   // clocked in: check for calls every few seconds
 
     // Staff who are clocked in and standing at the venue tell the server who is nearby. Only names are sent; it is read-only and nothing is sent to the game.
     private DateTime lastReport = DateTime.MinValue;
@@ -121,7 +121,7 @@ public sealed class LoungeState
     {
         try
         {
-            if (Idle.Asleep || (DateTime.UtcNow - lastReport).TotalSeconds < 8) return;
+            if (Idle.Asleep || (DateTime.UtcNow - lastReport).TotalSeconds < 30) return;
             LoungeView? v; bool b;
             lock (gate) { v = view; b = busy; }
             if (b || v == null || v.Venue == null || v.Venue.Room.Length == 0 || v.Me.Since.Length == 0) return;
@@ -237,7 +237,10 @@ public sealed class LoungeState
 
     private async Task Call(HttpMethod method, string path, object? body, bool quiet = false)
     {
-        lock (gate) { if (busy) return; busy = true; loud = !quiet; if (!quiet) { error = ""; notice = ""; } }
+        // Background checks never get in the way: they skip if something is already running. Things you press wait their turn instead of being dropped.
+        if (quiet) { if (!await sem.WaitAsync(0).ConfigureAwait(false)) return; }
+        else await sem.WaitAsync().ConfigureAwait(false);
+        lock (gate) { busy = true; loud = !quiet; if (!quiet) { error = ""; notice = ""; } }
         try
         {
             var r = await ItemsState.SendAsync(method, path, body).ConfigureAwait(false);
@@ -253,7 +256,7 @@ public sealed class LoungeState
         }
         catch (CombatException ex) { if (!quiet) lock (gate) { error = ex.Message; } }
         catch (Exception ex) { Plugin.Log.Warning(ex, "Lounge request failed"); if (!quiet) lock (gate) { error = "Couldn't reach the server. Check your connection and try again."; } }
-        finally { lock (gate) { busy = false; } }
+        finally { lock (gate) { busy = false; } sem.Release(); }
     }
 
     /// <summary>Writes the closed night as a plain text file in the plugin's own folder on this computer. The server also keeps it under Past nights.</summary>
