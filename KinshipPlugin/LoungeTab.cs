@@ -20,79 +20,111 @@ public sealed class LoungeTab
     private string? editId; private string mName = "", mDesc = ""; private int mPrice = 100; private bool mGift; private string gIcon = "game:20001", gName = "", gDesc = "", gLabel = "", gText = "";
     private bool confirmNight; private string? confirmPay;
 
+    /// <summary>The whole Lounge window: a header that every tab shares, then Menu, Time clock, Cash register and (for managers) Management.</summary>
     public void Draw()
     {
         Plugin.Lounge.RefreshIfDue(20);
         picker.Draw();
         var (v, error, notice, busy) = Plugin.Lounge.Snapshot();
-        if (Plugin.Config.Me().ItemsToken.Length == 0) { ImGui.TextWrapped("Sign in on the Inventory tab first."); return; }
+        if (Plugin.Config.Me().ItemsToken.Length == 0) { ImGui.TextWrapped("Sign in on the Inventory tab (switch to the Toolbox, then RP) first."); return; }
         if (v == null) { ImGui.TextColored(Dim, "Loading the lounge..."); return; }
         if (!infoLoaded) { infoLoaded = true; hoursEdit = v.Hours; rateEdit = v.Rate; }
 
         ImGui.TextColored(Gold, "The Embershade Lounge");
         if (v.Hours.Length > 0) ImGui.TextWrapped(v.Hours); else ImGui.TextColored(Dim, "Opening days and hours have not been set yet.");
-        ImGui.TextColored(Dim, "Allow up to a minute for any action to go through.");
         if (error.Length > 0) ImGui.TextColored(Red, error);
         else if (notice.Length > 0) ImGui.TextColored(Green, notice);
         if (busy) ImGui.TextColored(Dim, "Working...");
+        ImGui.Spacing();
+        if (ImGui.BeginTabBar("lounge_tabs", ImGuiTabBarFlags.FittingPolicyScroll))
+        {
+            if (ImGui.BeginTabItem("Menu")) { DrawMenu(v); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Time clock")) { DrawClock(v); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Cash register")) { DrawRegister(v); ImGui.EndTabItem(); }
+            if (v.CanManage && ImGui.BeginTabItem("Management")) { DrawManager(v); ImGui.EndTabItem(); }
+            ImGui.EndTabBar();
+        }
+    }
 
-        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+    private void DrawMenu(LoungeView v)
+    {
+        ImGui.TextColored(Dim, "Press Copy description to copy a drink or dish so you can paste it when a customer asks what it is.");
+        ImGui.Spacing();
+        if (v.Menu.Count == 0) ImGui.TextColored(Dim, "The menu is empty.");
+        foreach (var m in v.Menu)
+        {
+            ImGui.PushID("menu" + m.Id);
+            ImGui.Text($"{m.Name}  -  {m.Price:N0} gil" + (m.Gift != null ? "  (comes with an item)" : ""));
+            if (m.Description.Length > 0) ImGui.TextWrapped(m.Description);
+            if (ImGui.SmallButton("Copy description")) ImGui.SetClipboardText(m.Description.Length > 0 ? $"{m.Name}: {m.Description}" : m.Name);
+            ImGui.PopID();
+            ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        }
+    }
+
+    private void DrawClock(LoungeView v)
+    {
         ImGui.TextColored(Gold, "On shift");
         if (v.Working.Count == 0) ImGui.TextColored(Dim, "Nobody is clocked in.");
         foreach (var w in v.Working) ImGui.Text($"{w.Name}  (since {Local(w.Since)})");
-        ImGui.Spacing();
+        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         var onShift = v.Me.Since.Length > 0;
         if (onShift)
         {
             ImGui.TextColored(Green, $"You are clocked in since {Local(v.Me.Since)}  ({Mins(v.Me.Since)} min so far)");
             if (ImGui.Button("Clock out##lg")) _ = Plugin.Lounge.ClockAsync(false);
         }
-        else if (ImGui.Button("Clock in##lg")) _ = Plugin.Lounge.ClockAsync(true);
-        if (v.Me.UnpaidGold > 0) { ImGui.SameLine(); ImGui.TextColored(Dim, $"Waiting for pay: {v.Me.UnpaidMinutes} min = {v.Me.UnpaidGold:N0} gold"); }
+        else
+        {
+            ImGui.TextColored(Dim, "You are not clocked in.");
+            if (ImGui.Button("Clock in##lg")) _ = Plugin.Lounge.ClockAsync(true);
+        }
+        ImGui.Spacing();
+        if (v.Me.UnpaidGold > 0) ImGui.TextColored(Gold, $"Waiting for pay: {v.Me.UnpaidMinutes} min = {v.Me.UnpaidGold:N0} gold. A manager will pay you into your bank.");
+        else ImGui.TextColored(Dim, "No pay waiting.");
+        ImGui.TextColored(Dim, "A shift counts up to 12 hours. Allow up to a minute for an action to go through.");
+    }
 
-        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
-        ImGui.TextColored(Gold, "Menu");
-        if (!onShift) ImGui.TextColored(Dim, "Clock in to start selling.");
+    private void DrawRegister(LoungeView v)
+    {
+        var onShift = v.Me.Since.Length > 0;
+        if (!onShift) ImGui.TextColored(Dim, "Clock in on the Time clock tab to start selling.");
         ImGui.SetNextItemWidth(70f); ImGui.InputInt("How many##lgq", ref qty, 1, 5); qty = Math.Clamp(qty, 1, 20);
         ImGui.SetNextItemWidth(180f); ImGui.InputText("Hand item to (optional)##lgc", ref customer, 40);
         ImGui.TextColored(Dim, "If a menu item comes with an in-game item, type the customer's name to give it to them when you sell.");
+        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
         if (v.Menu.Count == 0) ImGui.TextColored(Dim, "The menu is empty.");
         foreach (var m in v.Menu)
         {
-            ImGui.PushID(m.Id);
+            ImGui.PushID("reg" + m.Id);
             ImGui.Text($"{m.Name}  -  {m.Price:N0} gil" + (m.Gift != null ? "  (comes with an item)" : ""));
-            if (m.Description.Length > 0) ImGui.TextColored(Dim, m.Description);
             if (!onShift) ImGui.BeginDisabled();
             if (ImGui.SmallButton("Sell")) _ = Plugin.Lounge.SellAsync(m.Id, qty, "");
-            if (m.Gift != null) { ImGui.SameLine(); if (customer.Trim().Length == 0) ImGui.BeginDisabled(); if (ImGui.SmallButton("Sell and give item")) _ = Plugin.Lounge.SellAsync(m.Id, qty, customer.Trim()); if (customer.Trim().Length == 0) ImGui.EndDisabled(); }
+            if (m.Gift != null) { ImGui.SameLine(); var noName = customer.Trim().Length == 0; if (noName) ImGui.BeginDisabled(); if (ImGui.SmallButton("Sell and give item")) _ = Plugin.Lounge.SellAsync(m.Id, qty, customer.Trim()); if (noName) ImGui.EndDisabled(); }
             if (!onShift) ImGui.EndDisabled();
-            ImGui.SameLine(); if (ImGui.SmallButton("Copy description")) ImGui.SetClipboardText(m.Description.Length > 0 ? $"{m.Name}: {m.Description}" : m.Name);
             ImGui.PopID();
             ImGui.Spacing();
         }
-
         ImGui.Separator(); ImGui.Spacing();
         ImGui.TextColored(Gold, "My sales tonight");
         ImGui.Text($"{v.Me.SoldCount} sold, {v.Me.SoldTotal:N0} gil");
         ImGui.SameLine(); if (ImGui.SmallButton("Undo my last sale")) _ = Plugin.Lounge.UndoAsync();
         ImGui.TextColored(Dim, "Undo works for sales from the last 15 minutes. It does not take back an item you handed over.");
-
-        if (!v.CanManage) return;
-        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
-        if (!ImGui.CollapsingHeader("Manager##lgm")) return;
-        DrawManager(v);
     }
 
     private void DrawManager(LoungeView v)
     {
-        ImGui.TextColored(Gold, "Hours and pay");
+        if (ImGui.CollapsingHeader("Hours and pay##lgh1", ImGuiTreeNodeFlags.DefaultOpen))
+        {
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - 8f); ImGui.InputText("##lghours", ref hoursEdit, 300);
         ImGui.TextColored(Dim, "Days open and hours, in your own words. Everyone sees this at the top.");
         ImGui.SetNextItemWidth(140f); ImGui.InputInt("Gold per hour##lgrate", ref rateEdit, 500, 5000); rateEdit = Math.Clamp(rateEdit, 0, 1000000);
         ImGui.TextColored(Dim, "Each shift locks in the rate at the moment of clock in. Shifts are capped at 12 hours.");
         if (ImGui.Button("Save hours and pay##lgsave")) _ = Plugin.Lounge.SaveInfoAsync(hoursEdit.Trim(), rateEdit);
+        }
 
-        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        if (ImGui.CollapsingHeader("Menu editor##lgh2"))
+        {
         ImGui.TextColored(Gold, editId == null ? "Add a menu item" : "Edit menu item");
         ImGui.SetNextItemWidth(220f); ImGui.InputText("Name##lgn", ref mName, 40);
         ImGui.SetNextItemWidth(140f); ImGui.InputInt("Price (gil)##lgp", ref mPrice, 10, 100); mPrice = Math.Clamp(mPrice, 0, 1000000);
@@ -124,9 +156,10 @@ public sealed class LoungeTab
             ImGui.SameLine(); if (ImGui.SmallButton("Remove")) _ = Plugin.Lounge.DeleteMenuAsync(m.Id);
             ImGui.PopID();
         }
+        }
 
-        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
-        ImGui.TextColored(Gold, "Receipt book, tonight");
+        if (ImGui.CollapsingHeader("Receipt book, tonight##lgh3", ImGuiTreeNodeFlags.DefaultOpen))
+        {
         var t = v.Tonight;
         if (t == null || t.Items.Count == 0) ImGui.TextColored(Dim, "Nothing sold yet.");
         else
@@ -141,9 +174,10 @@ public sealed class LoungeTab
             if (ImGui.SmallButton("Yes, start a new night##lgny")) { _ = Plugin.Lounge.NewNightAsync(); confirmNight = false; }
             ImGui.SameLine(); if (ImGui.SmallButton("Cancel##lgnc")) confirmNight = false;
         }
+        }
 
-        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
-        ImGui.TextColored(Gold, "Staff");
+        if (ImGui.CollapsingHeader("Staff and pay##lgh4", ImGuiTreeNodeFlags.DefaultOpen))
+        {
         var staff = v.Staff ?? new();
         if (staff.Count == 0) ImGui.TextColored(Dim, "Nobody has an open shift or pay waiting.");
         foreach (var s in staff)
@@ -165,6 +199,7 @@ public sealed class LoungeTab
             ImGui.PopID();
         }
         ImGui.TextColored(Dim, "Pay goes into the worker's personal bank. Clock someone out before paying them.");
+        }
     }
 
     private void ResetEditor() { editId = null; mName = ""; mDesc = ""; mPrice = 100; mGift = false; gIcon = "game:20001"; gName = ""; gDesc = ""; gLabel = ""; gText = ""; }

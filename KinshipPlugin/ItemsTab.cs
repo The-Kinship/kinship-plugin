@@ -41,7 +41,6 @@ public sealed class ItemsTab
     private readonly FindsTab findsTab = new();
     private readonly BankTab bankTab = new();
     private readonly MailTab mailTab = new();
-    private readonly LoungeTab loungeTab = new();
     private readonly ArmoryTab armoryTab = new();
     private readonly ProfileTab profileTab = new();
     private readonly DuelTab duelTab = new();
@@ -90,7 +89,6 @@ public sealed class ItemsTab
             if (ImGui.BeginTabItem((unread > 0 ? $"Mail ({unread})" : "Mail") + "###mailtab")) { mailTab.Draw(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Quests")) { questsTab.Draw(s); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Jobs")) { jobsTab.Draw(); ImGui.EndTabItem(); }
-            if (ImGui.BeginTabItem("Lounge")) { loungeTab.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Fight")) { duelTab.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Combat")) { combat.Draw(); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Party")) { rp.Draw(); ImGui.EndTabItem(); }

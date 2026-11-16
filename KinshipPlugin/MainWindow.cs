@@ -74,7 +74,9 @@ public sealed class MainWindow : Window, IDisposable
         return Plugin.Images.HasFailed(CrestPng) ? CrestJpg : CrestPng;
     }
 
-    public override void PreDraw() { WindowName = (Alpha.On ? "Rafter Cat's RP Toolbox (Alpha test)" : "Rafter Cat's RP Toolbox") + "##KinshipMain"; }
+    public override void PreDraw() { WindowName = (Plugin.Config.LoungeMode ? "Embershade Lounge" : Alpha.On ? "Rafter Cat's RP Toolbox (Alpha test)" : "Rafter Cat's RP Toolbox") + "##KinshipMain"; }
+
+    private readonly LoungeTab lounge = new();
 
     public override void Draw()
     {
@@ -82,7 +84,9 @@ public sealed class MainWindow : Window, IDisposable
         var (f, p, s) = Plugin.Data.Snapshot();
 
         DrawPauseButton();
-        if (ImGui.BeginTabBar("kinship_tabs", ImGuiTabBarFlags.FittingPolicyScroll))
+        DrawModeButton();
+        if (Plugin.Config.LoungeMode) lounge.Draw();
+        else if (ImGui.BeginTabBar("kinship_tabs", ImGuiTabBarFlags.FittingPolicyScroll))
         {
             if (ImGui.BeginTabItem("Home")) { DrawHome(f); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("About")) { AboutTab.Draw(); ImGui.EndTabItem(); }
@@ -100,6 +104,19 @@ public sealed class MainWindow : Window, IDisposable
         ImGui.Separator();
         ImGui.PushTextWrapPos(0f); ImGui.TextColored(Dim, "Some actions can take up to 30 seconds to go through. Please don't press buttons over and over, and give anything a full minute before you worry."); ImGui.PopTextWrapPos();
         if (s.Length > 0) ImGui.TextColored(Dim, s);
+    }
+
+    // Right under the pause button: switches the whole window between the toolbox and the Embershade Lounge.
+    private static void DrawModeButton()
+    {
+        var lounge = Plugin.Config.LoungeMode;
+        var label = lounge ? "Back to the Toolbox" : "Embershade Lounge";
+        var width = ImGui.CalcTextSize(label).X + 16f;
+        ImGui.SetCursorPosX(Math.Max(0f, ImGui.GetWindowWidth() - width - 14f));
+        ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.92f, 0.78f, 0.35f, 1f));
+        if (ImGui.SmallButton(label + "##klounge")) { Plugin.Config.LoungeMode = !lounge; Plugin.Config.Save(); }
+        ImGui.PopStyleColor();
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip(lounge ? "Switch back to the Kinship toolbox." : "Switch to the Embershade Lounge: menu, time clock, cash register and management.");
     }
 
     private static void DrawPauseButton()

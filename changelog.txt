@@ -1,3 +1,4 @@
+0.69.1: The Embershade Lounge now has its own window mode: press the Embershade Lounge button under the pause button to switch, and Back to the Toolbox to return. Tabs: Menu, Time clock, Cash register, Management.
 0.69.0: New Lounge tab (in RP): Embershade Lounge hours, menu with prices, clock in and out with pay, sales receipts, and a manager section. Stage 1.
 0.68.0: SMs can mail every member at once (or everyone with a tag) from SM Tools, under "Mail everyone".
 0.67.1: Quests can now have up to 50 steps (was 12).
