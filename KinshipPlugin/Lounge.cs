@@ -105,7 +105,7 @@ public sealed class LoungeView
 public sealed class LoungeState
 {
     private readonly object gate = new();
-    private LoungeView? view; private string error = "", notice = ""; private bool busy; private DateTime lastLoad = DateTime.MinValue, lastTick = DateTime.MinValue;
+    private LoungeView? view; private string error = "", notice = ""; private bool busy, loud; private DateTime lastLoad = DateTime.MinValue, lastTick = DateTime.MinValue;
     private LoungeNight? openNight; private string announced = "";
 
     public LoungeNight? OpenNight() { lock (gate) { return openNight; } }
@@ -174,7 +174,7 @@ public sealed class LoungeState
     public LoungeReceipt? LastReceipt() { lock (gate) { return lastReceipt; } }
     public void DismissReceipt() { lock (gate) { lastReceipt = null; } }
 
-    public (LoungeView? View, string Error, string Notice, bool Busy) Snapshot() { lock (gate) { return (view, error, notice, busy); } }
+    public (LoungeView? View, string Error, string Notice, bool Busy) Snapshot() { lock (gate) { return (view, error, notice, busy && loud); } }   // background checks do not show "Working..."
 
     public void RefreshIfDue(int seconds)
     {
@@ -232,7 +232,7 @@ public sealed class LoungeState
 
     private async Task Call(HttpMethod method, string path, object? body, bool quiet = false)
     {
-        lock (gate) { if (busy) return; busy = true; if (!quiet) { error = ""; notice = ""; } }
+        lock (gate) { if (busy) return; busy = true; loud = !quiet; if (!quiet) { error = ""; notice = ""; } }
         try
         {
             var r = await ItemsState.SendAsync(method, path, body).ConfigureAwait(false);

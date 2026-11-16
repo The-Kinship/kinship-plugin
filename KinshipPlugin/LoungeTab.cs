@@ -45,9 +45,6 @@ public sealed class LoungeTab
 
         ImGui.TextColored(Gold, "The Embershade Lounge");
         if (v.Hours.Length > 0) ImGui.TextWrapped(v.Hours); else ImGui.TextColored(Dim, "Opening days and hours have not been set yet.");
-        if (error.Length > 0) ImGui.TextColored(Red, error);
-        else if (notice.Length > 0) ImGui.TextColored(Green, notice);
-        if (busy) ImGui.TextColored(Dim, "Working...");
         if (!v.NightOpen) ImGui.TextColored(Gold, "The night is closed. A manager starts the next one.");
         var shift = v.Me.Since.Length > 0;
         if (!shift) ImGui.BeginDisabled();
@@ -68,6 +65,13 @@ public sealed class LoungeTab
             if (ImGui.BeginTabItem("Party Finder and Ads")) { DrawPf(v); ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing(); DrawAdvert(v); ImGui.EndTabItem(); }
             if (v.CanManage && ImGui.BeginTabItem("Management")) { DrawManager(v); ImGui.EndTabItem(); }
             ImGui.EndTabBar();
+        }
+        {
+            // Messages live at the bottom so nothing above them jumps around while you click.
+            ImGui.Spacing(); ImGui.Separator();
+            if (error.Length > 0) ImGui.TextColored(Red, error);
+            else if (notice.Length > 0) ImGui.TextColored(Green, notice);
+            if (busy) ImGui.TextColored(Dim, "Working...");
         }
     }
 
