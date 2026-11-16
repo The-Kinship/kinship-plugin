@@ -10,7 +10,8 @@ public sealed class LoungeGift { public string Name { get; set; } = ""; public s
 public sealed class LoungeMenuItem { public string Id { get; set; } = ""; public string Name { get; set; } = ""; public int Price { get; set; } public string Description { get; set; } = ""; public LoungeGift? Gift { get; set; } }
 public sealed class LoungeWorker { public string Name { get; set; } = ""; public string Since { get; set; } = ""; }
 public sealed class LoungeMe { public string Since { get; set; } = ""; public int UnpaidMinutes { get; set; } public int UnpaidGold { get; set; } public int SoldCount { get; set; } public long SoldTotal { get; set; } }
-public sealed class LoungeLine { public string Name { get; set; } = ""; public int Price { get; set; } public int Count { get; set; } public long Total { get; set; } }
+public sealed class LoungeBy { public string Name { get; set; } = ""; public int Count { get; set; } }
+public sealed class LoungeLine { public string Name { get; set; } = ""; public int Price { get; set; } public int Count { get; set; } public long Total { get; set; } public List<LoungeBy> By { get; set; } = new(); }
 public sealed class LoungeTonight { public List<LoungeLine> Items { get; set; } = new(); public int Count { get; set; } public long Total { get; set; } }
 public sealed class LoungeStaff { public string Name { get; set; } = ""; public int Minutes { get; set; } public int Gold { get; set; } public bool ClockedIn { get; set; } }
 public sealed class LoungeView

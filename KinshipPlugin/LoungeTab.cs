@@ -164,7 +164,11 @@ public sealed class LoungeTab
         if (t == null || t.Items.Count == 0) ImGui.TextColored(Dim, "Nothing sold yet.");
         else
         {
-            foreach (var l in t.Items) ImGui.Text($"{l.Count} x {l.Name}  =  {l.Total:N0} gil");
+            foreach (var l in t.Items)
+            {
+                ImGui.Text($"{l.Count} x {l.Name}  =  {l.Total:N0} gil");
+                if (l.By.Count > 0) { ImGui.Indent(14f); ImGui.TextColored(Dim, string.Join(",  ", l.By.Select(b => $"{b.Name} sold {b.Count}"))); ImGui.Unindent(14f); }
+            }
             ImGui.TextColored(Green, $"Total: {t.Count} sold, {t.Total:N0} gil expected");
         }
         if (!confirmNight) { if (ImGui.SmallButton("Close the night and start a new one##lgnn")) confirmNight = true; }
