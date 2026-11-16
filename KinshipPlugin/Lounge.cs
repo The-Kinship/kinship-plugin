@@ -153,7 +153,9 @@ public sealed class LoungeState
             var pf = view?.Pf;
             if (pf == null || pf.PostedAt.Length == 0 || pf.PostedAt == announced || !string.Equals(pf.PostedBy, Plugin.Config.Me().ItemsName, StringComparison.OrdinalIgnoreCase)) return;
             if (!DateTime.TryParse(pf.PostedAt, null, System.Globalization.DateTimeStyles.RoundtripKind, out var at)) return;
-            if ((DateTime.UtcNow - at.ToUniversalTime()).TotalMinutes < pf.Minutes) return;
+            var since = (DateTime.UtcNow - at.ToUniversalTime()).TotalMinutes;
+            if (since < pf.Minutes) return;
+            if (since > pf.Minutes + 60) { announced = pf.PostedAt; return; }   // an old, forgotten post: do not nag about it
             announced = pf.PostedAt; pfAlert = true;
         }
     }
@@ -167,7 +169,7 @@ public sealed class LoungeState
             LoungeSession? due = null;
             var ses = view?.Session;
             if (ses != null && DateTime.UtcNow >= snoozeUntil && DateTime.TryParse(ses.EndsAt, null, System.Globalization.DateTimeStyles.RoundtripKind, out var end) && end.ToUniversalTime() <= DateTime.UtcNow) due = ses;
-            return (pfAlert, due);
+            return (pfAlert && view?.Pf.PostedAt.Length > 0, due);
         }
     }
     public void DismissPf() { lock (gate) { pfAlert = false; } }
@@ -197,6 +199,7 @@ public sealed class LoungeState
     public Task CloseNightAsync() => Call(HttpMethod.Post, "/lounge/closenight", new { });
     public Task StartNightAsync() => Call(HttpMethod.Post, "/lounge/startnight", new { });
     public Task SavePfAsync(string text, int minutes) => Call(HttpMethod.Post, "/lounge/pf/save", new { text, minutes });
+    public Task StopPfAsync() { lock (gate) { pfAlert = false; } return Call(HttpMethod.Post, "/lounge/pf/stop", new { }); }
     public Task PostedAsync() => Call(HttpMethod.Post, "/lounge/pf/posted", new { });
     public Task ViewNightAsync(string id) => Call(HttpMethod.Post, "/lounge/night", new { id });
     public Task SaveServiceAsync(string? id, string name, int price) => Call(HttpMethod.Post, "/lounge/service/save", new { id, name, price });

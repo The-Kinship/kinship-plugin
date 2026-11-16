@@ -446,7 +446,8 @@ public sealed class LoungeTab
     private void DrawPf(LoungeView v)
     {
         if (!pfLoaded) { pfLoaded = true; pfEdit = v.Pf.Text; pfMinutes = v.Pf.Minutes; }
-        ImGui.TextColored(Gold, "Party Finder listing for tonight");
+        ImGui.TextColored(Gold, "Party Finder listing");
+        ImGui.TextColored(Dim, "The text is saved, so you can reuse the same listing every week.");
         if (v.Pf.Text.Length == 0) ImGui.TextColored(Dim, "No listing has been written yet.");
         else
         {
@@ -464,7 +465,9 @@ public sealed class LoungeTab
             var left = v.Pf.Minutes - ago;
             if (left > 0) ImGui.TextColored(Green, $"Refresh the listing in about {left} min.");
             else ImGui.TextColored(Red, "It is time to refresh the Party Finder listing.");
-            ImGui.TextColored(Dim, "If you posted it, the plugin also tells you in chat when the time is up.");
+            ImGui.TextColored(Dim, "If you posted it, a pop-up tells you when the time is up.");
+            if (ImGui.Button("Listing is off, stop the reminder##pfstop")) _ = Plugin.Lounge.StopPfAsync();
+            ImGui.TextColored(Dim, "Closing the night does this for you. The saved text stays for next time.");
         }
         else ImGui.TextColored(Dim, "Nobody has posted the listing yet tonight.");
         if (!v.CanManage) return;
