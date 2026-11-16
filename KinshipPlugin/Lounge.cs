@@ -12,6 +12,38 @@ public sealed class LoungeWorker { public string Name { get; set; } = ""; public
 public sealed class LoungeMe { public string Since { get; set; } = ""; public int UnpaidMinutes { get; set; } public int UnpaidGold { get; set; } public int SoldCount { get; set; } public long SoldTotal { get; set; } }
 public sealed class LoungeBy { public string Name { get; set; } = ""; public int Count { get; set; } }
 public sealed class LoungeLine { public string Name { get; set; } = ""; public int Price { get; set; } public int Count { get; set; } public long Total { get; set; } public List<LoungeBy> By { get; set; } = new(); }
+public sealed class LoungePerson { public string Name { get; set; } = ""; public int Count { get; set; } public long Total { get; set; } public int Minutes { get; set; } }
+public sealed class LoungePf { public string Text { get; set; } = ""; public int Minutes { get; set; } = 55; public string PostedAt { get; set; } = ""; public string PostedBy { get; set; } = ""; }
+public sealed class LoungeNightRow { public string Id { get; set; } = ""; public string ClosedAt { get; set; } = ""; public int Count { get; set; } public long Total { get; set; } }
+/// <summary>A closed night, as saved on the server. ToText() makes the plain text receipt with dates in the viewer's own time zone.</summary>
+public sealed class LoungeNight
+{
+    public string NightStart { get; set; } = ""; public string ClosedAt { get; set; } = ""; public string ClosedBy { get; set; } = "";
+    public List<LoungeLine> Items { get; set; } = new(); public List<LoungePerson> People { get; set; } = new(); public int Count { get; set; } public long Total { get; set; }
+    private static string Fmt(string iso) => DateTime.TryParse(iso, null, System.Globalization.DateTimeStyles.RoundtripKind, out var d) ? d.ToLocalTime().ToString("ddd MMM d yyyy, h:mm tt") : iso;
+    public DateTime ClosedLocal() => DateTime.TryParse(ClosedAt, null, System.Globalization.DateTimeStyles.RoundtripKind, out var d) ? d.ToLocalTime() : DateTime.Now;
+    public string ToText()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Embershade Lounge receipt book");
+        sb.AppendLine($"Night started: {Fmt(NightStart)}");
+        sb.AppendLine($"Closed: {Fmt(ClosedAt)} by {ClosedBy}");
+        sb.AppendLine();
+        sb.AppendLine("SOLD");
+        if (Items.Count == 0) sb.AppendLine("  Nothing was sold.");
+        foreach (var l in Items)
+        {
+            sb.AppendLine($"  {l.Count} x {l.Name} = {l.Total:N0} gil");
+            if (l.By.Count > 0) sb.AppendLine("      " + string.Join(", ", l.By.Select(b => $"{b.Name} sold {b.Count}")));
+        }
+        sb.AppendLine();
+        sb.AppendLine($"TOTAL: {Count} sold, {Total:N0} gil");
+        sb.AppendLine();
+        sb.AppendLine("BY PERSON");
+        foreach (var p in People) sb.AppendLine($"  {p.Name}: {p.Count} sold, {p.Total:N0} gil, on shift {p.Minutes} min");
+        return sb.ToString();
+    }
+}
 public sealed class LoungeTonight { public List<LoungeLine> Items { get; set; } = new(); public int Count { get; set; } public long Total { get; set; } }
 public sealed class LoungeStaff { public string Name { get; set; } = ""; public int Minutes { get; set; } public int Gold { get; set; } public bool ClockedIn { get; set; } }
 public sealed class LoungeView
@@ -19,13 +51,35 @@ public sealed class LoungeView
     public string Msg { get; set; } = ""; public bool CanManage { get; set; } public string Hours { get; set; } = ""; public int Rate { get; set; }
     public List<LoungeMenuItem> Menu { get; set; } = new(); public List<LoungeWorker> Working { get; set; } = new();
     public LoungeMe Me { get; set; } = new(); public LoungeTonight? Tonight { get; set; } public List<LoungeStaff>? Staff { get; set; }
+    public LoungePf Pf { get; set; } = new(); public List<LoungeNightRow>? Nights { get; set; }
 }
 
 /// <summary>The Embershade Lounge: hours, menu, clock in and out, receipts. Everything lives on the server; this keeps the last answer.</summary>
 public sealed class LoungeState
 {
     private readonly object gate = new();
-    private LoungeView? view; private string error = "", notice = ""; private bool busy; private DateTime lastLoad = DateTime.MinValue;
+    private LoungeView? view; private string error = "", notice = ""; private bool busy; private DateTime lastLoad = DateTime.MinValue, lastTick = DateTime.MinValue;
+    private LoungeNight? openNight; private string announced = "";
+
+    public LoungeNight? OpenNight() { lock (gate) { return openNight; } }
+    public void CloseNight() { lock (gate) { openNight = null; } }
+
+    /// <summary>Runs about once a second. If you were the one who posted the Party Finder listing, tells you in chat when it is time to refresh it.</summary>
+    public void Tick()
+    {
+        string text = "";
+        lock (gate)
+        {
+            if ((DateTime.UtcNow - lastTick).TotalSeconds < 5) return;
+            lastTick = DateTime.UtcNow;
+            var pf = view?.Pf;
+            if (pf == null || pf.PostedAt.Length == 0 || pf.PostedAt == announced || !string.Equals(pf.PostedBy, Plugin.Config.Me().ItemsName, StringComparison.OrdinalIgnoreCase)) return;
+            if (!DateTime.TryParse(pf.PostedAt, null, System.Globalization.DateTimeStyles.RoundtripKind, out var at)) return;
+            if ((DateTime.UtcNow - at.ToUniversalTime()).TotalMinutes < pf.Minutes) return;
+            announced = pf.PostedAt; text = "[Kinship] Time to refresh the Embershade Lounge Party Finder listing.";
+        }
+        if (text.Length > 0) _ = Plugin.Framework.RunOnFrameworkThread(() => Plugin.Chat.Print(text));
+    }
 
     public (LoungeView? View, string Error, string Notice, bool Busy) Snapshot() { lock (gate) { return (view, error, notice, busy); } }
 
@@ -47,6 +101,9 @@ public sealed class LoungeState
     public Task ClockOutAsync(string name) => Call(HttpMethod.Post, "/lounge/clockout", new { name });
     public Task PayAsync(string name) => Call(HttpMethod.Post, "/lounge/pay", new { name });
     public Task NewNightAsync() => Call(HttpMethod.Post, "/lounge/newnight", new { });
+    public Task SavePfAsync(string text, int minutes) => Call(HttpMethod.Post, "/lounge/pf/save", new { text, minutes });
+    public Task PostedAsync() => Call(HttpMethod.Post, "/lounge/pf/posted", new { });
+    public Task ViewNightAsync(string id) => Call(HttpMethod.Post, "/lounge/night", new { id });
 
     private async Task Call(HttpMethod method, string path, object? body, bool quiet = false)
     {
@@ -54,10 +111,30 @@ public sealed class LoungeState
         try
         {
             var r = await ItemsState.SendAsync(method, path, body).ConfigureAwait(false);
-            lock (gate) { if (r.Lounge != null) { view = r.Lounge; if (!quiet && r.Lounge.Msg.Length > 0) notice = r.Lounge.Msg; } }
+            string saved = "";
+            if (r.Night != null && path == "/lounge/newnight") saved = SaveReceipt(r.Night);
+            lock (gate)
+            {
+                if (r.Lounge != null) { view = r.Lounge; if (!quiet && r.Lounge.Msg.Length > 0) notice = r.Lounge.Msg + saved; }
+                if (r.Night != null) openNight = r.Night;
+            }
         }
         catch (CombatException ex) { if (!quiet) lock (gate) { error = ex.Message; } }
         catch (Exception ex) { Plugin.Log.Warning(ex, "Lounge request failed"); if (!quiet) lock (gate) { error = "Couldn't reach the server. Check your connection and try again."; } }
         finally { lock (gate) { busy = false; } }
+    }
+
+    /// <summary>Writes the closed night as a plain text file in the plugin's own folder on this computer. The server also keeps it under Past nights.</summary>
+    private static string SaveReceipt(LoungeNight n)
+    {
+        try
+        {
+            var dir = System.IO.Path.Combine(Plugin.PluginInterface.GetPluginConfigDirectory(), "Receipts");
+            System.IO.Directory.CreateDirectory(dir);
+            var file = System.IO.Path.Combine(dir, $"Receipt-{n.ClosedLocal():yyyy-MM-dd-HHmm}.txt");
+            System.IO.File.WriteAllText(file, n.ToText());
+            return " A text copy was saved to: " + file;
+        }
+        catch (Exception ex) { Plugin.Log.Warning(ex, "Could not save the receipt file"); return " (Could not save a text file on this computer.)"; }
     }
 }

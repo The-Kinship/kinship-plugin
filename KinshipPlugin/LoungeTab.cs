@@ -19,6 +19,8 @@ public sealed class LoungeTab
     private string hoursEdit = ""; private int rateEdit; private bool infoLoaded;
     private string? editId; private string mName = "", mDesc = ""; private int mPrice = 100; private bool mGift; private string gIcon = "game:20001", gName = "", gDesc = "", gLabel = "", gText = "";
     private bool confirmNight; private string? confirmPay;
+    private bool pfLoaded; private string pfEdit = ""; private int pfMinutes = 55;
+    private string nightText = "", nightTitle = "";
 
     /// <summary>The whole Lounge window: a header that every tab shares, then Menu, Time clock, Cash register and (for managers) Management.</summary>
     public void Draw()
@@ -41,6 +43,7 @@ public sealed class LoungeTab
             if (ImGui.BeginTabItem("Menu")) { DrawMenu(v); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Time clock")) { DrawClock(v); ImGui.EndTabItem(); }
             if (ImGui.BeginTabItem("Cash register")) { DrawRegister(v); ImGui.EndTabItem(); }
+            if (ImGui.BeginTabItem("Party Finder")) { DrawPf(v); ImGui.EndTabItem(); }
             if (v.CanManage && ImGui.BeginTabItem("Management")) { DrawManager(v); ImGui.EndTabItem(); }
             ImGui.EndTabBar();
         }
@@ -112,6 +115,39 @@ public sealed class LoungeTab
         ImGui.TextColored(Dim, "Undo works for sales from the last 15 minutes. It does not take back an item you handed over.");
     }
 
+    private void DrawPf(LoungeView v)
+    {
+        if (!pfLoaded) { pfLoaded = true; pfEdit = v.Pf.Text; pfMinutes = v.Pf.Minutes; }
+        ImGui.TextColored(Gold, "Party Finder listing for tonight");
+        if (v.Pf.Text.Length == 0) ImGui.TextColored(Dim, "No listing has been written yet.");
+        else
+        {
+            ImGui.TextWrapped(v.Pf.Text);
+            ImGui.TextColored(Dim, $"{v.Pf.Text.Length} / 192 characters");
+            if (ImGui.Button("Copy the listing##pfc")) ImGui.SetClipboardText(v.Pf.Text);
+            ImGui.SameLine(); if (ImGui.Button("I posted it##pfp")) _ = Plugin.Lounge.PostedAsync();
+            ImGui.TextColored(Dim, "Copy it, paste it into the Party Finder description, then press I posted it so everyone knows and you get a reminder.");
+        }
+        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        if (v.Pf.PostedAt.Length > 0 && DateTime.TryParse(v.Pf.PostedAt, null, System.Globalization.DateTimeStyles.RoundtripKind, out var at))
+        {
+            var ago = (int)Math.Max(0, (DateTime.UtcNow - at.ToUniversalTime()).TotalMinutes);
+            ImGui.Text($"Last posted by {v.Pf.PostedBy} at {at.ToLocalTime():h:mm tt} ({ago} min ago)");
+            var left = v.Pf.Minutes - ago;
+            if (left > 0) ImGui.TextColored(Green, $"Refresh the listing in about {left} min.");
+            else ImGui.TextColored(Red, "It is time to refresh the Party Finder listing.");
+            ImGui.TextColored(Dim, "If you posted it, the plugin also tells you in chat when the time is up.");
+        }
+        else ImGui.TextColored(Dim, "Nobody has posted the listing yet tonight.");
+        if (!v.CanManage) return;
+        ImGui.Spacing(); ImGui.Separator(); ImGui.Spacing();
+        ImGui.TextColored(Gold, "Write the listing (managers)");
+        ImGui.InputTextMultiline("##pfedit", ref pfEdit, 192, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 70f));
+        ImGui.TextColored(Dim, $"{pfEdit.Length} / 192 characters. That is the longest a Party Finder description can be.");
+        ImGui.SetNextItemWidth(100f); ImGui.InputInt("Remind to refresh after (minutes)##pfm", ref pfMinutes, 5, 10); pfMinutes = Math.Clamp(pfMinutes, 5, 120);
+        if (ImGui.Button("Save the listing##pfs")) _ = Plugin.Lounge.SavePfAsync(pfEdit.Trim(), pfMinutes);
+    }
+
     private void DrawManager(LoungeView v)
     {
         if (ImGui.CollapsingHeader("Hours and pay##lgh1", ImGuiTreeNodeFlags.DefaultOpen))
@@ -178,6 +214,30 @@ public sealed class LoungeTab
             if (ImGui.SmallButton("Yes, start a new night##lgny")) { _ = Plugin.Lounge.NewNightAsync(); confirmNight = false; }
             ImGui.SameLine(); if (ImGui.SmallButton("Cancel##lgnc")) confirmNight = false;
         }
+        }
+
+        if (ImGui.CollapsingHeader("Past nights##lgh5"))
+        {
+            ImGui.TextColored(Dim, "Every night you close is saved here with who sold what. A text copy is also saved on the computer of whoever closes the night.");
+            var rows = v.Nights ?? new();
+            if (rows.Count == 0) ImGui.TextColored(Dim, "No nights have been closed yet.");
+            foreach (var n in rows)
+            {
+                ImGui.PushID("pn" + n.Id);
+                var when = DateTime.TryParse(n.ClosedAt, null, System.Globalization.DateTimeStyles.RoundtripKind, out var d) ? d.ToLocalTime().ToString("ddd MMM d yyyy, h:mm tt") : n.ClosedAt;
+                ImGui.Text($"{when}  -  {n.Count} sold, {n.Total:N0} gil"); ImGui.SameLine();
+                if (ImGui.SmallButton("View")) { _ = Plugin.Lounge.ViewNightAsync(n.Id); nightTitle = n.Id; }
+                ImGui.PopID();
+            }
+            var open = Plugin.Lounge.OpenNight();
+            if (open != null)
+            {
+                if (nightTitle != open.ClosedAt) { nightTitle = open.ClosedAt; nightText = open.ToText(); }
+                ImGui.Spacing();
+                ImGui.InputTextMultiline("##nighttext", ref nightText, 8000, new Vector2(ImGui.GetContentRegionAvail().X - 8f, 220f));
+                if (ImGui.SmallButton("Copy this text##nc")) ImGui.SetClipboardText(open.ToText());
+                ImGui.SameLine(); if (ImGui.SmallButton("Close##nx")) { Plugin.Lounge.CloseNight(); nightText = ""; nightTitle = ""; }
+            }
         }
 
         if (ImGui.CollapsingHeader("Staff and pay##lgh4", ImGuiTreeNodeFlags.DefaultOpen))
