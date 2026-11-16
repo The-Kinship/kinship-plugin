@@ -67,7 +67,12 @@ public sealed class LoungeTab
             ImGui.EndTabBar();
         }
         {
-            ImGui.Spacing(); ImGui.Separator();
+            ImGui.Spacing();
+            var boxStart = ImGui.GetCursorScreenPos();
+            var boxWidth = ImGui.GetContentRegionAvail().X;
+            ImGui.Dummy(new Vector2(0f, 4f));
+            ImGui.Indent(8f);
+            ImGui.BeginGroup();
             ImGui.TextColored(Gold, "Active calls");
             if (v.Calls.Count == 0) ImGui.TextColored(Dim, "No active calls.");
             foreach (var c in v.Calls)
@@ -80,6 +85,12 @@ public sealed class LoungeTab
                 if (v.CanClearCalls) { ImGui.SameLine(); if (ImGui.SmallButton("Clear")) _ = Plugin.Lounge.ClearCallAsync(c.Id); }
                 ImGui.PopID();
             }
+            ImGui.EndGroup();
+            ImGui.Unindent(8f);
+            ImGui.Dummy(new Vector2(0f, 4f));
+            var boxEnd = ImGui.GetItemRectMax();
+            ImGui.GetWindowDrawList().AddRect(boxStart, new Vector2(boxStart.X + boxWidth, boxEnd.Y), ImGui.GetColorU32(Gold), 4f, ImDrawFlags.None, 2f);
+            ImGui.Spacing();
         }
         {
             // Messages live at the bottom so nothing above them jumps around while you click.
